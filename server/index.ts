@@ -18,7 +18,7 @@ import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getDailyWord, getRandomWord, type WordCategory } from "../client/src/lib/wordPool";
+import { getDailyWord, pickWord, type WordCategory } from "../client/src/lib/wordPool";
 import { isAiJudgeEnabled, judgeDrawing, type Locale } from "./aiJudge";
 import { AuthError, isProviderConfigured, verifyIdToken } from "./auth";
 
@@ -84,6 +84,7 @@ interface Room {
   state: RoomState;
   round: number;
   word: string;
+  wordEmoji: string;
   describerId: string;
   drawerId: string;
   phaseEndsAt: number;
@@ -174,9 +175,15 @@ function createRoomCode(): string {
 }
 
 function chooseWord(room: Room): string {
-  if (room.category === "daily_challenge") return getDailyWord(room.locale).word;
-  const category = VALID_CATEGORIES.has(room.category) ? room.category : "daily";
-  return getRandomWord(category as WordCategory, room.locale);
+  if (room.category === "daily_challenge") {
+    const daily = getDailyWord(room.locale);
+    room.wordEmoji = daily.emoji;
+    return daily.word;
+  }
+  const category = VALID_CATEGORIES.has(room.category) && room.category !== "daily_challenge" ? room.category : "daily";
+  const picked = pickWord(category as WordCategory, room.locale);
+  room.wordEmoji = picked.emoji;
+  return picked.word;
 }
 
 // ── Event queue ────────────────────────────────────────────────────────────
@@ -262,6 +269,7 @@ function startRound(room: Room): void {
     mode: "classic",
     role: "describer",
     word: room.word,
+    wordEmoji: room.wordEmoji,
     timeLimit: DESCRIBE_SECONDS,
     endsAt: room.phaseEndsAt,
     round: room.round,
@@ -316,6 +324,7 @@ function startCoDraw(room: Room): void {
       mode: "co-draw",
       role: "artist",
       word: room.word,
+      wordEmoji: room.wordEmoji,
       timeLimit: CO_DRAW_SECONDS,
       countdown: CO_COUNTDOWN_SECONDS,
       endsAt: room.phaseEndsAt,
@@ -399,6 +408,7 @@ async function finishRound(room: Room, submission: { imageData: string; score: n
     room.state = "result";
     pushRoom(room, "show_result", {
       word: room.word,
+      wordEmoji: room.wordEmoji,
       imageData: submission.imageData,
       aiScore: score,
       aiComment: comment,
@@ -431,6 +441,7 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
       state: "waiting",
       round: 0,
       word: "",
+      wordEmoji: "",
       describerId: "",
       drawerId: "",
       phaseEndsAt: 0,

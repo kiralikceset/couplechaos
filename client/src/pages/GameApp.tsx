@@ -53,7 +53,7 @@ import {
 } from "@/lib/retention";
 import { canPlayFree, incrementGamesToday, isBillingEnabled } from "@/lib/premium";
 import { getLocale } from "@/lib/i18n";
-import { getDailyWord } from "@/lib/wordPool";
+import { findWordEmoji, getDailyWord } from "@/lib/wordPool";
 import OnboardingScreen from "@/components/screens/OnboardingScreen";
 import ConnectScreen from "@/components/screens/ConnectScreen";
 import WaitingScreen from "@/components/screens/WaitingScreen";
@@ -105,6 +105,8 @@ export interface GameResult {
   opponentScore?: number;
   mode?: GameMode;
   judgedBy?: "ai" | "offline";
+  wordEmoji?: string;
+  aiGuess?: string;
 }
 
 export interface GameAppStart {
@@ -409,6 +411,8 @@ export default function GameApp({
       opponentScore,
       mode: resultMode,
       judgedBy,
+      wordEmoji,
+      aiGuess,
     }: GameResult) => {
       const numericScore = Number.isFinite(aiScore)
         ? Math.max(1, Math.min(100, Math.round(aiScore!)))
@@ -424,6 +428,8 @@ export default function GameApp({
           : undefined,
         mode: resultMode,
         judgedBy,
+        wordEmoji: wordEmoji || findWordEmoji(resultWord || word || ""),
+        aiGuess,
       };
       setResult(nextResult);
       incrementGamesPlayed();

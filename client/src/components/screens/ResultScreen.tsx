@@ -171,22 +171,49 @@ export default function ResultScreen({ result, onShare, onPlayAgain, onHome, par
           </h1>
         </motion.div>
 
-        {/* Drawing result with frame */}
-        <motion.div
-          initial={{ opacity: 0, y: 40, scale: 0.8 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ delay: 0.3, type: "spring", damping: 12 }}
-          className="relative w-full max-w-[200px] mb-3"
-        >
-          <div className="absolute inset-[-4px] rounded-2xl blur-sm" style={{ background: `linear-gradient(135deg, ${getScoreColor(score)}40, transparent)` }} />
-          <div className="relative aspect-square rounded-2xl overflow-hidden border-2 border-white/[0.15]">
-            {result.imageData ? (
-              <img src={result.imageData} alt="Drawing" className="w-full h-full object-contain bg-[#0a0a0a]" />
-            ) : (
-              <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center text-4xl">🎨</div>
-            )}
-          </div>
-        </motion.div>
+        {/* Drawing vs. reality — side by side */}
+        <div className="w-full max-w-[340px] grid grid-cols-2 gap-3 mb-3">
+          <motion.div
+            initial={{ opacity: 0, x: -30, scale: 0.85 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ delay: 0.3, type: "spring", damping: 12 }}
+            className="relative"
+          >
+            <p className="text-[0.5rem] font-bold text-white/35 uppercase tracking-[0.25em] text-center mb-1.5">{t("result.yourDrawing")}</p>
+            <div className="absolute inset-x-[-3px] top-[18px] bottom-[-3px] rounded-2xl blur-sm" style={{ background: `linear-gradient(135deg, ${getScoreColor(score)}40, transparent)` }} />
+            <div className="relative aspect-square rounded-2xl overflow-hidden border-2 border-white/[0.15]">
+              {result.imageData ? (
+                <img src={result.imageData} alt="Drawing" className="w-full h-full object-contain bg-[#0a0a0a]" />
+              ) : (
+                <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center text-4xl">🎨</div>
+              )}
+            </div>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 30, scale: 0.85, rotate: 8 }}
+            animate={{ opacity: 1, x: 0, scale: 1, rotate: 0 }}
+            transition={{ delay: 0.75, type: "spring", damping: 11 }}
+            className="relative"
+          >
+            <p className="text-[0.5rem] font-bold text-white/35 uppercase tracking-[0.25em] text-center mb-1.5">{t("result.reality")}</p>
+            <div className="relative aspect-square rounded-2xl overflow-hidden border-2 border-secondary/30 bg-gradient-to-br from-secondary/15 via-[#0d0b14] to-primary/10 flex flex-col items-center justify-center">
+              <span className="text-[4.5rem] leading-none drop-shadow-[0_6px_18px_rgba(0,0,0,0.6)]" role="img" aria-label={result.word}>
+                {result.wordEmoji || "❓"}
+              </span>
+              <span className="mt-2 px-2 text-center text-white/80 text-xs font-bold leading-tight line-clamp-2">{result.word}</span>
+            </div>
+          </motion.div>
+        </div>
+        {result.aiGuess && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.1 }}
+            className="text-white/45 text-xs text-center mb-3 max-w-[320px]"
+          >
+            🤖 {t("result.aiThinks")} <span className="text-white/80 font-semibold">“{result.aiGuess}”</span>
+          </motion.p>
+        )}
 
         {/* AI SCORE - Animated counter */}
         <AnimatePresence>

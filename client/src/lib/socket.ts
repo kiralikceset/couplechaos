@@ -1,5 +1,5 @@
 import { getLocale, type Locale } from "./i18n";
-import { getDailyWord, getRandomWord, type WordCategory } from "./wordPool";
+import { findWordEmoji, getDailyWord, getRandomWord, type WordCategory } from "./wordPool";
 
 type Listener = (data?: any) => void;
 export type GameTransport = "online" | "local" | "connecting" | "offline";
@@ -472,6 +472,7 @@ export class GameSocket {
     window.setTimeout(() => {
       this.dispatch("show_result", {
         word: this.localRoom?.word || "",
+        wordEmoji: findWordEmoji(this.localRoom?.word || ""),
         imageData,
         aiComment,
         aiScore: score,

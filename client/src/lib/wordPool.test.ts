@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { translations, type Locale } from "./i18n";
-import { CATEGORIES, getCategoryWordCount, getDailyWord, getRandomWord, getTotalWordCount, resetUsedWords } from "./wordPool";
+import { CATEGORIES, findWordEmoji, getAllWords, getCategoryWordCount, getDailyWord, getRandomWord, getTotalWordCount, pickWord, resetUsedWords } from "./wordPool";
 
 afterEach(() => {
   resetUsedWords();
@@ -9,7 +9,7 @@ afterEach(() => {
 
 describe("word pool", () => {
   it("contains the complete categorized and localized pool", () => {
-    expect(getTotalWordCount()).toBe(520);
+    expect(getTotalWordCount()).toBe(293);
     for (const category of CATEGORIES) expect(getCategoryWordCount(category.id)).toBeGreaterThan(0);
     for (const locale of ["tr", "en", "de", "es"] as Locale[]) {
       for (const category of CATEGORIES) expect(getRandomWord(category.id, locale).trim()).not.toBe("");
@@ -31,5 +31,27 @@ describe("word pool", () => {
       expect(Object.keys(translations[locale]).sort()).toEqual(englishKeys);
       expect(Object.values(translations[locale]).every((value) => value.trim().length > 0)).toBe(true);
     }
+  });
+
+  it("every word is drawable: has an emoji, translations and no duplicates", () => {
+    const seen = new Set<string>();
+    for (const entry of getAllWords()) {
+      expect(entry.emoji.length).toBeGreaterThan(0);
+      for (const value of [entry.tr, entry.en, entry.de, entry.es]) expect(value.trim()).not.toBe("");
+      expect(seen.has(entry.tr.toLowerCase())).toBe(false);
+      seen.add(entry.tr.toLowerCase());
+    }
+    // Abstract words from the old list must be gone.
+    for (const banned of ["Demokrasi", "Nostalji", "Empati", "Güven", "Sadakat", "Özlem", "Dedikodu", "Müzik"]) {
+      expect(findWordEmoji(banned)).toBe("");
+    }
+  });
+
+  it("returns the reference emoji in any language", () => {
+    expect(findWordEmoji("Peynir")).toBe("🧀");
+    expect(findWordEmoji("cheese")).toBe("🧀");
+    expect(findWordEmoji("Käse")).toBe("🧀");
+    const picked = pickWord("funny", "es");
+    expect(findWordEmoji(picked.word)).toBe(picked.emoji);
   });
 });

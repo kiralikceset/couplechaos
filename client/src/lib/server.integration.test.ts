@@ -117,6 +117,10 @@ describe("protocol 2 server with the real app transport", () => {
     const hostResult = (await waitFor(host.log, "show_result")).data;
     const guestResult = (await waitFor(guest.log, "show_result")).data;
     expect(hostResult.word).toBe(hostRole.word);
+    expect(typeof hostResult.wordEmoji).toBe("string");
+    expect(hostResult.wordEmoji.length).toBeGreaterThan(0);
+    expect(hostRole.wordEmoji).toBe(hostResult.wordEmoji); // describer sees the picture too
+    expect(guestRole.wordEmoji).toBeUndefined(); // the drawer must not
     expect(guestResult.word).toBe(hostRole.word);
     expect(hostResult.imageData).toBe(TINY_JPEG);
     expect(hostResult.aiScore).toBe(64);
