@@ -28,8 +28,9 @@ const num = (name: string, fallback: number) => {
   const value = Number(process.env[name]);
   return Number.isFinite(value) && value >= 0 ? value : fallback;
 };
-const DESCRIBE_SECONDS = num("DESCRIBE_SECONDS", 10);
-const DRAW_SECONDS = num("DRAW_SECONDS", 20);
+// 0 = no separate "describe" phase: the canvas opens at once and hints flow while drawing.
+const DESCRIBE_SECONDS = num("DESCRIBE_SECONDS", 0);
+const DRAW_SECONDS = num("DRAW_SECONDS", 30);
 const CO_DRAW_SECONDS = num("CO_DRAW_SECONDS", 20);
 const CO_COUNTDOWN_SECONDS = num("CO_COUNTDOWN_SECONDS", 3);
 const CO_STROKE_LATE_MS = 500; // strokes still in flight when the timer ends
@@ -281,11 +282,9 @@ function buildHintOptions(room: Room): HintOption[] {
   const letters = word.replace(/[^A-Za-z\u00C0-\u024F]/g, "");
   const words = word.split(/\s+/).filter(Boolean).length;
   const first = (letters[0] || "?").toLocaleUpperCase(room.locale);
-  const last = (letters[letters.length - 1] || "?").toLocaleUpperCase(room.locale);
   const options: HintOption[] = [
     { id: "letters", label: labels.letters(letters.length, words), text: `🔤 ${labels.letters(letters.length, words)}`, cost: 1, kind: "letters", used: false },
     { id: "first", label: labels.first, text: `🅰️ ${labels.first}: ${first}`, cost: 2, kind: "first", used: false },
-    { id: "last", label: labels.last, text: `🔚 ${labels.last}: ${last}`, cost: 2, kind: "last", used: false },
   ];
   if (room.wordEmoji) options.push({ id: "emoji", label: labels.emoji, text: `${labels.emoji}: ${room.wordEmoji}`, cost: 4, kind: "emoji", used: false });
   return options;
@@ -303,7 +302,7 @@ function addAiHints(room: Room, round: number): void {
     const labels = HINT_LABELS[room.locale] || HINT_LABELS.tr;
     hints
       .filter((hint) => !hintRevealsWord(hint, room.word))
-      .slice(0, 3)
+      .slice(0, 2)
       .forEach((hint, index) => room.hintOptions.push({ id: `ai${index}`, label: labels.ai, text: hint, cost: 1, kind: "ai", used: false }));
     if (room.hintOptions.some((option) => option.kind === "ai")) push(room.describerId, "hint_options", { options: publicHintOptions(room) });
   });
@@ -349,6 +348,10 @@ function startRound(room: Room): void {
   });
   const round = room.round;
   addAiHints(room, round);
+  if (DESCRIBE_SECONDS <= 0) {
+    beginDrawing(room);
+    return;
+  }
   // If the describer's phone never reports "done", move on anyway.
   later(room, DESCRIBE_SECONDS * 1000 + PHASE_GRACE_MS, () => {
     if (room.round === round && room.state === "describing") beginDrawing(room);
@@ -430,6 +433,15 @@ function coTimeUp(room: Room): void {
 function num01(value: unknown): number | null {
   const n = Number(value);
   return Number.isFinite(n) ? Math.round(Math.max(0, Math.min(1, n)) * 10000) / 10000 : null;
+}
+
+function cleanLiveOp(data: Record<string, unknown>): Record<string, unknown> | null {
+  if (data.t === "u" || data.t === "x") return { t: data.t };
+  if (data.t !== "s") return null;
+  const stroke = cleanStroke(data);
+  if (!stroke) return null;
+  const aspect = Number(data.a);
+  return { t: "s", ...stroke, a: Number.isFinite(aspect) ? Math.max(0.3, Math.min(3, aspect)) : 0.75 };
 }
 
 function cleanStroke(data: Record<string, unknown>): Record<string, unknown> | null {
@@ -635,6 +647,14 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
       score: cleanScore(data.score),
       comment: cleanText(data.comment, "Çizim tamamlandı.", 300),
     });
+    return;
+  }
+
+  if (event === "live_stroke") {
+    // Classic mode: the drawer's strokes are relayed to the describer as they happen.
+    if (room.mode !== "classic" || room.state !== "drawing" || session.id !== room.drawerId) return;
+    const op = cleanLiveOp(data);
+    if (op) push(room.describerId, "live_stroke", op);
     return;
   }
 
@@ -917,6 +937,7 @@ export async function startServer(requestedPort = Number(process.env.PORT) || 30
     gameServer.server.once("error", onError);
     gameServer.server.listen(requestedPort, "0.0.0.0", () => {
       gameServer.server.off("error", onError);
+      keepAwake();
       resolve();
     });
   });
@@ -937,4 +958,19 @@ if (isMainModule) {
       console.error(error);
       process.exitCode = 1;
     });
+}
+
+/**
+ * Render's free plan puts the server to sleep after 15 idle minutes, and the first
+ * visitor then waits ~50 s. A light ping through the public URL keeps it awake.
+ * Render sets RENDER_EXTERNAL_URL itself; KEEP_AWAKE=0 turns this off.
+ */
+function keepAwake(): void {
+  const base = process.env.KEEP_AWAKE_URL || process.env.RENDER_EXTERNAL_URL;
+  if (!base || process.env.KEEP_AWAKE === "0") return;
+  const url = `${base.replace(/\/$/, "")}/api/health`;
+  const timer = setInterval(() => {
+    void fetch(url, { signal: AbortSignal.timeout(10_000) }).catch(() => undefined);
+  }, 10 * 60_000);
+  timer.unref();
 }

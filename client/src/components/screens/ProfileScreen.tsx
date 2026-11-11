@@ -17,7 +17,7 @@ import { deleteAccountAndData, getAccount, getAvailableProviders, signOut, type 
 import PrivacySheet from "@/components/PrivacySheet";
 import { toast } from "sonner";
 
-const APP_VERSION = "1.0.3";
+const APP_VERSION = "1.0.4";
 import { ACHIEVEMENTS, getPlayerStats, getStreakData, getUnlockedAchievements } from "@/lib/retention";
 import { getTokens } from "@/lib/tokens";
 

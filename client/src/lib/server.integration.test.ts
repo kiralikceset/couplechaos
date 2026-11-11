@@ -30,7 +30,7 @@ vi.stubGlobal("window", globalThis);
 type Logged = { event: string; data: any };
 const EVENTS = [
   "connect", "room_created", "room_joined", "player_joined", "game_started", "your_role", "start_drawing",
-  "watch_drawing", "hint_received", "drawing_time_up", "generating_result", "show_result",
+  "watch_drawing", "live_stroke", "hint_received", "drawing_time_up", "generating_result", "show_result",
   "partner_disconnected", "join_error", "protocol_error",
   "co_draw_stroke", "co_draw_react", "co_draw_partner_ready", "co_draw_time_up",
   "hint_rejected", "hint_options", "hint_option_used", "partner_guess",
@@ -205,7 +205,7 @@ describe("hints, tokens and guesses (classic)", () => {
     const { host, guest, code } = await startedRoom();
     const role = (await waitFor(host.log, "your_role")).data;
     const word: string = role.word;
-    expect(role.hintOptions.map((option: { id: string }) => option.id)).toEqual(expect.arrayContaining(["letters", "first", "last"]));
+    expect(role.hintOptions.map((option: { id: string }) => option.id)).toEqual(expect.arrayContaining(["letters", "first"]));
     expect(JSON.stringify(role.hintOptions)).not.toContain(word); // only labels, never the answer
 
     // 1) the word inside a hint is refused and never reaches the drawer
@@ -234,6 +234,17 @@ describe("hints, tokens and guesses (classic)", () => {
     guest.socket.emit("submit_guess", { code, guess: "not-an-option" });
     guest.socket.emit("submit_guess", { code, guess: word });
     expect((await waitFor(host.log, "partner_guess")).data.guess).toBe(word);
+
+    // the drawing is relayed live to the describer (and only to the describer)
+    guest.socket.emit("live_stroke", { t: "s", s: "a1", c: "#FFFFFF", w: 0.01, a: 0.75, p: [[0.1, 0.1], [0.5, 0.5]] });
+    guest.socket.emit("live_stroke", { t: "u" });
+    host.socket.emit("live_stroke", { t: "x" }); // describer can't draw
+    const live = (await waitFor(host.log, "live_stroke")).data;
+    expect(live).toMatchObject({ t: "s", s: "a1", p: [[0.1, 0.1], [0.5, 0.5]] });
+    expect((await waitFor(host.log, "live_stroke", 2)).data).toEqual({ t: "u" });
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(host.log.filter((entry) => entry.event === "live_stroke")).toHaveLength(2);
+    expect(guest.log.filter((entry) => entry.event === "live_stroke")).toHaveLength(0);
 
     // hints still flow while the partner draws
     host.socket.emit("send_hint", { code, text: "qqq yine", id: "during" });
