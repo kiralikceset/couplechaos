@@ -42,7 +42,77 @@ export function getAvailableProviders(): AuthProvider[] {
   const current = platform();
   if (current === "ios") return GOOGLE_IOS_CLIENT_ID ? ["apple", "google"] : ["apple"];
   if (current === "android") return GOOGLE_WEB_CLIENT_ID ? ["google"] : [];
-  return [];
+  // Web (Safari/Chrome, "Add to Home Screen"): Google's own Identity Services button.
+  return GOOGLE_WEB_CLIENT_ID ? ["google"] : [];
+}
+
+export function isWebPlatform(): boolean {
+  return platform() === "web";
+}
+
+// ── Web: Google Identity Services ("Sign in with Google" button) ──
+interface GoogleIdApi {
+  initialize(options: { client_id: string; callback: (response: { credential?: string }) => void; ux_mode?: string; auto_select?: boolean; itp_support?: boolean }): void;
+  renderButton(element: HTMLElement, options: Record<string, unknown>): void;
+  disableAutoSelect(): void;
+}
+
+let gisLoading: Promise<GoogleIdApi> | null = null;
+function loadGoogleIdentity(): Promise<GoogleIdApi> {
+  const existing = (window as { google?: { accounts?: { id?: GoogleIdApi } } }).google?.accounts?.id;
+  if (existing) return Promise.resolve(existing);
+  if (!gisLoading) {
+    gisLoading = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.onload = () => {
+        const api = (window as { google?: { accounts?: { id?: GoogleIdApi } } }).google?.accounts?.id;
+        if (api) resolve(api);
+        else reject(new Error("GIS_UNAVAILABLE"));
+      };
+      script.onerror = () => {
+        gisLoading = null;
+        reject(new Error("GIS_LOAD_FAILED"));
+      };
+      document.head.appendChild(script);
+    });
+  }
+  return gisLoading;
+}
+
+/** Renders Google's official button into `element`; calls back with the verified account. */
+export async function renderGoogleWebButton(
+  element: HTMLElement,
+  onResult: (result: { account?: Account; error?: unknown }) => void,
+  locale = "tr",
+): Promise<void> {
+  const api = await loadGoogleIdentity();
+  api.initialize({
+    client_id: GOOGLE_WEB_CLIENT_ID,
+    itp_support: true,
+    callback: (response) => {
+      if (!response.credential) {
+        onResult({ error: new AuthCancelled("cancelled") });
+        return;
+      }
+      completeSignIn("google", response.credential, "").then(
+        (account) => onResult({ account }),
+        (error) => onResult({ error }),
+      );
+    },
+  });
+  element.innerHTML = "";
+  api.renderButton(element, {
+    type: "standard",
+    theme: "filled_black",
+    size: "large",
+    shape: "pill",
+    text: "continue_with",
+    logo_alignment: "center",
+    width: Math.min(360, Math.max(220, Math.round(element.getBoundingClientRect().width) || 320)),
+    locale,
+  });
 }
 
 export function getAccount(): Account | null {
@@ -91,6 +161,7 @@ function looksCancelled(error: unknown): boolean {
 }
 
 export async function signIn(provider: AuthProvider): Promise<Account> {
+  if (isWebPlatform()) throw new Error("USE_WEB_BUTTON");
   const SocialLogin = await plugin();
   let idToken = "";
   let displayName = "";
@@ -111,8 +182,11 @@ export async function signIn(provider: AuthProvider): Promise<Account> {
     throw error;
   }
   if (!idToken) throw new Error("NO_ID_TOKEN");
+  return completeSignIn(provider, idToken, displayName);
+}
 
-  const base = getServerBaseUrl();
+async function completeSignIn(provider: AuthProvider, idToken: string, displayName: string): Promise<Account> {
+  const base = getServerBaseUrl() || (isWebPlatform() ? window.location.origin : "");
   if (!base) throw new Error("NO_SERVER");
   const response = await fetch(`${base}/api/auth/verify`, {
     method: "POST",
@@ -149,6 +223,9 @@ export async function signOut(): Promise<void> {
     localStorage.setItem("cc_logged_in", "guest");
   } catch {
     /* ignore */
+  }
+  if (account && isWebPlatform()) {
+    (window as { google?: { accounts?: { id?: GoogleIdApi } } }).google?.accounts?.id?.disableAutoSelect();
   }
   if (account && platform() !== "web") {
     try {

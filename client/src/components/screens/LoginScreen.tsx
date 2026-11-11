@@ -5,12 +5,12 @@
  * Flow: After onboarding → Login → Premium → Home
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { m as motion } from "framer-motion";
 import { useLocale } from "@/contexts/LocaleContext";
 import { playError, playSuccess, playTap } from "@/lib/sounds";
 import { toast } from "sonner";
-import { AuthCancelled, getAvailableProviders, signIn, type AuthProvider } from "@/lib/auth";
+import { AuthCancelled, getAvailableProviders, isWebPlatform, renderGoogleWebButton, signIn, type AuthProvider } from "@/lib/auth";
 import PrivacySheet from "@/components/PrivacySheet";
 
 interface Props {
@@ -19,7 +19,9 @@ interface Props {
 }
 
 export default function LoginScreen({ onSkip, onSignedIn }: Props) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const webGoogleRef = useRef<HTMLDivElement>(null);
+  const useWebGoogle = isWebPlatform() && getAvailableProviders().includes("google");
   const providers = getAvailableProviders();
   const [busy, setBusy] = useState<AuthProvider | null>(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
@@ -44,6 +46,22 @@ export default function LoginScreen({ onSkip, onSignedIn }: Props) {
       setBusy(null);
     }
   }
+
+  useEffect(() => {
+    if (!useWebGoogle || !webGoogleRef.current) return;
+    renderGoogleWebButton(webGoogleRef.current, ({ account, error }) => {
+      if (account) {
+        playSuccess();
+        (onSignedIn || onSkip)();
+      } else if (error instanceof AuthCancelled) {
+        toast(t("login.cancelled"));
+      } else if (error) {
+        console.warn("[auth]", error);
+        playError();
+        toast.error(t("login.failed"));
+      }
+    }, locale).catch((error) => console.warn("[auth] Google button unavailable", error));
+  }, [useWebGoogle, locale]);
 
   function handleSkip() {
     playTap();
@@ -119,7 +137,11 @@ export default function LoginScreen({ onSkip, onSignedIn }: Props) {
             </motion.button>
           )}
 
-          {providers.includes("google") && (
+          {useWebGoogle && (
+            <div ref={webGoogleRef} className="w-full min-h-[44px] flex justify-center" />
+          )}
+
+          {providers.includes("google") && !useWebGoogle && (
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={() => void handleProviderLogin("google")}
