@@ -1,0 +1,30 @@
+{
+  "label": "v9",
+  "transition": {
+    "firstContentMs": 13.199999999953434,
+    "visibleMs": 131.30000000004657
+  },
+  "work": {
+    "TaskDuration": 0.010775000000000035,
+    "ScriptDuration": 0.00007899999999999574,
+    "LayoutCount": 0,
+    "RecalcStyleCount": 6
+  },
+  "images": [
+    {
+      "src": "/images/scoring.svg",
+      "loaded": true
+    }
+  ],
+  "overflow": {
+    "width": 393,
+    "view": 393,
+    "height": 840,
+    "viewHeight": 840
+  },
+  "errors": [],
+  "introExternal": [],
+  "external": [
+    "https://couple-chaos-realtime.byusuf2233123.chatgpt.site/api/session"
+  ]
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Couple Chaos</string>
+    <string name="title_activity_main">Couple Chaos</string>
+    <string name="package_name">com.couplechaos.app</string>
+    <string name="custom_url_scheme">com.couplechaos.app</string>
+</resources>

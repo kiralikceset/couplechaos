@@ -1,0 +1,14 @@
+# One-click deploy on Render.com (Blueprint). Free plan: no credit card, sleeps after 15 min idle (~1 min wake-up). Add ANTHROPIC_API_KEY or OPENAI_API_KEY in the dashboard.
+services:
+  - type: web
+    name: couple-chaos-server
+    runtime: docker
+    plan: free   # test için ücretsiz; gerçek kullanıcılar gelince "starter" yap
+    healthCheckPath: /api/health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_IDS
+        sync: false

@@ -1,0 +1,27 @@
+{
+  "label": "v7",
+  "transition": {
+    "firstContentMs": 217.79999999998836,
+    "visibleMs": 395.5
+  },
+  "work": {
+    "TaskDuration": 1.0644259999999999,
+    "ScriptDuration": 0.25300599999999995,
+    "LayoutCount": 277,
+    "RecalcStyleCount": 300
+  },
+  "images": [
+    {
+      "src": "/images/scoring.svg",
+      "loaded": true
+    }
+  ],
+  "overflow": {
+    "width": 393,
+    "view": 393,
+    "height": 840,
+    "viewHeight": 840
+  },
+  "errors": [],
+  "external": []
+}

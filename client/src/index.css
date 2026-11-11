@@ -1,0 +1,310 @@
+@import "tailwindcss" source("./");
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+:root {
+  --primary: oklch(0.65 0.29 350);
+  --primary-foreground: oklch(1 0 0);
+  --radius: 1rem;
+  --background: oklch(0.08 0.01 285);
+  --foreground: oklch(0.95 0.005 0);
+  --card: oklch(0.12 0.015 285);
+  --card-foreground: oklch(0.95 0.005 0);
+  --popover: oklch(0.12 0.015 285);
+  --popover-foreground: oklch(0.95 0.005 0);
+  --secondary: oklch(0.55 0.22 300);
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(0.2 0.01 285);
+  --muted-foreground: oklch(0.6 0.01 285);
+  --accent: oklch(0.8 0.18 85);
+  --accent-foreground: oklch(0.15 0.02 85);
+  --destructive: oklch(0.6 0.24 27);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 10%);
+  --ring: oklch(0.65 0.29 350);
+  --chart-1: oklch(0.65 0.29 350);
+  --chart-2: oklch(0.55 0.22 300);
+  --chart-3: oklch(0.8 0.18 85);
+  --chart-4: oklch(0.7 0.2 170);
+  --chart-5: oklch(0.6 0.25 30);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
+  }
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overscroll-behavior: none;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Outfit', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  button {
+    touch-action: manipulation;
+  }
+  canvas {
+    cursor: crosshair;
+    display: block;
+  }
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
+
+/* Phones with a notch / Dynamic Island / gesture bar: keep every screen inside
+   the visible area. On devices without insets these resolve to 0. */
+#root {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.h-screen {
+  height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+}
+.min-h-screen {
+  min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+}
+
+@layer components {
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  .font-display {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .font-body {
+    font-family: 'Outfit', sans-serif;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Glow effects */
+  .glow-primary {
+    box-shadow: 0 0 20px oklch(0.65 0.29 350 / 40%), 0 0 60px oklch(0.65 0.29 350 / 20%);
+  }
+
+  .glow-secondary {
+    box-shadow: 0 0 20px oklch(0.55 0.22 300 / 40%), 0 0 60px oklch(0.55 0.22 300 / 20%);
+  }
+
+  .glow-gold {
+    box-shadow: 0 0 20px oklch(0.8 0.18 85 / 40%), 0 0 60px oklch(0.8 0.18 85 / 20%);
+  }
+
+  .text-glow-primary {
+    text-shadow: 0 0 20px oklch(0.65 0.29 350 / 60%), 0 0 40px oklch(0.65 0.29 350 / 30%);
+  }
+
+  .text-glow-secondary {
+    text-shadow: 0 0 20px oklch(0.55 0.22 300 / 60%), 0 0 40px oklch(0.55 0.22 300 / 30%);
+  }
+
+  /* Noise texture overlay */
+  .noise-overlay {
+    position: relative;
+  }
+  .noise-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  }
+
+  /* Pulse animation for timer */
+  .pulse-ring {
+    animation: pulse-ring 1.5s ease-in-out infinite;
+  }
+
+  /* Shake animation */
+  .shake {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  /* Float animation */
+  .float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Slam animation */
+  .slam-in {
+    animation: slam-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  /* Bounce in */
+  .bounce-in {
+    animation: bounce-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    background: linear-gradient(135deg, #FF1A6C, #8B5CF6, #FBBF24);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+@keyframes pulse-ring {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes slam-in {
+  0% { transform: scale(2) translateY(-20px); opacity: 0; }
+  60% { transform: scale(0.95); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes bounce-in {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes ring-countdown {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: var(--circumference); }
+}
+
+.ring-countdown {
+  animation: ring-countdown var(--duration) linear forwards;
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+@keyframes slide-up {
+  0% { transform: translateY(100%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fade-in-up {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Transform/opacity-only particles run without JavaScript animation frames. */
+.onboarding-particle {
+  opacity: 0;
+  animation: onboarding-particle 5s ease-in-out infinite;
+}
+@keyframes onboarding-particle {
+  0% { opacity: 0; transform: translate3d(0, 0, 0); }
+  50% { opacity: .6; }
+  100% { opacity: 0; transform: translate3d(var(--particle-x), -120px, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-particle { animation: none; }
+}
+
+.result-confetti { animation: result-confetti 1.8s ease-in both; }
+@keyframes result-confetti {
+  from { transform: translate3d(0, -20px, 0) rotate(0); opacity: 1; }
+  to { transform: translate3d(0, 100vh, 0) rotate(540deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .result-confetti { display: none; } }
+
+/* Intro: preserve the neon artwork without a large live blur surface.
+   Screen changes mount immediately; no exit-animation queue. */
+.intro-screen { height: 100svh; }
+.intro-glow { width: 700px; height: 700px; top: calc(20% - 200px); left: calc(50% - 350px); }
+.intro-slide { animation: intro-enter 120ms ease-out; }
+.intro-tagline { animation: intro-enter 160ms ease-out; }
+@keyframes intro-enter {
+  from { opacity: .7; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.intro-bubble { animation: intro-float 3s ease-in-out 2; }
+.intro-bubble-reverse { animation-direction: reverse; animation-duration: 3.5s; }
+.intro-canvas { animation: intro-tilt 4s ease-in-out 2; }
+.intro-badge { animation: intro-pulse 2s ease-in-out 2; }
+.intro-arrow { animation: intro-arrow 1.2s ease-in-out 3; }
+.intro-shimmer { transform: translateX(-100%); animation: intro-shimmer 4s ease-in-out 2; pointer-events: none; }
+@keyframes intro-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(3px); } }
+@keyframes intro-tilt { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(2deg); } }
+@keyframes intro-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes intro-arrow { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+@keyframes intro-shimmer { 0% { transform: translateX(-100%); } 60%, 100% { transform: translateX(100%); } }
+.intro-screen .onboarding-particle { animation-iteration-count: 2; }
+@media (prefers-reduced-motion: reduce) {
+  .intro-screen *, .intro-screen *::before, .intro-screen *::after { animation: none !important; transition: none !important; }
+}

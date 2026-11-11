@@ -1,0 +1,10 @@
+{
+  "typescript": "passed",
+  "unitTests": 28,
+  "unitTestFiles": 6,
+  "entryBytesV8": 470217,
+  "entryBytesV9": 284694,
+  "cssUnchanged": true,
+  "imagesUnchanged": 3,
+  "fontFilesUnchanged": 19
+}

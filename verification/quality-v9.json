@@ -1,0 +1,24 @@
+{
+  "checks": [
+    "Splash and 3 slides: identical screenshot PNG bytes with decorations frozen at the same point",
+    "Fast skip with 500ms delayed game/login imports: no blank frame; name preserved; name-form back works",
+    "Profile opened from splash returns to splash",
+    "Browser/device history back during bootstrap and re-entry",
+    "Returning player opens home directly; game code prepared in connect screen before round"
+  ],
+  "errors": [],
+  "shots": {
+    "v8": {
+      "splash": "/workspace/scratch/504ad8e5bebf/couple-v9/verification/v8-quality-splash.png",
+      "slide1": "/workspace/scratch/504ad8e5bebf/couple-v9/verification/v8-quality-slide1.png",
+      "slide2": "/workspace/scratch/504ad8e5bebf/couple-v9/verification/v8-quality-slide2.png",
+      "slide3": "/workspace/scratch/504ad8e5bebf/couple-v9/verification/v8-quality-slide3.png"
+    },
+    "v9": {
+      "splash": "/workspace/scratch/504ad8e5bebf/couple-v9/verification/v9-quality-splash.png",
+      "slide1": "/workspace/scratch/504ad8e5bebf/couple-v9/verification/v9-quality-slide1.png",
+      "slide2": "/workspace/scratch/504ad8e5bebf/couple-v9/verification/v9-quality-slide2.png",
+      "slide3": "/workspace/scratch/504ad8e5bebf/couple-v9/verification/v9-quality-slide3.png"
+    }
+  }
+}

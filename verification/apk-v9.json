@@ -1,0 +1,45 @@
+{
+  "apkBytes": 4107440,
+  "sha256": "93d42985c84bfa2aa1ec42dbbd77b611ffbc22b2af01950a320a0e7a0e4f2be6",
+  "v1": "jarsigner verified",
+  "v2v3": {
+    "v2": {
+      "verified": true,
+      "scheme": "v2",
+      "signing_block_offset": 4071424,
+      "central_directory_offset": 4075520,
+      "signers": [
+        {
+          "signer": 1,
+          "subject": "CN=Couple Chaos,OU=Mobile,O=CoupleGames,L=Istanbul,ST=Istanbul,C=TR",
+          "certificate_sha256": "4e801e01c5bae98abcbc2c7bcf9c632ad084461dd08bada1d3bc533229b4fd9e",
+          "algorithms": [
+            "0x0103"
+          ]
+        }
+      ]
+    },
+    "v3": {
+      "verified": true,
+      "scheme": "v3",
+      "signers": [
+        {
+          "signer": 1,
+          "subject": "CN=Couple Chaos,OU=Mobile,O=CoupleGames,L=Istanbul,ST=Istanbul,C=TR",
+          "certificate_sha256": "4e801e01c5bae98abcbc2c7bcf9c632ad084461dd08bada1d3bc533229b4fd9e",
+          "min_sdk": 24,
+          "max_sdk": 2147483647,
+          "algorithms": [
+            "0x0103"
+          ]
+        }
+      ]
+    }
+  },
+  "alignment": "passed",
+  "zipIntegrity": "passed",
+  "packagedAssetCount": 44,
+  "packagedAssets": "byte-for-byte equal to tested final build; no stale compiled chunks",
+  "nativeShell": "unchanged from v8; versionCode=1, versionName=1.0",
+  "physicalDeviceTest": false
+}
