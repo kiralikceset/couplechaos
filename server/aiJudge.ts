@@ -210,3 +210,69 @@ export async function judgeDrawing(input: JudgeInput): Promise<JudgeResult | nul
 }
 
 export const __test = { parseJudgeJson, buildPrompt };
+
+// ── Smart hints ("Akıllı ipucu") for the describer ─────────────────────────
+function hintPrompt(word: string, locale: Locale): string {
+  return [
+    `Secret word for a drawing game: "${word}".`,
+    `Write 3 short, fun hints in ${LANGUAGE_NAMES[locale]} that help someone guess and draw it.`,
+    "Each hint max 5 words. Describe shape, color, where you find it or what it does.",
+    "NEVER write the word itself, a part of it, its root, a translation or the first letter.",
+    'Reply with ONLY a JSON array of 3 strings, e.g. ["...","...","..."].',
+  ].join("\n");
+}
+
+async function textCompletion(prompt: string, signal: AbortSignal): Promise<string> {
+  const selected = provider();
+  if (!selected) return "";
+  if (selected === "anthropic") {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      signal,
+      headers: { "content-type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY!.trim(), "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: process.env.AI_MODEL?.trim() || "claude-haiku-5-5", max_tokens: 200, messages: [{ role: "user", content: prompt }] }),
+    });
+    if (!response.ok) throw new Error(`anthropic_http_${response.status}`);
+    const payload = await response.json() as { content?: Array<{ type: string; text?: string }> };
+    return (payload.content || []).map((part) => part.text || "").join("");
+  }
+  const target = OPENAI_COMPATIBLE[selected];
+  const response = await fetch(target.url, {
+    method: "POST",
+    signal,
+    headers: { "content-type": "application/json", authorization: `Bearer ${process.env[target.keyEnv]!.trim()}` },
+    body: JSON.stringify({ model: process.env.AI_MODEL?.trim() || target.model, max_tokens: 200, messages: [{ role: "user", content: prompt }] }),
+  });
+  if (!response.ok) throw new Error(`${selected}_http_${response.status}`);
+  const payload = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+  return payload.choices?.[0]?.message?.content || "";
+}
+
+export function parseHintList(text: string): string[] {
+  const start = text.indexOf("[");
+  const end = text.lastIndexOf("]");
+  if (start < 0 || end <= start) return [];
+  try {
+    const parsed = JSON.parse(text.slice(start, end + 1));
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string").map((item) => item.replace(/[\u0000-\u001f]/g, "").trim().slice(0, 60)).filter(Boolean)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Up to 3 AI hints; [] when AI is off, slow or failing. Never throws. */
+export async function generateHints(word: string, locale: Locale): Promise<string[]> {
+  if (!provider() || !word || !underDailyLimit()) return [];
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), Number(process.env.AI_HINT_TIMEOUT_MS) || 6000);
+  try {
+    return parseHintList(await textCompletion(hintPrompt(word, locale), controller.signal));
+  } catch (error) {
+    console.warn("[ai] hints failed:", String(error).slice(0, 200));
+    return [];
+  } finally {
+    clearTimeout(timeout);
+  }
+}

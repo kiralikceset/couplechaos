@@ -18,8 +18,9 @@ import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getDailyWord, pickWord, type WordCategory } from "../client/src/lib/wordPool";
-import { isAiJudgeEnabled, judgeDrawing, type Locale } from "./aiJudge";
+import { getDailyWord, getDistractors, pickWord, type WordCategory } from "../client/src/lib/wordPool";
+import { foldText, hintRevealsWord } from "../client/src/lib/hintFilter";
+import { generateHints, isAiJudgeEnabled, judgeDrawing, type Locale } from "./aiJudge";
 import { AuthError, isProviderConfigured, verifyIdToken } from "./auth";
 
 // ── Tunables (env-overridable, mostly for tests) ───────────────────────────
@@ -28,7 +29,7 @@ const num = (name: string, fallback: number) => {
   return Number.isFinite(value) && value >= 0 ? value : fallback;
 };
 const DESCRIBE_SECONDS = num("DESCRIBE_SECONDS", 10);
-const DRAW_SECONDS = num("DRAW_SECONDS", 10);
+const DRAW_SECONDS = num("DRAW_SECONDS", 20);
 const CO_DRAW_SECONDS = num("CO_DRAW_SECONDS", 20);
 const CO_COUNTDOWN_SECONDS = num("CO_COUNTDOWN_SECONDS", 3);
 const CO_STROKE_LATE_MS = 500; // strokes still in flight when the timer ends
@@ -74,6 +75,15 @@ interface Session {
   seenActionOrder: string[];
 }
 
+interface HintOption {
+  id: string;
+  label: string;
+  text: string;
+  cost: number;
+  kind: "letters" | "first" | "last" | "emoji" | "ai";
+  used: boolean;
+}
+
 interface Room {
   code: string;
   mode: GameMode;
@@ -90,6 +100,9 @@ interface Room {
   phaseEndsAt: number;
   timers: NodeJS.Timeout[];
   hintsThisRound: number;
+  hintOptions: HintOption[];
+  guessOptions: string[];
+  guess: string;
   createdAt: number;
 }
 
@@ -131,6 +144,12 @@ const MESSAGES: Record<string, Record<Locale, string>> = {
     en: "The server is very busy, please try again shortly.",
     de: "Der Server ist gerade ausgelastet, bitte gleich nochmal versuchen.",
     es: "El servidor está muy ocupado, inténtalo de nuevo en un momento.",
+  },
+  hintBlocked: {
+    tr: "Bu ipucu gizli kelimeyi ele veriyor. Kelimeyi (ya da kökünü) yazamazsın!",
+    en: "That hint gives the word away. You can't write the word (or its root)!",
+    de: "Dieser Tipp verrät das Wort. Du darfst das Wort (oder seinen Stamm) nicht schreiben!",
+    es: "Esa pista revela la palabra. ¡No puedes escribir la palabra (ni su raíz)!",
   },
   emptyDrawing: {
     tr: "Tuval bomboş kaldı... Bu çizim değil, meditasyon 🧘",
@@ -248,6 +267,48 @@ function leaveCurrentRoom(session: Session): void {
   if (room) closeRoom(room, session.id);
 }
 
+const HINT_LABELS: Record<Locale, { letters: (n: number, w: number) => string; first: string; last: string; emoji: string; ai: string }> = {
+  tr: { letters: (n, w) => (w > 1 ? `${w} kelime · ${n} harf` : `${n} harfli`), first: "İlk harf", last: "Son harf", emoji: "Emoji ipucu", ai: "Akıllı ipucu" },
+  en: { letters: (n, w) => (w > 1 ? `${w} words · ${n} letters` : `${n} letters`), first: "First letter", last: "Last letter", emoji: "Emoji hint", ai: "Smart hint" },
+  de: { letters: (n, w) => (w > 1 ? `${w} Wörter · ${n} Buchstaben` : `${n} Buchstaben`), first: "Erster Buchstabe", last: "Letzter Buchstabe", emoji: "Emoji-Tipp", ai: "Schlauer Tipp" },
+  es: { letters: (n, w) => (w > 1 ? `${w} palabras · ${n} letras` : `${n} letras`), first: "Primera letra", last: "Última letra", emoji: "Pista emoji", ai: "Pista inteligente" },
+};
+
+/** Ready-made hints the describer can "buy" with tokens. Always available, no AI needed. */
+function buildHintOptions(room: Room): HintOption[] {
+  const labels = HINT_LABELS[room.locale] || HINT_LABELS.tr;
+  const word = room.word.trim();
+  const letters = word.replace(/[^A-Za-z\u00C0-\u024F]/g, "");
+  const words = word.split(/\s+/).filter(Boolean).length;
+  const first = (letters[0] || "?").toLocaleUpperCase(room.locale);
+  const last = (letters[letters.length - 1] || "?").toLocaleUpperCase(room.locale);
+  const options: HintOption[] = [
+    { id: "letters", label: labels.letters(letters.length, words), text: `🔤 ${labels.letters(letters.length, words)}`, cost: 1, kind: "letters", used: false },
+    { id: "first", label: labels.first, text: `🅰️ ${labels.first}: ${first}`, cost: 2, kind: "first", used: false },
+    { id: "last", label: labels.last, text: `🔚 ${labels.last}: ${last}`, cost: 2, kind: "last", used: false },
+  ];
+  if (room.wordEmoji) options.push({ id: "emoji", label: labels.emoji, text: `${labels.emoji}: ${room.wordEmoji}`, cost: 4, kind: "emoji", used: false });
+  return options;
+}
+
+function publicHintOptions(room: Room) {
+  return room.hintOptions.map(({ id, label, cost, kind, used, text }) => ({ id, label: kind === "ai" ? text : label, cost, kind, used }));
+}
+
+/** Adds up to 3 AI-written hints a moment after the round starts (never blocks the game). */
+function addAiHints(room: Room, round: number): void {
+  if (!isAiJudgeEnabled()) return;
+  void generateHints(room.word, room.locale).then((hints) => {
+    if (room.round !== round || room.state === "closed" || room.mode !== "classic") return;
+    const labels = HINT_LABELS[room.locale] || HINT_LABELS.tr;
+    hints
+      .filter((hint) => !hintRevealsWord(hint, room.word))
+      .slice(0, 3)
+      .forEach((hint, index) => room.hintOptions.push({ id: `ai${index}`, label: labels.ai, text: hint, cost: 1, kind: "ai", used: false }));
+    if (room.hintOptions.some((option) => option.kind === "ai")) push(room.describerId, "hint_options", { options: publicHintOptions(room) });
+  });
+}
+
 function startRound(room: Room): void {
   if (room.players.length < 2 || room.state === "closed") return;
   if (room.mode === "co-draw") {
@@ -259,10 +320,13 @@ function startRound(room: Room): void {
   room.word = chooseWord(room);
   room.state = "describing";
   room.hintsThisRound = 0;
+  room.guess = "";
+  room.guessOptions = [];
   const describerIndex = (room.round - 1) % 2;
   room.describerId = room.players[describerIndex];
   room.drawerId = room.players[1 - describerIndex];
   room.phaseEndsAt = Date.now() + DESCRIBE_SECONDS * 1000;
+  room.hintOptions = buildHintOptions(room);
 
   pushRoom(room, "game_started", { mode: "classic", round: room.round });
   push(room.describerId, "your_role", {
@@ -273,6 +337,7 @@ function startRound(room: Room): void {
     timeLimit: DESCRIBE_SECONDS,
     endsAt: room.phaseEndsAt,
     round: room.round,
+    hintOptions: publicHintOptions(room),
   });
   push(room.drawerId, "your_role", {
     mode: "classic",
@@ -283,6 +348,7 @@ function startRound(room: Room): void {
     round: room.round,
   });
   const round = room.round;
+  addAiHints(room, round);
   // If the describer's phone never reports "done", move on anyway.
   later(room, DESCRIBE_SECONDS * 1000 + PHASE_GRACE_MS, () => {
     if (room.round === round && room.state === "describing") beginDrawing(room);
@@ -294,7 +360,13 @@ function beginDrawing(room: Room): void {
   clearRoomTimers(room);
   room.state = "drawing";
   room.phaseEndsAt = Date.now() + DRAW_SECONDS * 1000;
-  push(room.drawerId, "start_drawing", { mode: "classic", timeLimit: DRAW_SECONDS, endsAt: room.phaseEndsAt });
+  const options = [room.word, ...getDistractors(room.word, room.category === "daily_challenge" ? "daily" : room.category, room.locale, 3)];
+  for (let i = options.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [options[i], options[j]] = [options[j], options[i]];
+  }
+  room.guessOptions = options;
+  push(room.drawerId, "start_drawing", { mode: "classic", timeLimit: DRAW_SECONDS, endsAt: room.phaseEndsAt, options });
   push(room.describerId, "watch_drawing", { mode: "classic", timeLimit: DRAW_SECONDS, endsAt: room.phaseEndsAt });
   const round = room.round;
   later(room, DRAW_SECONDS * 1000 + PHASE_GRACE_MS, () => {
@@ -416,6 +488,8 @@ async function finishRound(room: Room, submission: { imageData: string; score: n
       judgedBy,
       round,
       mode: room.mode,
+      playerGuess: room.mode === "classic" ? room.guess || null : undefined,
+      guessCorrect: room.mode === "classic" ? Boolean(room.guess) && foldText(room.guess) === foldText(room.word) : undefined,
     });
   });
 }
@@ -447,6 +521,9 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
       phaseEndsAt: 0,
       timers: [],
       hintsThisRound: 0,
+      hintOptions: [],
+      guessOptions: [],
+      guess: "",
       createdAt: Date.now(),
     };
     rooms.set(room.code, room);
@@ -510,10 +587,37 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
   if (event === "send_hint") {
     if (room.state !== "describing" && room.state !== "drawing") return;
     if (room.hintsThisRound >= 60) return;
+    if (room.mode === "classic" && session.id !== room.describerId) return;
     const text = cleanText(data.text, "", 80);
     if (!text) return;
+    const id = cleanText(data.id, randomUUID(), 64);
+    if (hintRevealsWord(text, room.word)) {
+      push(session.id, "hint_rejected", { id, text, message: msg("hintBlocked", room.locale) });
+      return;
+    }
     room.hintsThisRound += 1;
-    pushRoom(room, "hint_received", { text, id: cleanText(data.id, randomUUID(), 64) }, session.id);
+    pushRoom(room, "hint_received", { text, id }, session.id);
+    return;
+  }
+
+  if (event === "use_hint_option") {
+    if (room.mode !== "classic" || session.id !== room.describerId) return;
+    if (room.state !== "describing" && room.state !== "drawing") return;
+    const option = room.hintOptions.find((item) => item.id === String(data.optionId || ""));
+    if (!option || option.used) return;
+    option.used = true;
+    const id = `opt-${room.round}-${option.id}`;
+    push(room.drawerId, "hint_received", { text: option.text, id, kind: option.kind });
+    push(room.describerId, "hint_option_used", { optionId: option.id, id, text: option.text, cost: option.cost, options: publicHintOptions(room) });
+    return;
+  }
+
+  if (event === "submit_guess") {
+    if (room.mode !== "classic" || session.id !== room.drawerId || room.state !== "drawing") return;
+    const guess = cleanText(data.guess, "", 60);
+    if (!room.guessOptions.includes(guess)) return;
+    room.guess = guess;
+    push(room.describerId, "partner_guess", { guess });
     return;
   }
 
@@ -524,6 +628,8 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
 
   if (event === "submit_drawing") {
     if (session.id !== room.drawerId || room.state !== "drawing") return;
+    const guess = cleanText(data.guess, "", 60);
+    if (guess && room.guessOptions.includes(guess)) room.guess = guess;
     void finishRound(room, {
       imageData: cleanImage(data.imageData),
       score: cleanScore(data.score),

@@ -116,6 +116,7 @@ export default function HomeScreen({
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => { playTap(); onProfile(); }}
+            aria-label={t("profile.title")}
             className="size-10 rounded-full bg-white/[0.06] border border-white/[0.1] flex items-center justify-center"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-white/60">

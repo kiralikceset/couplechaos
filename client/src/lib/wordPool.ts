@@ -428,3 +428,14 @@ export function getCategoryWordCount(category: WordCategory): number {
 export function resetUsedWords(): void {
   usedWordIds.clear();
 }
+
+/** Wrong-but-plausible answers from the same category, for the drawer's guess buttons. */
+export function getDistractors(word: string, category: WordCategory | string, locale: Locale, count = 3): string[] {
+  const pool = (ALL_WORDS[category as WordCategory] || DAILY_WORDS).map((entry) => localized(entry, locale));
+  const others = pool.filter((value) => value.toLocaleLowerCase("tr") !== word.toLocaleLowerCase("tr"));
+  for (let i = others.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [others[i], others[j]] = [others[j], others[i]];
+  }
+  return others.slice(0, count);
+}

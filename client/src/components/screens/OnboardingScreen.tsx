@@ -42,7 +42,9 @@ export default function OnboardingScreen({
           className="w-full h-full object-cover"
         />
         {/* Gradient overlays for readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/70 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] from-20% via-[#050505]/85 via-40% to-transparent" />
+        {/* The artwork has lettering near its bottom edge: keep it out from behind the button */}
+        <div className="absolute inset-x-0 bottom-0 h-[20%] bg-[#050505]" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/40 via-transparent to-transparent" />
       </div>
       {/* Subtle animated particles */}
@@ -129,11 +131,11 @@ export default function OnboardingScreen({
             playTap();
             onNext();
           }}
-          className="w-full bg-primary text-white font-bold text-lg py-[1.15rem] rounded-2xl glow-primary relative overflow-hidden active:scale-[0.98] transition-transform duration-100"
+          className="w-full bg-amber-400 text-black font-black text-lg py-[1.15rem] rounded-2xl shadow-[0_0_30px_rgba(251,191,36,0.4)] relative overflow-hidden active:scale-[0.98] transition-transform duration-100"
         >
           <span className="relative z-10 flex items-center justify-center gap-2">
             {t("onboarding.cta")}
-            <span className="intro-arrow text-white/80">→</span>
+            <span className="intro-arrow text-black/70">→</span>
           </span>
           <div className="intro-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
         </button>

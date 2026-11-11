@@ -54,6 +54,7 @@ import {
 import { canPlayFree, incrementGamesToday, isBillingEnabled } from "@/lib/premium";
 import { getLocale } from "@/lib/i18n";
 import { findWordEmoji, getDailyWord } from "@/lib/wordPool";
+import { earnTokens, TOKEN_REWARD_CORRECT, TOKEN_REWARD_ROUND } from "@/lib/tokens";
 import OnboardingScreen from "@/components/screens/OnboardingScreen";
 import ConnectScreen from "@/components/screens/ConnectScreen";
 import WaitingScreen from "@/components/screens/WaitingScreen";
@@ -107,6 +108,17 @@ export interface GameResult {
   judgedBy?: "ai" | "offline";
   wordEmoji?: string;
   aiGuess?: string;
+  playerGuess?: string | null;
+  guessCorrect?: boolean;
+  tokensEarned?: number;
+}
+
+export interface HintOptionView {
+  id: string;
+  label: string;
+  cost: number;
+  kind: string;
+  used: boolean;
 }
 
 export interface GameAppStart {
@@ -156,6 +168,10 @@ export default function GameApp({
   const [result, setResult] = useState<GameResult | null>(null);
   const [partnerName, setPartnerName] = useState<string | null>(null);
   const [partnerAvatar, setPartnerAvatar] = useState<string | null>(null);
+  const [hintOptions, setHintOptions] = useState<HintOptionView[]>([]);
+  const [guessOptions, setGuessOptions] = useState<string[]>([]);
+  const [partnerGuess, setPartnerGuess] = useState<string | null>(null);
+  const [wordEmoji, setWordEmoji] = useState<string>("");
   const [gameMode, setGameMode] = useState<GameMode>("classic");
   const [seat, setSeat] = useState(0);
   const [transport, setTransport] = useState(socket.transport);
@@ -331,6 +347,10 @@ export default function GameApp({
     };
     const onGameStarted = () => {
       setReceivedHints([]);
+      setHintOptions([]);
+      setGuessOptions([]);
+      setPartnerGuess(null);
+      setWordEmoji("");
       setResult(null);
       setWord(null);
       roundStartedAtRef.current = Date.now();
@@ -350,7 +370,11 @@ export default function GameApp({
       seat: nextSeat,
       partnerName: nextPartner,
       partnerAvatar: nextPartnerAvatar,
+      hintOptions: nextHintOptions,
+      wordEmoji: nextEmoji,
     }: {
+      hintOptions?: HintOptionView[];
+      wordEmoji?: string;
       role: string;
       word?: string | null;
       timeLimit?: number;
@@ -375,6 +399,8 @@ export default function GameApp({
         return;
       }
       if (mode === "classic") setGameMode("classic");
+      if (Array.isArray(nextHintOptions)) setHintOptions(nextHintOptions);
+      setWordEmoji(nextEmoji || "");
       setRole(nextRole);
       setRoundNumber(round || 1);
       setWord(nextWord || null);
@@ -386,12 +412,15 @@ export default function GameApp({
       word: nextWord,
       timeLimit: nextLimit,
       localEndsAt,
+      options,
     }: {
       word?: string;
       timeLimit?: number;
       localEndsAt?: number;
+      options?: string[];
     }) => {
       if (nextWord) setWord(nextWord);
+      if (Array.isArray(options)) setGuessOptions(options);
       setTimeLimit(nextLimit || 10);
       setPhaseEndsAt(localEndsAt);
       setGamePhase("drawing");
@@ -413,6 +442,8 @@ export default function GameApp({
       judgedBy,
       wordEmoji,
       aiGuess,
+      playerGuess,
+      guessCorrect,
     }: GameResult) => {
       const numericScore = Number.isFinite(aiScore)
         ? Math.max(1, Math.min(100, Math.round(aiScore!)))
@@ -430,7 +461,16 @@ export default function GameApp({
         judgedBy,
         wordEmoji: wordEmoji || findWordEmoji(resultWord || word || ""),
         aiGuess,
+        playerGuess,
+        guessCorrect,
+        tokensEarned: TOKEN_REWARD_ROUND + (guessCorrect ? TOKEN_REWARD_CORRECT : 0),
       };
+      earnTokens(nextResult.tokensEarned);
+      if (guessCorrect) {
+        try {
+          localStorage.setItem("cc_correct_guesses", String((Number(localStorage.getItem("cc_correct_guesses")) || 0) + 1));
+        } catch { /* ignore */ }
+      }
       setResult(nextResult);
       incrementGamesPlayed();
       incrementGamesToday();
@@ -498,6 +538,19 @@ export default function GameApp({
     socket.on("watch_drawing", onWatchDrawing);
     socket.on("generating_result", onGenerating);
     socket.on("show_result", onShowResult);
+    const onHintOptions = (data: { options?: HintOptionView[] }) => {
+      if (Array.isArray(data?.options)) setHintOptions(data.options);
+    };
+    const onHintOptionUsed = (data: { options?: HintOptionView[]; id: string; text: string }) => {
+      if (Array.isArray(data?.options)) setHintOptions(data.options);
+      if (data?.id && data?.text) {
+        setReceivedHints(previous => previous.some(hint => hint.id === data.id) ? previous : [...previous, { id: data.id, text: data.text, fromSelf: true }]);
+      }
+    };
+    const onPartnerGuess = (data: { guess?: string }) => setPartnerGuess(data?.guess || null);
+    socket.on("hint_options", onHintOptions);
+    socket.on("hint_option_used", onHintOptionUsed);
+    socket.on("partner_guess", onPartnerGuess);
     socket.on("partner_disconnected", onPartnerDisconnected);
     socket.on("join_error", onJoinError);
     socket.on("protocol_error", onProtocolError);
@@ -510,6 +563,9 @@ export default function GameApp({
       socket.off("game_started", onGameStarted);
       socket.off("your_role", onYourRole);
       socket.off("start_drawing", onStartDrawing);
+      socket.off("hint_options", onHintOptions);
+      socket.off("hint_option_used", onHintOptionUsed);
+      socket.off("partner_guess", onPartnerGuess);
       socket.off("watch_drawing", onWatchDrawing);
       socket.off("generating_result", onGenerating);
       socket.off("show_result", onShowResult);
@@ -526,6 +582,8 @@ export default function GameApp({
     aiComment: string;
     aiScore?: number;
     mode?: GameMode;
+    wordEmoji?: string;
+    guessCorrect?: boolean;
   }) {
     let savedHistory: Array<Record<string, unknown>> = [];
     try {
@@ -543,6 +601,8 @@ export default function GameApp({
       partner: partnerName || "Partner",
       word: game.word,
       score: game.aiScore ?? 3,
+      emoji: game.wordEmoji || "",
+      guessCorrect: game.guessCorrect,
       date: new Date().toLocaleDateString(),
       imageData: thumbnail,
     });
@@ -712,6 +772,7 @@ export default function GameApp({
             onBack={goBack}
             onProfile={() => navigate("profile")}
             onCategory={() => navigate("category")}
+            onSelectCategory={setSelectedCategory}
             selectedCategory={selectedCategory}
             mode={gameMode}
           />
@@ -761,6 +822,11 @@ export default function GameApp({
             receivedHints={receivedHints}
             code={roomCode}
             onProfile={() => navigate("profile")}
+            hintOptions={hintOptions}
+            guessOptions={guessOptions}
+            partnerGuess={partnerGuess}
+            wordEmoji={wordEmoji}
+            partnerName={partnerName}
           />
         )}
         {/* === RESULTS === */}

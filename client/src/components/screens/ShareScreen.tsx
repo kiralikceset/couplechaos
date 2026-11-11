@@ -168,7 +168,8 @@ export default function ShareScreen({ result, onBack }: Props) {
       playSuccess();
       toast.success(t("share.downloaded") || "Card downloaded!");
     } catch (e) {
-      toast.error("Download failed");
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      toast.error(t("share.saveFailed"));
     }
   }
 

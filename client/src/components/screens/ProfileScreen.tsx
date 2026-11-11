@@ -17,8 +17,40 @@ import { deleteAccountAndData, getAccount, getAvailableProviders, signOut, type 
 import PrivacySheet from "@/components/PrivacySheet";
 import { toast } from "sonner";
 
-const APP_VERSION = "1.0.0";
-import { getStreakData } from "@/lib/retention";
+const APP_VERSION = "1.0.3";
+import { ACHIEVEMENTS, getPlayerStats, getStreakData, getUnlockedAchievements } from "@/lib/retention";
+import { getTokens } from "@/lib/tokens";
+
+interface HistoryItem {
+  id: string;
+  word: string;
+  score: number;
+  imageData?: string;
+  emoji?: string;
+  guessCorrect?: boolean;
+}
+
+function readHistory(): HistoryItem[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem("cc_game_history") || "[]");
+    return Array.isArray(parsed) ? parsed.slice(0, 12) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** 100 XP for level 2, +50 more per level after that. */
+function computeLevel(xp: number) {
+  let level = 1;
+  let need = 100;
+  let rest = Math.max(0, Math.floor(xp));
+  while (rest >= need) {
+    rest -= need;
+    level += 1;
+    need += 50;
+  }
+  return { level, xpInLevel: rest, xpForLevel: need, progress: rest / need };
+}
 
 interface Props {
   onBack: () => void;
@@ -37,6 +69,7 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
   const premium = isPremiumUser();
   const billingEnabled = isBillingEnabled();
   const streak = getStreakData().currentStreak;
+  const tokens = getTokens();
   const [account, setAccount] = useState<Account | null>(getAccount());
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
@@ -83,9 +116,18 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
     if (newState) playTap();
   }
 
+  const history = readHistory();
+  const correctGuesses = Number(localStorage.getItem("cc_correct_guesses")) || 0;
+  const playerStats = getPlayerStats();
+  const unlocked = getUnlockedAchievements();
+  const bestScore = history.reduce((best, item) => Math.max(best, Number(item.score) || 0), 0);
+  const level = computeLevel((profile.gamesPlayed ?? 0) * 10 + correctGuesses * 15 + playerStats.perfectGuesses * 20);
   const stats = [
     { label: t("profile.games"), value: profile.gamesPlayed ?? 0, icon: "🎮" },
     { label: t("profile.streak"), value: streak, icon: "🔥" },
+    { label: t("profile.wins"), value: correctGuesses, icon: "🎯" },
+    { label: t("profile.bestScore"), value: bestScore || "—", icon: "🏆" },
+    { label: t("profile.achievements"), value: `${unlocked.length}`, icon: "🏅" },
     { label: t("profile.partner"), value: partnerName ? "💞" : "—", icon: "💕" },
   ];
 
@@ -120,58 +162,126 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
 
       {/* Content */}
       <main className="relative z-10 px-6 pt-8 space-y-6">
-        {/* Avatar & Name */}
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <motion.div
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 3, repeat: Infinity }}
-              className="absolute inset-[-8px] bg-gradient-to-br from-primary/30 to-secondary/30 blur-xl rounded-full"
-            />
-            <div className="relative size-24 rounded-full border-2 border-white/[0.15] bg-[#0a0a0a] flex items-center justify-center text-5xl shadow-2xl">
-              {editing ? editData.avatar : profile.avatar}
-            </div>
-            {!editing && (
-              <button
-                onClick={() => { playTap(); setEditing(true); }}
-                className="absolute -bottom-1 -right-1 size-8 rounded-full bg-primary border-2 border-[#050505] flex items-center justify-center active:scale-90 transition-transform"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-white">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                </svg>
-              </button>
-            )}
-          </div>
-          <div className="text-center">
-            <h2 className="text-xl font-bold tracking-tight text-white">{profile.username || t("profile.newPlayer")}</h2>
-            {partnerName && (
-              <p className="text-xs text-primary/70 font-medium mt-1">💞 {partnerName} {t("profile.pairedWith")}</p>
-            )}
-            {premium && (
-              <span className="inline-flex items-center gap-1 mt-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
-                <span className="text-xs">👑</span>
-                <span className="text-amber-400 text-[0.6rem] font-bold">PREMIUM</span>
+        {/* Hero card: avatar with level ring, name, XP */}
+        <div className="relative rounded-3xl overflow-hidden border border-white/[0.08] bg-gradient-to-br from-primary/20 via-[#0d0710] to-secondary/20 p-5">
+          <div className="absolute -top-16 -right-16 size-44 rounded-full bg-primary/25 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-10 size-44 rounded-full bg-secondary/25 blur-3xl pointer-events-none" />
+          <div className="relative flex items-center gap-4">
+            <div className="relative size-[88px] flex-shrink-0">
+              <svg className="absolute inset-0 -rotate-90" viewBox="0 0 88 88">
+                <circle cx="44" cy="44" r="40" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="5" />
+                <motion.circle
+                  cx="44" cy="44" r="40" fill="none" stroke="url(#lvl)" strokeWidth="5" strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 40}
+                  initial={{ strokeDashoffset: 2 * Math.PI * 40 }}
+                  animate={{ strokeDashoffset: 2 * Math.PI * 40 * (1 - level.progress) }}
+                  transition={{ duration: 1.2, ease: "easeOut" }}
+                />
+                <defs><linearGradient id="lvl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FBBF24" /><stop offset="1" stopColor="#FF1A6C" /></linearGradient></defs>
+              </svg>
+              <div className="absolute inset-[9px] rounded-full bg-[#0a0a0a] flex items-center justify-center text-4xl">
+                {editing ? editData.avatar : profile.avatar}
+              </div>
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-amber-400 text-black text-[0.6rem] font-black whitespace-nowrap shadow-[0_0_12px_rgba(251,191,36,0.5)]">
+                {t("profile.level")} {level.level}
               </span>
-            )}
+              {!editing && (
+                <button
+                  onClick={() => { playTap(); setEditing(true); }}
+                  aria-label={t("profile.editProfile")}
+                  className="absolute -top-1 -right-1 size-7 rounded-full bg-primary border-2 border-[#0d0710] flex items-center justify-center active:scale-90 transition-transform"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-white">
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-xl font-black tracking-tight text-white truncate">{profile.username || t("profile.newPlayer")}</h2>
+              {partnerName ? (
+                <p className="text-xs text-primary/80 font-medium mt-0.5 truncate">💞 {partnerName} {t("profile.pairedWith")}</p>
+              ) : (
+                <p className="text-xs text-white/35 mt-0.5">{account ? `${account.provider === "apple" ? "Apple" : "Google"} ${t("profile.signedInWith")}` : t("profile.guest")}</p>
+              )}
+              <div className="mt-3 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <motion.div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-primary" initial={{ width: 0 }} animate={{ width: `${Math.round(level.progress * 100)}%` }} transition={{ duration: 1.2 }} />
+              </div>
+              <p className="text-[0.6rem] text-white/35 mt-1 tabular-nums">{level.xpInLevel} / {level.xpForLevel} XP</p>
+            </div>
           </div>
+          {premium && (
+            <span className="relative inline-flex items-center gap-1 mt-3 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
+              <span className="text-xs">👑</span>
+              <span className="text-amber-400 text-[0.6rem] font-bold">PREMIUM</span>
+            </span>
+          )}
         </div>
 
-        {/* Stats */}
         {!editing && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-3 gap-3"
-          >
-            {stats.map(s => (
-              <div key={s.label} className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex flex-col items-center gap-1.5">
-                <span className="text-lg">{s.icon}</span>
-                <span className="text-lg font-bold text-white">{s.value}</span>
-                <span className="text-[0.5rem] font-bold text-white/25 uppercase tracking-widest">{s.label}</span>
+          <>
+            {/* Tokens */}
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-400/[0.07] border border-amber-400/25">
+              <span className="inline-flex items-center justify-center size-11 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-amber-900 text-lg font-black shadow-[0_0_18px_rgba(251,191,36,0.45)]">J</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-amber-300 text-2xl font-black leading-none tabular-nums">{tokens}</p>
+                <p className="text-white/40 text-[0.65rem] mt-1">{t("profile.tokensHow")}</p>
               </div>
-            ))}
-          </motion.div>
+            </div>
+
+            {/* Stats */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-3 gap-2.5">
+              {stats.map(item => (
+                <div key={item.label} className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex flex-col items-center gap-1">
+                  <span className="text-lg leading-none">{item.icon}</span>
+                  <span className="text-lg font-black text-white tabular-nums leading-tight">{item.value}</span>
+                  <span className="text-[0.5rem] font-bold text-white/30 uppercase tracking-wider text-center leading-tight">{item.label}</span>
+                </div>
+              ))}
+            </motion.div>
+
+            {/* Recent drawings */}
+            <div>
+              <p className="text-[0.55rem] font-bold text-white/30 uppercase tracking-[0.2em] mb-2">{t("profile.recent")}</p>
+              {history.length === 0 ? (
+                <p className="text-white/30 text-xs p-4 rounded-2xl bg-white/[0.02] border border-dashed border-white/[0.08] text-center">{t("profile.noHistory")}</p>
+              ) : (
+                <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1">
+                  {history.map(item => (
+                    <div key={item.id} className="flex-shrink-0 w-[104px]">
+                      <div className="relative aspect-square rounded-2xl overflow-hidden border border-white/[0.1] bg-[#0a0a0a]">
+                        {item.imageData ? <img src={item.imageData} alt={item.word} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-3xl">🎨</div>}
+                        <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-md bg-black/75 text-[0.6rem] font-black text-white tabular-nums">{item.score}</span>
+                        {item.guessCorrect !== undefined && (
+                          <span className="absolute top-1 left-1 text-sm">{item.guessCorrect ? "🎯" : "❌"}</span>
+                        )}
+                      </div>
+                      <p className="text-white/70 text-[0.65rem] font-semibold mt-1 truncate">{item.emoji ? `${item.emoji} ` : ""}{item.word}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Achievements */}
+            <div>
+              <p className="text-[0.55rem] font-bold text-white/30 uppercase tracking-[0.2em] mb-2">{t("profile.achievements")} · {unlocked.length}/{ACHIEVEMENTS.length}</p>
+              <div className="grid grid-cols-5 gap-2">
+                {ACHIEVEMENTS.map(achievement => {
+                  const has = unlocked.includes(achievement.id);
+                  return (
+                    <div
+                      key={achievement.id}
+                      title={t(achievement.nameKey)}
+                      className={`aspect-square rounded-xl flex items-center justify-center text-xl border ${has ? "bg-amber-400/10 border-amber-400/30" : "bg-white/[0.02] border-white/[0.05] grayscale opacity-30"}`}
+                    >
+                      {achievement.emoji}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
         )}
 
         {/* Edit form */}

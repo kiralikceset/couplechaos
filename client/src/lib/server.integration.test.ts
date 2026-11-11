@@ -33,6 +33,7 @@ const EVENTS = [
   "watch_drawing", "hint_received", "drawing_time_up", "generating_result", "show_result",
   "partner_disconnected", "join_error", "protocol_error",
   "co_draw_stroke", "co_draw_react", "co_draw_partner_ready", "co_draw_time_up",
+  "hint_rejected", "hint_options", "hint_option_used", "partner_guess",
 ];
 
 let baseUrl = "";
@@ -102,9 +103,9 @@ describe("protocol 2 server with the real app transport", () => {
     expect(guestRole.word).toBeNull(); // the drawer must never receive the secret word
     expect(hostRole.localEndsAt).toBeGreaterThan(Date.now() - 50);
 
-    host.socket.emit("send_hint", { code, text: "uçuyor ama kuş değil", id: "h1" });
+    host.socket.emit("send_hint", { code, text: "qqq zzz ipucu", id: "h1" });
     const hint = await waitFor(guest.log, "hint_received");
-    expect(hint.data.text).toBe("uçuyor ama kuş değil");
+    expect(hint.data.text).toBe("qqq zzz ipucu");
     expect(host.log.some((entry) => entry.event === "hint_received")).toBe(false);
 
     host.socket.emit("description_done", { code });
@@ -197,6 +198,68 @@ describe("protocol 2 server with the real app transport", () => {
     const bad = await fetch(`${baseUrl}/api/events?after=0`, { headers: { ...headers, authorization: "Bearer wrong" } });
     expect(bad.status).toBe(401);
   }, 10_000);
+});
+
+describe("hints, tokens and guesses (classic)", () => {
+  it("blocks hints that contain the word, sells ready hints, and scores the drawer's guess", async () => {
+    const { host, guest, code } = await startedRoom();
+    const role = (await waitFor(host.log, "your_role")).data;
+    const word: string = role.word;
+    expect(role.hintOptions.map((option: { id: string }) => option.id)).toEqual(expect.arrayContaining(["letters", "first", "last"]));
+    expect(JSON.stringify(role.hintOptions)).not.toContain(word); // only labels, never the answer
+
+    // 1) the word inside a hint is refused and never reaches the drawer
+    host.socket.emit("send_hint", { code, text: `bu bir ${word.toLowerCase()}`, id: "bad" });
+    const rejected = (await waitFor(host.log, "hint_rejected")).data;
+    expect(rejected.id).toBe("bad");
+    host.socket.emit("send_hint", { code, text: "qqq zzz", id: "ok" });
+    await waitFor(guest.log, "hint_received");
+    expect(guest.log.filter((entry) => entry.event === "hint_received").map((entry) => entry.data.id)).toEqual(["ok"]);
+
+    // 2) a ready hint goes to the drawer once
+    host.socket.emit("use_hint_option", { code, optionId: "first" });
+    host.socket.emit("use_hint_option", { code, optionId: "first" });
+    const used = (await waitFor(host.log, "hint_option_used")).data;
+    expect(used.options.find((option: { id: string }) => option.id === "first").used).toBe(true);
+    const firstLetter = (await waitFor(guest.log, "hint_received", 2)).data.text as string;
+    expect(firstLetter.endsWith(word.replace(/[^A-Za-z\u00C0-\u024F]/g, "")[0].toLocaleUpperCase("tr"))).toBe(true);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(guest.log.filter((entry) => entry.event === "hint_received")).toHaveLength(2);
+
+    // 3) drawing starts with 4 options containing the word; the guess is live for the describer
+    host.socket.emit("description_done", { code });
+    const drawing = (await waitFor(guest.log, "start_drawing")).data;
+    expect(drawing.options).toHaveLength(4);
+    expect(drawing.options).toContain(word);
+    guest.socket.emit("submit_guess", { code, guess: "not-an-option" });
+    guest.socket.emit("submit_guess", { code, guess: word });
+    expect((await waitFor(host.log, "partner_guess")).data.guess).toBe(word);
+
+    // hints still flow while the partner draws
+    host.socket.emit("send_hint", { code, text: "qqq yine", id: "during" });
+    expect((await waitFor(guest.log, "hint_received", 3)).data.id).toBe("during");
+
+    guest.socket.emit("submit_drawing", { code, imageData: TINY_JPEG, score: 40, comment: "x" });
+    const result = (await waitFor(host.log, "show_result")).data;
+    expect(result.playerGuess).toBe(word);
+    expect(result.guessCorrect).toBe(true);
+    host.socket.disconnect();
+    guest.socket.disconnect();
+  }, 20_000);
+
+  it("marks a wrong guess as wrong", async () => {
+    const { host, guest, code } = await startedRoom();
+    const word = (await waitFor(host.log, "your_role")).data.word;
+    host.socket.emit("description_done", { code });
+    const drawing = (await waitFor(guest.log, "start_drawing")).data;
+    const wrong = drawing.options.find((option: string) => option !== word);
+    guest.socket.emit("submit_drawing", { code, imageData: TINY_JPEG, score: 40, comment: "x", guess: wrong });
+    const result = (await waitFor(guest.log, "show_result")).data;
+    expect(result.playerGuess).toBe(wrong);
+    expect(result.guessCorrect).toBe(false);
+    host.socket.disconnect();
+    guest.socket.disconnect();
+  }, 20_000);
 });
 
 describe("Ortak Tuval (co-draw) mode", () => {

@@ -21,9 +21,18 @@ interface Props {
   onCategory?: () => void;
   selectedCategory?: string | null;
   mode?: "classic" | "co-draw";
+  onSelectCategory?: (category: string) => void;
 }
 
-export default function ConnectScreen({ onBack, onProfile, onCategory, selectedCategory, mode: gameMode = "classic" }: Props) {
+const CATEGORY_CHIPS = [
+  { id: "daily", emoji: "☀️" },
+  { id: "romantic", emoji: "💕" },
+  { id: "funny", emoji: "😂" },
+  { id: "hard", emoji: "🧠" },
+  { id: "spicy", emoji: "🌶️" },
+];
+
+export default function ConnectScreen({ onBack, onProfile, onCategory, selectedCategory, mode: gameMode = "classic", onSelectCategory }: Props) {
   const { t } = useLocale();
   const [joinCode, setJoinCode] = useState("");
   const [mode, setMode] = useState<"choose" | "join">("choose");
@@ -157,6 +166,31 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
                 </p>
               </div>
 
+              {/* Category — chosen right here, before creating the room */}
+              {gameMode === "classic" || gameMode === "co-draw" ? (
+                <div>
+                  <p className="text-[0.55rem] font-bold text-white/35 uppercase tracking-[0.25em] mb-2">{t("connect.category")}</p>
+                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                    {CATEGORY_CHIPS.map(chip => {
+                      const active = (selectedCategory || "daily") === chip.id;
+                      return (
+                        <motion.button
+                          key={chip.id}
+                          whileTap={{ scale: 0.92 }}
+                          onClick={() => { playTap(); onSelectCategory?.(chip.id); }}
+                          className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
+                            active ? "bg-amber-400 text-black border-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.35)]" : "bg-white/[0.04] text-white/70 border-white/[0.08]"
+                          }`}
+                        >
+                          <span className="text-base leading-none">{chip.emoji}</span>
+                          {chip.id === "daily_challenge" ? t("cat.dailyChallenge") : t(`cat.${chip.id}`)}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+
               {/* Create Room */}
               <motion.button
                 whileTap={{ scale: 0.98 }}
@@ -179,33 +213,6 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
                 </div>
               </motion.button>
 
-              {/* Category Selector */}
-              {onCategory && (
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => { playTap(); onCategory(); }}
-                  className="w-full p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-left group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-lg bg-[#FBBF24]/20 border border-[#FBBF24]/30 flex items-center justify-center text-lg">
-                      {selectedCategory === "daily_challenge" ? "⭐" : selectedCategory === "romantic" ? "💕" : selectedCategory === "funny" ? "😂" : selectedCategory === "hard" ? "🧠" : selectedCategory === "spicy" ? "🌶️" : "☀️"}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-white/80 text-sm font-medium">{t("cat.title")}</p>
-                      <p className="text-white/30 text-xs">
-                        {selectedCategory === "daily_challenge"
-                          ? t("cat.dailyChallenge")
-                          : selectedCategory
-                            ? t(`cat.${selectedCategory}`)
-                            : t("cat.daily")}
-                      </p>
-                    </div>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-white/30">
-                      <path d="M5 12h14M12 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </motion.button>
-              )}
               {/* Join Room */}
               <motion.button
                 whileTap={{ scale: 0.98 }}

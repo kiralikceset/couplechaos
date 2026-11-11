@@ -14,6 +14,9 @@ interface Props {
 export default function HowItWorksScreen({ onBack, onNext }: Props) {
   const { t } = useLocale();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const coin = (
+    <span className="inline-flex items-center justify-center size-4 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-amber-900 text-[0.55rem] font-black">J</span>
+  );
   const slides = [
     {
       title: t("how.slide1.title"),
@@ -21,19 +24,19 @@ export default function HowItWorksScreen({ onBack, onNext }: Props) {
       funNote: t("how.slide1.fun"),
       accentColor: "#FF1A6C",
       illustration: (
-        <div className="relative w-48 h-48">
-          {/* Chat bubble illustration */}
-          <div className="intro-bubble absolute top-4 left-4 px-5 py-3 rounded-2xl rounded-bl-sm bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/30">
-            <span className="text-white font-bold text-sm">Kedi 🐱</span>
-          </div>
-          <div className="intro-bubble intro-bubble-reverse absolute bottom-8 right-4 px-5 py-3 rounded-2xl rounded-br-sm bg-gradient-to-br from-purple-500/30 to-purple-500/10 border border-purple-500/30">
-            <span className="text-white font-bold text-sm">Tüylü? 🤔</span>
-          </div>
-          {/* Center icon */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="size-16 rounded-2xl bg-white/[0.05] border border-white/[0.1] flex items-center justify-center text-3xl shadow-[0_0_30px_rgba(255,26,108,0.2)]">
-              💬
+        <div className="w-60 flex flex-col gap-2.5">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/[0.05] border border-white/[0.1]">
+            <span className="text-3xl leading-none">🧀</span>
+            <div className="text-left">
+              <p className="text-[0.5rem] text-white/35 font-bold uppercase tracking-[0.3em]">{t("game.secretWord")}</p>
+              <p className="text-white font-black text-lg leading-tight">{t("how.demo.word")}</p>
             </div>
+          </div>
+          <div className="self-end px-4 py-2 rounded-2xl rounded-br-sm bg-primary/25 border border-primary/40 text-white text-sm font-semibold">
+            {t("how.demo.hint")}
+          </div>
+          <div className="self-end flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.12] text-white/85 text-xs font-semibold">
+            🅰️ {t("how.demo.ready")} <span className="flex items-center gap-0.5 pl-1.5 border-l border-white/10">{coin}<span className="text-amber-300 font-black">2</span></span>
           </div>
         </div>
       ),
@@ -44,39 +47,25 @@ export default function HowItWorksScreen({ onBack, onNext }: Props) {
       funNote: t("how.slide2.fun"),
       accentColor: "#8B5CF6",
       illustration: (
-        <div className="relative w-48 h-48">
-          {/* Drawing canvas illustration */}
-          <div className="intro-canvas absolute inset-4 rounded-2xl bg-white/[0.04] border border-white/[0.1] overflow-hidden">
-            {/* Simulated drawing strokes */}
-            <svg className="w-full h-full" viewBox="0 0 100 100">
-              <path
-                d="M 20 50 Q 35 20 50 50 T 80 50"
-                fill="none"
-                stroke="#8B5CF6"
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-              <circle
-                cx="50"
-                cy="35"
-                r="12"
-                fill="none"
-                stroke="#FF1A6C"
-                strokeWidth="2.5"
-              />
-              <path
-                d="M 30 70 L 40 65 L 50 72 L 60 60 L 70 70"
-                fill="none"
-                stroke="#FBBF24"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+        <div className="w-60 flex flex-col gap-2.5">
+          <div className="relative h-32 rounded-2xl bg-[#0a0a0a] border border-white/[0.1] overflow-hidden">
+            <svg className="w-full h-full" viewBox="0 0 120 64">
+              <path d="M30 44 L60 14 L90 44 Z" fill="none" stroke="#FBBF24" strokeWidth="3" strokeLinejoin="round" />
+              <circle cx="52" cy="34" r="3" fill="#FBBF24" />
+              <circle cx="66" cy="38" r="2.5" fill="#FBBF24" />
+              <circle cx="60" cy="27" r="2" fill="#FBBF24" />
             </svg>
+            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-red-300 text-[0.6rem] font-bold">0:12</span>
           </div>
-          {/* Timer badge */}
-          <div className="absolute -top-1 -right-1 px-2.5 py-1 rounded-full bg-red-500/20 border border-red-500/30 text-red-400 text-[0.6rem] font-bold">
-            0:10
+          <div className="grid grid-cols-2 gap-2">
+            {[t("how.demo.opt1"), t("how.demo.word"), t("how.demo.opt2"), t("how.demo.opt3")].map((option, index) => (
+              <span
+                key={option}
+                className={`py-2 rounded-xl text-xs font-bold text-center border ${index === 1 ? "bg-amber-400 text-black border-amber-300" : "bg-white/[0.05] text-white/70 border-white/[0.1]"}`}
+              >
+                {index === 1 ? "✓ " : ""}{option}
+              </span>
+            ))}
           </div>
         </div>
       ),
@@ -87,29 +76,16 @@ export default function HowItWorksScreen({ onBack, onNext }: Props) {
       funNote: t("how.slide3.fun"),
       accentColor: "#FBBF24",
       illustration: (
-        <div className="relative w-48 h-48">
-          {/* AI scoring illustration with generated image */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative">
-              <img
-                src="/images/scoring.svg"
-                width="144"
-                height="144"
-                decoding="async"
-                alt="Drawing score"
-                className="w-36 h-36 rounded-2xl object-cover border border-white/[0.1] shadow-[0_0_40px_rgba(251,191,36,0.15)]"
-              />
-              {/* Score badge */}
-              <div className="intro-badge absolute -top-3 -right-3 size-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.5)]">
-                <span className="text-black font-black text-xs">9.2</span>
-              </div>
-              {/* Roast bubble */}
-              <div className="absolute -bottom-4 -left-6 px-3 py-1.5 rounded-xl rounded-bl-sm bg-white/[0.08] border border-white/[0.1] max-w-[120px]">
-                <span className="text-white/70 text-[0.55rem]">
-                  Bu kedi mi yoksa patates mi? 😂
-                </span>
-              </div>
+        <div className="w-60 flex flex-col gap-2.5">
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="aspect-square rounded-2xl bg-[#0a0a0a] border border-white/[0.12] flex items-center justify-center">
+              <svg className="w-3/4 h-3/4" viewBox="0 0 64 64"><path d="M8 48 L32 14 L56 48 Z" fill="none" stroke="#FBBF24" strokeWidth="3" strokeLinejoin="round" /><circle cx="28" cy="38" r="3" fill="#FBBF24" /><circle cx="38" cy="40" r="2.5" fill="#FBBF24" /></svg>
             </div>
+            <div className="aspect-square rounded-2xl bg-gradient-to-br from-secondary/15 to-primary/10 border border-secondary/30 flex items-center justify-center text-5xl">🧀</div>
+          </div>
+          <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-green-500/10 border border-green-400/40">
+            <span className="text-green-300 text-sm font-black">{t("result.guessCorrect")}</span>
+            <span className="flex items-center gap-1 text-amber-300 text-xs font-black">+5 {coin}</span>
           </div>
         </div>
       ),
@@ -237,20 +213,16 @@ export default function HowItWorksScreen({ onBack, onNext }: Props) {
           onClick={handleNext}
           className="w-full font-bold text-lg py-[1.1rem] rounded-2xl relative overflow-hidden active:scale-[0.98] transition-transform duration-100"
           style={{
-            backgroundColor: isLast
-              ? slide.accentColor
-              : "rgba(255,255,255,0.06)",
-            border: isLast ? "none" : "1px solid rgba(255,255,255,0.1)",
-            color: "white",
-            boxShadow: isLast ? `0 0 30px ${slide.accentColor}40` : "none",
+            backgroundColor: "#FBBF24",
+            border: "none",
+            color: "#111111",
+            boxShadow: "0 0 30px rgba(251,191,36,0.35)",
           }}
         >
           <span className="relative z-10">
             {isLast ? t("how.letsgo") : t("how.continue")}
           </span>
-          {isLast && (
-            <div className="intro-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-          )}
+          <div className="intro-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent" />
         </button>
       </footer>
     </div>

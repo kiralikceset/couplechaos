@@ -54,24 +54,58 @@ export async function copyText(text: string): Promise<boolean> {
   }
 }
 
+function isNativeApp(): boolean {
+  const capacitor = (globalThis as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+  try {
+    return Boolean(capacitor?.isNativePlatform?.());
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * In the Android/iOS app the WebView ignores <a download>, so the image is
+ * written to the app's cache and handed to the phone's own share sheet
+ * ("Save to gallery / Files / WhatsApp ...").
+ */
+async function shareNatively(dataUrl: string, filename: string, title: string, text: string): Promise<"shared"> {
+  const [{ Filesystem, Directory }, { Share }] = await Promise.all([import("@capacitor/filesystem"), import("@capacitor/share")]);
+  const base64 = dataUrl.split(",", 2)[1] || "";
+  const safeName = filename.replace(/[^\w.\-]+/g, "_") || "couple-chaos.png";
+  const written = await Filesystem.writeFile({ path: safeName, data: base64, directory: Directory.Cache });
+  try {
+    await Share.share({ title, text, files: [written.uri], dialogTitle: title });
+  } catch (error) {
+    const message = String((error as { message?: string })?.message || error).toLowerCase();
+    if (message.includes("cancel")) throw new DOMException("cancelled", "AbortError");
+    throw error;
+  }
+  return "shared";
+}
+
 export async function shareOrDownloadImage(dataUrl: string, filename: string, title: string, text: string): Promise<"shared" | "downloaded"> {
+  if (isNativeApp()) return shareNatively(dataUrl, filename, title, text);
+
   const file = dataUrlToFile(dataUrl, filename);
   if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
     try {
       await navigator.share({ title, text, files: [file] });
       return "shared";
     } catch (error) {
-      // Cancelling is intentional. Other WebView share failures fall back to a
-      // regular download so the user's generated image is not lost.
+      // Cancelling is intentional. Other share failures fall back to a regular download.
       if (error instanceof DOMException && error.name === "AbortError") throw error;
     }
   }
 
+  // Blob URL works in more browsers than a huge data: URL (iOS Safari, Chrome Android).
+  const url = URL.createObjectURL(file);
   const link = document.createElement("a");
   link.download = filename;
-  link.href = dataUrl;
+  link.href = url;
+  link.rel = "noopener";
   document.body.appendChild(link);
   link.click();
   link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
   return "downloaded";
 }

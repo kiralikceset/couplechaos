@@ -12,6 +12,7 @@ import { getLocalizedPlayfulMessage } from "@/lib/i18n";
 import { playConfetti, playSuccess, playTap, playWordReveal, playError, playAchievement } from "@/lib/sounds";
 import { getRoast, getScoreEmoji, getScoreLabel, getScoreColor } from "@/lib/aiRoast";
 import { wallpaperThemes, generateWallpaper, downloadWallpaper } from "@/lib/wallpaper";
+import { shareOrDownloadImage } from "@/lib/imageUtils";
 import { getProfile } from "@/lib/gameData";
 import { toast } from "sonner";
 
@@ -111,13 +112,28 @@ export default function ResultScreen({ result, onShare, onPlayAgain, onHome, par
     setIsGeneratingWallpaper(false);
   };
 
+  const handleSaveDrawing = async () => {
+    if (!result.imageData) return;
+    playTap();
+    try {
+      await shareOrDownloadImage(result.imageData, `couple-chaos-${result.word}.jpg`, "Couple Chaos", `“${result.word}” ${result.wordEmoji || ""}`.trim());
+      playSuccess();
+      toast.success(t("share.saved"));
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      playError();
+      toast.error(t("share.saveFailed"));
+    }
+  };
+
   const handleDownloadWallpaper = async () => {
     if (wallpaperPreview) {
       try {
         await downloadWallpaper(wallpaperPreview, `couple-chaos-${result.word}`);
         playSuccess();
         toast.success(t("result.wallpaperSaved"));
-      } catch {
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
         playError();
         toast.error(t("result.wallpaperFailed"));
       }
@@ -215,6 +231,35 @@ export default function ResultScreen({ result, onShare, onPlayAgain, onHome, par
           </motion.p>
         )}
 
+        {/* Drawer's guess: right or wrong */}
+        {result.mode !== "co-draw" && result.guessCorrect !== undefined && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.6 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 1.0, type: "spring", damping: 9, stiffness: 220 }}
+            className={`w-full max-w-[340px] mb-3 px-4 py-3 rounded-2xl border flex items-center gap-3 ${
+              result.guessCorrect
+                ? "bg-green-500/10 border-green-400/40 shadow-[0_0_24px_rgba(74,222,128,0.18)]"
+                : "bg-red-500/10 border-red-400/30"
+            }`}
+          >
+            <span className="text-3xl">{result.guessCorrect ? "🎯" : result.playerGuess ? "❌" : "🤷"}</span>
+            <div className="min-w-0 flex-1">
+              <p className={`font-display text-lg font-black leading-tight ${result.guessCorrect ? "text-green-300" : "text-red-300"}`}>
+                {result.guessCorrect ? t("result.guessCorrect") : result.playerGuess ? t("result.guessWrong") : t("result.guessNone")}
+              </p>
+              {result.playerGuess && (
+                <p className="text-white/50 text-xs truncate">{t("result.guessLabel")}: <span className="text-white/80 font-semibold">{result.playerGuess}</span></p>
+              )}
+            </div>
+            {!!result.tokensEarned && (
+              <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 text-xs font-black whitespace-nowrap">
+                +{result.tokensEarned} <span className="inline-flex items-center justify-center size-4 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-amber-900 text-[0.55rem] font-black">J</span>
+              </span>
+            )}
+          </motion.div>
+        )}
+
         {/* AI SCORE - Animated counter */}
         <AnimatePresence>
           {showScore && (
@@ -278,17 +323,27 @@ export default function ResultScreen({ result, onShare, onPlayAgain, onHome, par
           )}
         </AnimatePresence>
 
-        {/* Wallpaper button */}
+        {/* Save drawing + wallpaper */}
         {result.imageData && (
-          <motion.button
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.16 }}
-            onClick={() => { playTap(); setShowWallpaperModal(true); }}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.05] border border-white/[0.1] text-white/50 text-xs font-medium hover:bg-white/[0.08] transition-all mb-2"
+            className="flex items-center gap-2 mb-2"
           >
-            🖼️ {t("result.makeWallpaper") || "Make Wallpaper"}
-          </motion.button>
+            <button
+              onClick={() => void handleSaveDrawing()}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-400 text-black text-xs font-bold active:scale-95 transition-all"
+            >
+              📥 {t("result.saveDrawing")}
+            </button>
+            <button
+              onClick={() => { playTap(); setShowWallpaperModal(true); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.05] border border-white/[0.1] text-white/60 text-xs font-medium hover:bg-white/[0.08] transition-all"
+            >
+              🖼️ {t("result.makeWallpaper") || "Make Wallpaper"}
+            </button>
+          </motion.div>
         )}
 
         {/* Replay encouragement */}
