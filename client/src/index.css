@@ -38,6 +38,8 @@
 }
 
 :root {
+  /* Already dark: browsers' forced/auto dark mode must leave our colours alone. */
+  color-scheme: dark only;
   --primary: oklch(0.65 0.29 350);
   --primary-foreground: oklch(1 0 0);
   --radius: 1rem;
@@ -307,4 +309,10 @@
 .intro-screen .onboarding-particle { animation-iteration-count: 2; }
 @media (prefers-reduced-motion: reduce) {
   .intro-screen *, .intro-screen *::before, .intro-screen *::after { animation: none !important; transition: none !important; }
+}
+
+/* Some browsers (Samsung Internet) only skip their forced dark mode for sites that
+   declare dark support through this media query. */
+@media (prefers-color-scheme: dark) {
+  html { background-color: #050505; }
 }

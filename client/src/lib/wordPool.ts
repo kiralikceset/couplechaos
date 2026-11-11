@@ -32,8 +32,7 @@ export const CATEGORIES: CategoryInfo[] = [
   { id: "animals", emoji: "🐾", premium: false, nameKey: "cat.animals" },
   { id: "food", emoji: "🍕", premium: false, nameKey: "cat.food" },
   { id: "objects", emoji: "🎒", premium: false, nameKey: "cat.objects" },
-  { id: "places", emoji: "🏝️", premium: false, nameKey: "cat.places" },
-  { id: "people", emoji: "🦸", premium: false, nameKey: "cat.people" },
+  { id: "places", emoji: "🌳", premium: false, nameKey: "cat.places" },
   { id: "love", emoji: "💕", premium: false, nameKey: "cat.love" },
 ];
 
@@ -42,7 +41,7 @@ const LEGACY: Record<string, WordCategory> = { daily: "mixed", funny: "mixed", h
 /** Any stored/old category id → a valid one ("funny" from an old phone → "mixed"). */
 export function normalizeCategory(value: unknown): WordCategory {
   const id = String(value || "");
-  if (CATEGORIES.some((category) => category.id === id)) return id as WordCategory;
+  if (CATEGORIES.some((category) => category.id === id) || id === "people") return id as WordCategory;
   return LEGACY[id] || "mixed";
 }
 

@@ -161,7 +161,7 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
               {gameMode === "classic" || gameMode === "co-draw" ? (
                 <div>
                   <p className="text-[0.55rem] font-bold text-white/35 uppercase tracking-[0.25em] mb-2">{t("connect.category")}</p>
-                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                  <div className="grid grid-cols-3 gap-2">
                     {CATEGORY_CHIPS.map(chip => {
                       const active = normalizeCategory(selectedCategory) === chip.id;
                       return (
@@ -169,12 +169,13 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
                           key={chip.id}
                           whileTap={{ scale: 0.92 }}
                           onClick={() => { playTap(); onSelectCategory?.(chip.id); }}
-                          className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
-                            active ? "bg-amber-400 text-black border-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.35)]" : "bg-white/[0.04] text-white/70 border-white/[0.08]"
+                          aria-pressed={active}
+                          className={`flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl border text-xs font-bold transition-colors ${
+                            active ? "bg-amber-400 text-black border-amber-300" : "bg-white/[0.04] text-white/75 border-white/[0.08]"
                           }`}
                         >
-                          <span className="text-base leading-none">{chip.emoji}</span>
-                          {t(`cat.${chip.id}`)}
+                          <span className="text-xl leading-none">{chip.emoji}</span>
+                          <span className="truncate max-w-full px-1">{t(`cat.${chip.id}`)}</span>
                         </motion.button>
                       );
                     })}
