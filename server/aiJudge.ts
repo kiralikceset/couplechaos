@@ -49,7 +49,7 @@ type ProviderName = "anthropic" | "openai" | "gemini" | "groq";
 /** OpenAI-compatible chat endpoints. Gemini and Groq both offer one. */
 const OPENAI_COMPATIBLE: Record<Exclude<ProviderName, "anthropic">, { url: string; keyEnv: string; model: string }> = {
   openai: { url: "https://api.openai.com/v1/chat/completions", keyEnv: "OPENAI_API_KEY", model: "gpt-4o-mini" },
-  gemini: { url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", keyEnv: "GEMINI_API_KEY", model: "gemini-flash-latest" },
+  gemini: { url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", keyEnv: "GEMINI_API_KEY", model: "gemini-3.5-flash-lite" },
   groq: { url: "https://api.groq.com/openai/v1/chat/completions", keyEnv: "GROQ_API_KEY", model: "qwen/qwen3.8-27b" },
 };
 
