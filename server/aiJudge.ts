@@ -5,9 +5,11 @@
  * shipped inside the Android/iOS app, so it cannot be extracted from the APK.
  *
  * Configure with environment variables:
- *   AI_PROVIDER        "anthropic" | "openai" | "auto" (default: auto → whichever key exists)
+ *   AI_PROVIDER        "anthropic" | "openai" | "gemini" | "groq" | "auto" (default: auto → whichever key exists)
  *   ANTHROPIC_API_KEY  key for Claude (vision)
  *   OPENAI_API_KEY     key for OpenAI (vision)
+ *   GEMINI_API_KEY     key for Google Gemini (free tier available, aistudio.google.com)
+ *   GROQ_API_KEY       key for Groq (free tier available, console.groq.com)
  *   AI_MODEL           optional model override
  *   AI_TIMEOUT_MS      max wait for the AI answer (default 7000)
  *   AI_DAILY_LIMIT     max AI calls per server per day (default 3000) — cost guard
@@ -42,14 +44,22 @@ const LANGUAGE_NAMES: Record<Locale, string> = {
 let usageDay = "";
 let usageCount = 0;
 
-function provider(): "anthropic" | "openai" | null {
-  const wanted = (process.env.AI_PROVIDER || "auto").trim().toLowerCase();
-  const hasAnthropic = Boolean(process.env.ANTHROPIC_API_KEY?.trim());
-  const hasOpenAI = Boolean(process.env.OPENAI_API_KEY?.trim());
-  if (wanted === "anthropic") return hasAnthropic ? "anthropic" : null;
-  if (wanted === "openai") return hasOpenAI ? "openai" : null;
-  if (hasAnthropic) return "anthropic";
-  if (hasOpenAI) return "openai";
+type ProviderName = "anthropic" | "openai" | "gemini" | "groq";
+
+/** OpenAI-compatible chat endpoints. Gemini and Groq both offer one. */
+const OPENAI_COMPATIBLE: Record<Exclude<ProviderName, "anthropic">, { url: string; keyEnv: string; model: string }> = {
+  openai: { url: "https://api.openai.com/v1/chat/completions", keyEnv: "OPENAI_API_KEY", model: "gpt-4o-mini" },
+  gemini: { url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", keyEnv: "GEMINI_API_KEY", model: "gemini-flash-latest" },
+  groq: { url: "https://api.groq.com/openai/v1/chat/completions", keyEnv: "GROQ_API_KEY", model: "qwen/qwen3.8-27b" },
+};
+
+const hasKey = (name: ProviderName) =>
+  Boolean(process.env[name === "anthropic" ? "ANTHROPIC_API_KEY" : OPENAI_COMPATIBLE[name].keyEnv]?.trim());
+
+function provider(): ProviderName | null {
+  const wanted = (process.env.AI_PROVIDER || "auto").trim().toLowerCase() as ProviderName | "auto";
+  if (wanted !== "auto") return ["anthropic", "openai", "gemini", "groq"].includes(wanted) && hasKey(wanted) ? wanted : null;
+  for (const name of ["anthropic", "openai", "gemini", "groq"] as ProviderName[]) if (hasKey(name)) return name;
   return null;
 }
 
@@ -142,28 +152,31 @@ async function callAnthropic(input: JudgeInput, image: { mediaType: string; base
   return (payload.content || []).filter((part) => part.type === "text").map((part) => part.text || "").join("");
 }
 
-async function callOpenAI(input: JudgeInput, signal: AbortSignal): Promise<string> {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+async function callOpenAICompatible(name: Exclude<ProviderName, "anthropic">, input: JudgeInput, signal: AbortSignal): Promise<string> {
+  const target = OPENAI_COMPATIBLE[name];
+  const isOpenAI = name === "openai";
+  const response = await fetch(target.url, {
     method: "POST",
     signal,
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${process.env.OPENAI_API_KEY!.trim()}`,
+      authorization: `Bearer ${process.env[target.keyEnv]!.trim()}`,
     },
     body: JSON.stringify({
-      model: process.env.AI_MODEL?.trim() || "gpt-4o-mini",
+      model: process.env.AI_MODEL?.trim() || target.model,
       max_tokens: 300,
-      response_format: { type: "json_object" },
+      // Only OpenAI is guaranteed to accept these two; the reply is parsed leniently anyway.
+      ...(isOpenAI ? { response_format: { type: "json_object" } } : {}),
       messages: [{
         role: "user",
         content: [
           { type: "text", text: buildPrompt(input.word, input.locale, input.mode) },
-          { type: "image_url", image_url: { url: input.imageData, detail: "low" } },
+          { type: "image_url", image_url: isOpenAI ? { url: input.imageData, detail: "low" } : { url: input.imageData } },
         ],
       }],
     }),
   });
-  if (!response.ok) throw new Error(`openai_http_${response.status}: ${(await response.text()).slice(0, 200)}`);
+  if (!response.ok) throw new Error(`${name}_http_${response.status}: ${(await response.text()).slice(0, 200)}`);
   const payload = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
   return payload.choices?.[0]?.message?.content || "";
 }
@@ -184,7 +197,7 @@ export async function judgeDrawing(input: JudgeInput): Promise<JudgeResult | nul
   try {
     const text = selected === "anthropic"
       ? await callAnthropic(input, image, controller.signal)
-      : await callOpenAI(input, controller.signal);
+      : await callOpenAICompatible(selected, input, controller.signal);
     const result = parseJudgeJson(text);
     if (!result) console.warn("[ai] unparseable answer:", text.slice(0, 200));
     return result;

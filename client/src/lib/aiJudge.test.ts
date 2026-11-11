@@ -4,6 +4,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
   delete process.env.ANTHROPIC_API_KEY;
   delete process.env.OPENAI_API_KEY;
+  delete process.env.GEMINI_API_KEY;
+  delete process.env.GROQ_API_KEY;
 });
 
 const IMAGE = "data:image/jpeg;base64,AAAA";
@@ -30,6 +32,26 @@ describe("server AI judge", () => {
     expect((init.headers as Record<string, string>)["x-api-key"]).toBe("test-key");
     const body = JSON.parse(String(init.body));
     expect(body.messages[0].content[0].source).toEqual({ type: "base64", media_type: "image/jpeg", data: "AAAA" });
+  });
+
+  it.each([
+    ["GEMINI_API_KEY", "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"],
+    ["GROQ_API_KEY", "https://api.groq.com/openai/v1/chat/completions"],
+  ])("uses the free %s provider through its OpenAI-compatible endpoint", async (envName, expectedUrl) => {
+    process.env[envName] = "free-key";
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+      choices: [{ message: { content: "```json\n{\"score\": 40, \"comment\": \"Bu bir bulut mu kedi mi 🤔\"}\n```" } }],
+    })));
+    vi.stubGlobal("fetch", fetchMock);
+    const { judgeDrawing } = await import("../../../server/aiJudge");
+    const verdict = await judgeDrawing({ imageData: IMAGE, word: "Kedi", locale: "tr" });
+    expect(verdict?.score).toBe(40);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(expectedUrl);
+    expect((init.headers as Record<string, string>).authorization).toBe("Bearer free-key");
+    const body = JSON.parse(String(init.body));
+    expect(body.response_format).toBeUndefined();
+    expect(body.messages[0].content[1].image_url).toEqual({ url: IMAGE });
   });
 
   it("falls back (null) when the AI errors, never blocking the round", async () => {
