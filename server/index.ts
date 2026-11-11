@@ -18,7 +18,7 @@ import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getDailyWord, getDistractors, pickWord, type WordCategory } from "../client/src/lib/wordPool";
+import { getDailyWord, getDistractors, normalizeCategory, pickWord } from "../client/src/lib/wordPool";
 import { foldText, hintRevealsWord } from "../client/src/lib/hintFilter";
 import { generateHints, isAiJudgeEnabled, judgeDrawing, type Locale } from "./aiJudge";
 import { AuthError, isProviderConfigured, verifyIdToken } from "./auth";
@@ -28,8 +28,8 @@ const num = (name: string, fallback: number) => {
   const value = Number(process.env[name]);
   return Number.isFinite(value) && value >= 0 ? value : fallback;
 };
-// 0 = no separate "describe" phase: the canvas opens at once and hints flow while drawing.
-const DESCRIBE_SECONDS = num("DESCRIBE_SECONDS", 0);
+// Hints come first (the describer can skip ahead with "start drawing"); 0 = canvas opens at once.
+const DESCRIBE_SECONDS = num("DESCRIBE_SECONDS", 15);
 const DRAW_SECONDS = num("DRAW_SECONDS", 30);
 const CO_DRAW_SECONDS = num("CO_DRAW_SECONDS", 20);
 const CO_COUNTDOWN_SECONDS = num("CO_COUNTDOWN_SECONDS", 3);
@@ -109,7 +109,7 @@ interface Room {
 
 const sessions = new Map<string, Session>();
 const rooms = new Map<string, Room>();
-const VALID_CATEGORIES = new Set(["daily", "romantic", "funny", "hard", "spicy", "daily_challenge"]);
+const VALID_CATEGORIES = new Set(["mixed", "animals", "food", "objects", "places", "people", "love", "daily_challenge"]);
 const VALID_LOCALES = new Set<Locale>(["tr", "en", "de", "es"]);
 const ROOM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const CO_REACTIONS = new Set(["😂", "🔥", "😱", "😍", "🤡", "👏"]);
@@ -200,8 +200,7 @@ function chooseWord(room: Room): string {
     room.wordEmoji = daily.emoji;
     return daily.word;
   }
-  const category = VALID_CATEGORIES.has(room.category) && room.category !== "daily_challenge" ? room.category : "daily";
-  const picked = pickWord(category as WordCategory, room.locale);
+  const picked = pickWord(normalizeCategory(room.category), room.locale);
   room.wordEmoji = picked.emoji;
   return picked.word;
 }
@@ -363,7 +362,7 @@ function beginDrawing(room: Room): void {
   clearRoomTimers(room);
   room.state = "drawing";
   room.phaseEndsAt = Date.now() + DRAW_SECONDS * 1000;
-  const options = [room.word, ...getDistractors(room.word, room.category === "daily_challenge" ? "daily" : room.category, room.locale, 3)];
+  const options = [room.word, ...getDistractors(room.word, room.category === "daily_challenge" ? "mixed" : room.category, room.locale, 3)];
   for (let i = options.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
     [options[i], options[j]] = [options[j], options[i]];
@@ -521,7 +520,7 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
       code: createRoomCode(),
       mode: data.mode === "co-draw" ? "co-draw" : "classic",
       coReady: new Set(),
-      category: VALID_CATEGORIES.has(String(data.category)) ? String(data.category) : "daily",
+      category: data.category === "daily_challenge" ? "daily_challenge" : normalizeCategory(data.category),
       locale,
       players: [session.id],
       state: "waiting",

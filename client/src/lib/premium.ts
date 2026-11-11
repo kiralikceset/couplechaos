@@ -158,5 +158,5 @@ export const PREMIUM_FEATURES = [
 // Check if a category is locked
 export function isCategoryLocked(categoryId: string): boolean {
   if (arePremiumFeaturesUnlocked()) return false;
-  return categoryId === "hard" || categoryId === "spicy";
+  return false; // every theme is free in v1 (categoryId kept for a future premium pack)
 }

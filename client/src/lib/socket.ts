@@ -1,5 +1,5 @@
 import { getLocale, type Locale } from "./i18n";
-import { findWordEmoji, getDailyWord, getRandomWord, type WordCategory } from "./wordPool";
+import { findWordEmoji, getDailyWord, getRandomWord, normalizeCategory } from "./wordPool";
 
 type Listener = (data?: any) => void;
 export type GameTransport = "online" | "local" | "connecting" | "offline";
@@ -64,9 +64,7 @@ function normalizeLocale(value: unknown): Locale {
 
 function selectWord(category: string, locale: Locale): string {
   if (category === "daily_challenge") return getDailyWord(locale).word;
-  const allowed: WordCategory[] = ["daily", "romantic", "funny", "hard", "spicy"];
-  const selected = allowed.includes(category as WordCategory) ? category as WordCategory : "daily";
-  return getRandomWord(selected, locale);
+  return getRandomWord(normalizeCategory(category), locale);
 }
 
 function detectPlatform(): string {

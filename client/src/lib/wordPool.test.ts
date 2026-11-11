@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { translations, type Locale } from "./i18n";
-import { CATEGORIES, findWordEmoji, getAllWords, getCategoryWordCount, getDailyWord, getRandomWord, getTotalWordCount, pickWord, resetUsedWords } from "./wordPool";
+import { CATEGORIES, findWordEmoji, getAllWords, getCategoryWordCount, getDailyWord, getDistractors, getRandomWord, getTotalWordCount, normalizeCategory, pickWord, resetUsedWords } from "./wordPool";
 
 afterEach(() => {
   resetUsedWords();
@@ -9,7 +9,8 @@ afterEach(() => {
 
 describe("word pool", () => {
   it("contains the complete categorized and localized pool", () => {
-    expect(getTotalWordCount()).toBe(293);
+    expect(getTotalWordCount()).toBe(233);
+    expect(getCategoryWordCount("mixed")).toBe(233);
     for (const category of CATEGORIES) expect(getCategoryWordCount(category.id)).toBeGreaterThan(0);
     for (const locale of ["tr", "en", "de", "es"] as Locale[]) {
       for (const category of CATEGORIES) expect(getRandomWord(category.id, locale).trim()).not.toBe("");
@@ -42,7 +43,7 @@ describe("word pool", () => {
       seen.add(entry.tr.toLowerCase());
     }
     // Abstract words from the old list must be gone.
-    for (const banned of ["Demokrasi", "Nostalji", "Empati", "Güven", "Sadakat", "Özlem", "Dedikodu", "Müzik"]) {
+    for (const banned of ["Demokrasi", "Nostalji", "Empati", "Güven", "Sadakat", "Özlem", "Dedikodu", "Müzik", "Kaka", "Sarhoş surat", "Horlayan adam"]) {
       expect(findWordEmoji(banned)).toBe("");
     }
   });
@@ -51,7 +52,19 @@ describe("word pool", () => {
     expect(findWordEmoji("Peynir")).toBe("🧀");
     expect(findWordEmoji("cheese")).toBe("🧀");
     expect(findWordEmoji("Käse")).toBe("🧀");
-    const picked = pickWord("funny", "es");
+    const picked = pickWord("animals", "es");
     expect(findWordEmoji(picked.word)).toBe(picked.emoji);
+  });
+
+  it("themes hold what they say, and old ids still work", () => {
+    expect(normalizeCategory("funny")).toBe("mixed");
+    expect(normalizeCategory("romantic")).toBe("love");
+    expect(normalizeCategory("animals")).toBe("animals");
+    expect(pickWord("daily", "tr").category).toBe("mixed");
+    // distractors come from the word's own theme: "Kedi" (cat) only gets other animals
+    const options = getDistractors("Kedi", "mixed", "tr", 100);
+    expect(options.length).toBe(34);
+    expect(options).toContain("Köpek");
+    expect(options).not.toContain("Pizza");
   });
 });

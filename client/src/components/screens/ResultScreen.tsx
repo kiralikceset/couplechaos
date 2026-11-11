@@ -10,6 +10,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { playConfetti, playSuccess, playTap, playWordReveal, playError } from "@/lib/sounds";
 import { getRoast, getScoreLabel, getScoreColor } from "@/lib/aiRoast";
 import { shareOrDownloadImage } from "@/lib/imageUtils";
+import { foldText } from "@/lib/hintFilter";
 import { toast } from "sonner";
 
 interface Props {
@@ -49,7 +50,7 @@ export default function ResultScreen({ result, onShare, onPlayAgain, onHome }: P
     if (!result.imageData) return;
     playTap();
     try {
-      await shareOrDownloadImage(result.imageData, `couple-chaos-${result.word}.jpg`, "Couple Chaos", `“${result.word}” ${result.wordEmoji || ""}`.trim());
+      await shareOrDownloadImage(result.imageData, `couple-chaos-${foldText(result.word) || "cizim"}.jpg`, "Couple Chaos", `“${result.word}” ${result.wordEmoji || ""}`.trim());
       toast.success(t("share.saved"));
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;

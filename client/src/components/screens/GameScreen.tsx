@@ -211,6 +211,7 @@ export default function GameScreen({
   // ═══════════════════════════════════════════
   if (isDescriber && (phase === "describing" || phase === "watch_drawing")) {
     const sent = messages.filter(m => m.mine).slice().reverse();
+    const drawingNow = phase === "watch_drawing";
     return (
       <div className="relative flex flex-col h-[100dvh] w-full bg-[#050505] overflow-hidden">
         <header className="pt-7 px-4 flex items-center gap-3 flex-shrink-0">
@@ -225,14 +226,29 @@ export default function GameScreen({
           {tokenBadge}
         </header>
 
-        {/* Live drawing + live guess */}
+        {/* Before drawing: hints first. While drawing: live canvas + live guess */}
         <div className="relative flex-1 min-h-0 flex flex-col px-4 pt-3">
-          <LiveCanvas roundNumber={roundNumber} placeholder={t("game.partnerDrawingNow").replace("{name}", partner)} />
-          <div className="absolute left-6 top-5 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-white/10 text-[0.65rem]">
-            <span className="size-1.5 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-white/50">{t("game.partnerGuess").replace("{name}", partner)}</span>
-            <span className={`font-black ${partnerGuess ? "text-amber-300" : "text-white/30"}`}>{partnerGuess || t("game.noGuessYet")}</span>
-          </div>
+          {drawingNow ? (
+            <>
+              <LiveCanvas roundNumber={roundNumber} placeholder={t("game.partnerDrawingNow").replace("{name}", partner)} />
+              <div className="absolute left-6 top-5 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-white/10 text-[0.65rem]">
+                <span className="size-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-white/50">{t("game.partnerGuess").replace("{name}", partner)}</span>
+                <span className={`font-black ${partnerGuess ? "text-amber-300" : "text-white/30"}`}>{partnerGuess || t("game.noGuessYet")}</span>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-white/[0.1] px-6 text-center">
+              <span className="text-4xl">💬</span>
+              <p className="text-white/80 text-sm font-semibold leading-snug">{t("game.hintFirst").replace("{name}", partner)}</p>
+              <button
+                onClick={() => { playTap(); handleDescriptionDone(); }}
+                className="px-5 py-2.5 rounded-xl bg-amber-400 text-black text-sm font-bold active:scale-95 transition-transform"
+              >
+                ✏️ {t("game.startDrawingNow").replace("{name}", partner)}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Hints already sent */}
@@ -356,14 +372,33 @@ export default function GameScreen({
     );
   }
 
-  // Drawer before the canvas opens (only when a separate describe phase is configured)
+  // Drawer before the canvas opens: read the first hints
   if (phase === "watch_drawing" || phase === "describing") {
     return (
-      <div className="relative flex flex-col items-center justify-center h-[100dvh] w-full bg-[#050505] gap-3 px-8 text-center">
-        <CountdownTimer key={endsAt} endsAt={endsAt} duration={timeLimit} size="sm" />
-        <p className="text-white/70 text-sm font-bold">{t("game.canvasSoon")}</p>
-        <div className="flex flex-wrap justify-center gap-1.5">
-          {messages.map(m => <span key={m.id} className="px-3 py-1.5 rounded-full bg-primary/15 border border-primary/30 text-white text-xs font-semibold">{m.text}</span>)}
+      <div className="relative flex flex-col h-[100dvh] w-full bg-[#050505] overflow-hidden">
+        <header className="pt-7 px-4 flex items-center gap-3 flex-shrink-0">
+          <CountdownTimer key={endsAt} endsAt={endsAt} duration={timeLimit} size="sm" />
+          <div className="flex-1 min-w-0">
+            <h2 className="font-display text-lg font-black text-white leading-tight">{t("game.readHints")}</h2>
+            <p className="text-white/40 text-xs">{t("game.canvasSoon")}</p>
+          </div>
+        </header>
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-2">
+          {messages.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
+              <span className="text-4xl">💬</span>
+              <p className="text-white/50 text-sm">{t("game.readHintsSub").replace("{name}", partner)}</p>
+            </div>
+          ) : messages.map((m, index) => (
+            <motion.div
+              key={m.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`self-start max-w-[90%] px-4 py-3 rounded-2xl rounded-tl-md text-base font-semibold border ${index === messages.length - 1 ? "bg-primary/20 border-primary/40 text-white" : "bg-white/[0.05] border-white/[0.08] text-white/80"}`}
+            >
+              {m.text}
+            </motion.div>
+          ))}
         </div>
       </div>
     );

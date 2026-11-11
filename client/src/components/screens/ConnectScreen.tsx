@@ -10,6 +10,7 @@ import { m as motion, AnimatePresence } from "framer-motion";
 import socket from "@/lib/socket";
 import { getProfile } from "@/lib/gameData";
 import { useLocale } from "@/contexts/LocaleContext";
+import { CATEGORIES, normalizeCategory } from "@/lib/wordPool";
 import { getLocale, getLocalizedSurpriseMessage } from "@/lib/i18n";
 import { playTap, playSend } from "@/lib/sounds";
 import { requestNotificationPermission } from "@/lib/notifications";
@@ -24,13 +25,7 @@ interface Props {
   onSelectCategory?: (category: string) => void;
 }
 
-const CATEGORY_CHIPS = [
-  { id: "daily", emoji: "☀️" },
-  { id: "romantic", emoji: "💕" },
-  { id: "funny", emoji: "😂" },
-  { id: "hard", emoji: "🧠" },
-  { id: "spicy", emoji: "🌶️" },
-];
+const CATEGORY_CHIPS = CATEGORIES.map(({ id, emoji }) => ({ id, emoji }));
 
 export default function ConnectScreen({ onBack, onProfile, onCategory, selectedCategory, mode: gameMode = "classic", onSelectCategory }: Props) {
   const { t } = useLocale();
@@ -89,7 +84,7 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
       username: profile.username || "Player",
       avatar: profile.avatar,
       mode: gameMode,
-      category: selectedCategory || "daily",
+      category: selectedCategory || "mixed",
       locale: getLocale(),
     });
     void requestNotificationPermission();
@@ -105,7 +100,7 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
       avatar: profile.avatar,
       locale: getLocale(),
       mode: "classic",
-      category: selectedCategory || "daily",
+      category: selectedCategory || "mixed",
     });
     void requestNotificationPermission();
   }
@@ -155,15 +150,11 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
                 <span className={`inline-flex items-center gap-1.5 mt-3 px-2.5 py-1 rounded-full text-[0.65rem] font-bold uppercase tracking-wider border ${gameMode === "co-draw" ? "bg-secondary/10 border-secondary/30 text-secondary" : "bg-primary/10 border-primary/30 text-primary"}`}>
                   {gameMode === "co-draw" ? `🖌️ ${t("home.coDraw")}` : `🎨 ${t("home.classic")}`}
                 </span>
-                <p className={`mt-3 text-xs font-medium ${transport === "online" ? "text-green-400/70" : transport === "offline" ? "text-red-400/70" : "text-amber-400/70"}`}>
-                  {transport === "online"
-                    ? t("connect.onlineMode")
-                    : transport === "connecting"
-                      ? t("connect.connectingMode")
-                      : transport === "offline"
-                        ? t("connect.offlineMode")
-                        : t("connect.localMode")}
-                </p>
+                {transport !== "online" && transport !== "connecting" && (
+                  <p className={`mt-3 text-xs font-medium ${transport === "offline" ? "text-red-400/70" : "text-amber-400/70"}`}>
+                    {transport === "offline" ? t("connect.offlineMode") : t("connect.localMode")}
+                  </p>
+                )}
               </div>
 
               {/* Category — chosen right here, before creating the room */}
@@ -172,7 +163,7 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
                   <p className="text-[0.55rem] font-bold text-white/35 uppercase tracking-[0.25em] mb-2">{t("connect.category")}</p>
                   <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
                     {CATEGORY_CHIPS.map(chip => {
-                      const active = (selectedCategory || "daily") === chip.id;
+                      const active = normalizeCategory(selectedCategory) === chip.id;
                       return (
                         <motion.button
                           key={chip.id}
@@ -183,7 +174,7 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
                           }`}
                         >
                           <span className="text-base leading-none">{chip.emoji}</span>
-                          {chip.id === "daily_challenge" ? t("cat.dailyChallenge") : t(`cat.${chip.id}`)}
+                          {t(`cat.${chip.id}`)}
                         </motion.button>
                       );
                     })}

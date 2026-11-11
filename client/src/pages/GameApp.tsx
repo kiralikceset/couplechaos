@@ -176,7 +176,7 @@ export default function GameApp({
   const [seat, setSeat] = useState(0);
   const [transport, setTransport] = useState(socket.transport);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
-    "daily"
+    "mixed"
   );
   const [pendingAchievement, setPendingAchievement] =
     useState<Achievement | null>(null);
@@ -697,7 +697,7 @@ export default function GameApp({
   // Start game mode
   function handlePlayCoDraw() {
     setGameMode("co-draw");
-    if (selectedCategory === "daily_challenge") setSelectedCategory("daily");
+    if (selectedCategory === "daily_challenge") setSelectedCategory("mixed");
     if (!canPlayFree()) {
       navigate("premium");
       return;
@@ -707,7 +707,7 @@ export default function GameApp({
 
   function handlePlayClassic() {
     setGameMode("classic");
-    if (selectedCategory === "daily_challenge") setSelectedCategory("daily");
+    if (selectedCategory === "daily_challenge") setSelectedCategory("mixed");
     if (!canPlayFree()) {
       navigate("premium");
       return;
