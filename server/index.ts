@@ -128,7 +128,7 @@ interface Room {
   strokes: ReplayStroke[];
   strokeAspect: number;
   /** AI drawer: its current doodle and pending timers. */
-  bot: { version: number; strokes: number[][][]; think?: ReturnType<typeof setTimeout>; submit?: ReturnType<typeof setTimeout> };
+  bot: { version: number; strokes: number[][][]; think?: ReturnType<typeof setTimeout>; submit?: ReturnType<typeof setTimeout>; hints?: ReturnType<typeof setInterval> };
   createdAt: number;
 }
 
@@ -318,6 +318,7 @@ function closeRoom(room: Room, leavingId: string | null): void {
   if (room.state === "closed") return;
   room.state = "closed";
   clearRoomTimers(room);
+  stopBotHints(room);
   const leaver = leavingId ? sessions.get(leavingId) : undefined;
   room.players.forEach((id) => {
     const session = sessions.get(id);
@@ -450,39 +451,57 @@ function botHandIn(room: Room, round: number): void {
   void finishRound(room, { imageData, score: 25, comment: "" });
 }
 
+/** Gap between the AI hint-giver's hints. */
+const BOT_HINT_EVERY_MS = num("BOT_HINT_EVERY_MS", 3800);
+
+function stopBotHints(room: Room): void {
+  if (room.bot?.hints) clearInterval(room.bot.hints);
+  if (room.bot) room.bot.hints = undefined;
+}
+
 /**
- * The AI partner in solo mode: sends a hint every few seconds, from vague to obvious.
- * Uses AI-written hints when an AI key is set; otherwise category, letters, first letter, emoji.
+ * The AI partner in solo mode gives hints from vague to obvious, one every few seconds,
+ * through the describe phase AND while you draw (its own timer survives the phase change).
+ * Order: category → AI-written hints (whenever they arrive) → letter count → first letter → emoji.
  */
 function runBotDescriber(room: Room, round: number): void {
   const option = (kind: HintOption["kind"]) => room.hintOptions.find((item) => item.kind === kind)?.text;
-  const category = room.category === "daily_challenge" ? "" : `🗂️ ${msg("categoryHint", room.locale)}: ${categoryName(room.category, room.locale)}`;
-  const offline = [category, option("letters"), option("first"), option("emoji")].filter((text): text is string => Boolean(text));
+  const opener = room.category === "daily_challenge" ? [] : [`🗂️ ${msg("categoryHint", room.locale)}: ${categoryName(room.category, room.locale)}`];
+  const smart: string[] = [];
+  const giveaways = [option("letters"), option("first"), option("emoji")].filter((text): text is string => Boolean(text));
   let sent = 0;
-  const send = (text: string) => {
-    if (room.round !== round || room.state === "closed" || room.state === "result") return;
+  let aiPending = isAiJudgeEnabled();
+
+  const next = (): string | undefined => opener.shift() || smart.shift() || (aiPending && sent < 2 ? undefined : giveaways.shift());
+  const tick = () => {
+    if (room.round !== round || room.state === "closed" || room.state === "judging" || room.state === "result") {
+      stopBotHints(room);
+      return;
+    }
+    const text = next();
+    if (!text) {
+      if (!aiPending && !opener.length && !smart.length && !giveaways.length) stopBotHints(room);
+      return;
+    }
     sent += 1;
+    room.hintLog.push(text);
     push(room.drawerId, "hint_received", { text, id: `bot-${round}-${sent}`, kind: "bot" });
   };
-  const schedule = (texts: string[]) => texts.forEach((text, index) => later(room, 900 + index * 3800, () => send(text)));
-  if (!isAiJudgeEnabled()) {
-    schedule(offline);
-    return;
+
+  stopBotHints(room);
+  const first = setTimeout(tick, 900);
+  room.timers.push(first); // only the first one may be cleared with the describe phase…
+  room.bot.hints = setInterval(tick, BOT_HINT_EVERY_MS); // …the rest keeps going while you draw
+
+  if (aiPending) {
+    void generateHints(room.word, room.locale)
+      .then((hints) => {
+        if (room.round !== round) return;
+        hints.filter((hint) => !hintRevealsWord(hint, room.word)).slice(0, 3).forEach((hint) => smart.push(`✨ ${hint}`));
+      })
+      .catch(() => undefined)
+      .finally(() => { aiPending = false; });
   }
-  // Wait briefly for AI hints, then mix them in front of the giveaway ones.
-  let started = false;
-  const fallback = setTimeout(() => {
-    if (!started) { started = true; schedule(offline); }
-  }, 3500);
-  room.timers.push(fallback);
-  void generateHints(room.word, room.locale).then((hints) => {
-    if (started || room.round !== round) return;
-    started = true;
-    clearTimeout(fallback);
-    const ai = hints.filter((hint) => !hintRevealsWord(hint, room.word)).slice(0, 3).map((hint) => `✨ ${hint}`);
-    const mixed = [ai[0], option("letters"), ai[1], ai[2], option("first"), option("emoji")].filter((text): text is string => Boolean(text));
-    schedule(mixed.length ? mixed : offline);
-  }).catch(() => undefined);
 }
 
 const CATEGORY_NAMES: Record<string, Record<Locale, string>> = {
@@ -580,6 +599,7 @@ function recordDaily(room: Room, score: number, correct: boolean): { rank: numbe
 
 function startRound(room: Room): void {
   if (room.players.length < 2 || room.state === "closed") return;
+  stopBotHints(room);
   if (room.mode === "co-draw") {
     startCoDraw(room);
     return;
@@ -770,6 +790,7 @@ function cleanStroke(data: Record<string, unknown>): Record<string, unknown> | n
 async function finishRound(room: Room, submission: { imageData: string; score: number; comment: string }): Promise<void> {
   if (room.state !== "drawing" && room.state !== "co_collecting") return;
   clearRoomTimers(room);
+  stopBotHints(room);
   room.state = "judging";
   const round = room.round;
   const startedAt = Date.now();

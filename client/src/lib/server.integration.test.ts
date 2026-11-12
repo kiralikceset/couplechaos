@@ -18,6 +18,7 @@ process.env.CO_DRAW_SECONDS = "2";
 process.env.CO_COUNTDOWN_SECONDS = "0";
 process.env.RANDOM_MATCH = "1";
 process.env.SOLO_DESCRIBE_SECONDS = "1";
+process.env.BOT_HINT_EVERY_MS = "600";
 process.env.DATA_DIR = `${process.env.TMPDIR || "/tmp"}/cc-test-${process.pid}`;
 delete process.env.ANTHROPIC_API_KEY;
 delete process.env.GROQ_API_KEY;
@@ -432,6 +433,13 @@ describe("solo vs AI", () => {
     expect(firstHint.text).toContain("Hayvanlar"); // offline bot starts with the category
     const options = (await waitFor(me.log, "start_drawing")).data.options as string[];
     expect(options).toHaveLength(4);
+    // Hints keep coming AFTER the canvas opens (they used to stop when drawing began)
+    const drawingAt = me.log.findIndex((entry) => entry.event === "start_drawing");
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    const later = me.log.slice(drawingAt).filter((entry) => entry.event === "hint_received").map((entry) => entry.data.text as string);
+    expect(later.length).toBeGreaterThanOrEqual(1);
+    const all = me.log.filter((entry) => entry.event === "hint_received").map((entry) => entry.data.text as string).join(" ");
+    expect(all).toMatch(/harf/); // letter count / first letter giveaways arrive
     me.socket.emit("submit_drawing", { imageData: TINY_JPEG, score: 50, comment: "x", guess: options[0] });
     const result = (await waitFor(me.log, "show_result")).data;
     expect(result.solo).toBe(true);
