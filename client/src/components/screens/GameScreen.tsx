@@ -37,6 +37,8 @@ interface Props {
   partnerGuess?: string | null;
   wordEmoji?: string;
   partnerName?: string | null;
+  /** Only for random matches: report + block the stranger. */
+  onReport?: () => void;
 }
 
 interface Message {
@@ -69,7 +71,7 @@ function useTokens(): number {
 
 export default function GameScreen({
   phase, role, word, timeLimit, endsAt, roundNumber, receivedHints, code, onProfile,
-  hintOptions = [], guessOptions = [], partnerGuess = null, wordEmoji = "", partnerName = null,
+  hintOptions = [], guessOptions = [], partnerGuess = null, wordEmoji = "", partnerName = null, onReport,
 }: Props) {
   const { t } = useLocale();
   const tokens = useTokens();
@@ -199,6 +201,16 @@ export default function GameScreen({
     socket.emit("description_done", { code });
   }
 
+  const reportButton = onReport ? (
+    <button
+      onClick={() => { playTap(); onReport(); }}
+      aria-label={t("report.do")}
+      className="size-9 flex-shrink-0 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-sm"
+    >
+      🚩
+    </button>
+  ) : null;
+
   const tokenBadge = (
     <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/30">
       <Coin size={16} />
@@ -224,6 +236,7 @@ export default function GameScreen({
             </div>
           </div>
           {tokenBadge}
+          {reportButton}
         </header>
 
         {/* Before drawing: hints first. While drawing: live canvas + live guess */}
@@ -316,6 +329,7 @@ export default function GameScreen({
         <header className="pt-7 px-4 flex items-center gap-3 flex-shrink-0">
           <CountdownTimer key={`${phase}-${endsAt}`} endsAt={endsAt} duration={timeLimit} size="sm" onComplete={submitDrawing} onTick={playTick} />
           <h2 className="flex-1 text-center font-display text-lg font-black tracking-tight text-white truncate">{t("game.drawAndGuess")}</h2>
+          {reportButton}
           <button
             onClick={submitDrawing}
             disabled={submitting}
@@ -382,6 +396,7 @@ export default function GameScreen({
             <h2 className="font-display text-lg font-black text-white leading-tight">{t("game.readHints")}</h2>
             <p className="text-white/40 text-xs">{t("game.canvasSoon")}</p>
           </div>
+          {reportButton}
         </header>
         <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-2">
           {messages.length === 0 ? (

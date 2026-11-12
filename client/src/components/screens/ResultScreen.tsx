@@ -19,9 +19,11 @@ interface Props {
   onPlayAgain: () => void;
   onHome: () => void;
   partnerName?: string | null;
+  /** Only for random matches: report + block the stranger. */
+  onReport?: () => void;
 }
 
-export default function ResultScreen({ result, onShare, onPlayAgain, onHome }: Props) {
+export default function ResultScreen({ result, onShare, onPlayAgain, onHome, onReport }: Props) {
   const { t } = useLocale();
   const score = useRef(Number.isFinite(result.aiScore) ? Math.max(1, Math.min(100, Math.round(result.aiScore!))) : 3).current;
   const comment = useRef(result.aiComment || getRoast(score, result.word)).current;
@@ -173,9 +175,16 @@ export default function ResultScreen({ result, onShare, onPlayAgain, onHome }: P
               {t("result.share")}
             </button>
           </div>
-          <button onClick={() => { playTap(); onHome(); }} className="w-full text-white/35 text-xs font-medium py-1.5 active:text-white/60">
-            {t("common.home")}
-          </button>
+          <div className="flex justify-center gap-6">
+            <button onClick={() => { playTap(); onHome(); }} className="text-white/35 text-xs font-medium py-1.5 active:text-white/60">
+              {t("common.home")}
+            </button>
+            {onReport && (
+              <button onClick={() => { playTap(); onReport(); }} className="text-red-300/60 text-xs font-medium py-1.5">
+                {t("report.link")}
+              </button>
+            )}
+          </div>
         </div>
       </footer>
     </div>

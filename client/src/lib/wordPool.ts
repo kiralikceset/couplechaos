@@ -35,7 +35,7 @@ export const CATEGORIES: CategoryInfo[] = [
   { id: "vehicles", emoji: "🚗", premium: false, nameKey: "cat.vehicles" },
   { id: "places", emoji: "🌳", premium: false, nameKey: "cat.places" },
   { id: "people", emoji: "🧛", premium: false, nameKey: "cat.people" },
-  { id: "fun", emoji: "⚽", premium: false, nameKey: "cat.fun" },
+  { id: "fun", emoji: "🎸", premium: false, nameKey: "cat.fun" },
   { id: "love", emoji: "💕", premium: false, nameKey: "cat.love" },
 ];
 

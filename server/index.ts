@@ -74,6 +74,8 @@ interface Session {
   avatar: string;
   /** App language of this player (AI comments come in this language). */
   locale: Locale;
+  /** Set when the player uses random match. */
+  gender?: Gender;
   seenActions: Set<string>;
   seenActionOrder: string[];
 }
@@ -106,11 +108,28 @@ interface Room {
   hintOptions: HintOption[];
   guessOptions: string[];
   guess: string;
+  /** Strangers matched by "random match": stricter hint rules, report button. */
+  random: boolean;
   createdAt: number;
+}
+
+type Gender = "f" | "m";
+
+interface MatchTicket {
+  sessionId: string;
+  gender: Gender;
+  mode: GameMode;
+  category: string;
+  since: number;
 }
 
 const sessions = new Map<string, Session>();
 const rooms = new Map<string, Room>();
+/** Players waiting for a random partner (oldest first). */
+const matchQueue: MatchTicket[] = [];
+/** Session ids a player reported/blocked: they are never matched again. */
+const blockedPairs = new Map<string, Set<string>>();
+const MATCH_WAIT_MS = num("MATCH_WAIT_MS", 120_000);
 const VALID_CATEGORIES = new Set(["mixed", "animals", "food", "objects", "vehicles", "places", "people", "fun", "love", "daily_challenge"]);
 const VALID_LOCALES = new Set<Locale>(["tr", "en", "de", "es"]);
 const ROOM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -118,6 +137,18 @@ const CO_REACTIONS = new Set(["😂", "🔥", "😱", "😍", "🤡", "👏"]);
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 const MESSAGES: Record<string, Record<Locale, string>> = {
+  contactBlocked: {
+    tr: "Rastgele oyunlarda telefon, link veya sosyal medya paylaşılamaz.",
+    en: "Phone numbers, links and social handles can't be shared with random players.",
+    de: "Telefonnummern, Links und Social-Media-Namen sind bei Zufallsspielen nicht erlaubt.",
+    es: "No se pueden compartir teléfonos, enlaces ni redes con jugadores aleatorios.",
+  },
+  matchRules: {
+    tr: "Rastgele eşleşme için cinsiyet seçimi ve 18 yaş onayı gerekli.",
+    en: "Random match needs your gender and an 18+ confirmation.",
+    de: "Für Zufallsspiele brauchst du Geschlecht und 18+-Bestätigung.",
+    es: "El emparejamiento aleatorio requiere tu género y confirmar que tienes 18+.",
+  },
   roomNotFound: {
     tr: "Oda bulunamadı veya süresi doldu.",
     en: "Room not found or it has expired.",
@@ -519,41 +550,113 @@ async function finishRound(room: Room, submission: { imageData: string; score: n
   });
 }
 
+// ── Rooms, random match, blocking ─────────────────────────────────────────
+function rememberPlayer(session: Session, data: Record<string, unknown>): void {
+  session.username = cleanText(data.username, "Player", 24);
+  session.avatar = cleanText(data.avatar, "😎", 8);
+  session.locale = getLocale(data.locale);
+}
+
+function openRoom(host: Session, mode: GameMode, category: unknown, random: boolean): Room {
+  const room: Room = {
+    code: createRoomCode(),
+    mode,
+    coReady: new Set(),
+    category: category === "daily_challenge" && !random ? "daily_challenge" : normalizeCategory(category),
+    locale: host.locale,
+    players: [host.id],
+    state: "waiting",
+    round: 0,
+    word: "",
+    wordEmoji: "",
+    describerId: "",
+    drawerId: "",
+    phaseEndsAt: 0,
+    timers: [],
+    hintsThisRound: 0,
+    hintOptions: [],
+    guessOptions: [],
+    guess: "",
+    random,
+    createdAt: Date.now(),
+  };
+  rooms.set(room.code, room);
+  host.roomCode = room.code;
+  return room;
+}
+
+function seatGuest(room: Room, session: Session): void {
+  room.players.push(session.id);
+  session.roomCode = room.code;
+  push(session.id, "room_joined", { code: room.code, role: "guest", mode: room.mode, random: room.random });
+  room.players.forEach((id) => {
+    const partner = sessions.get(room.players.find((other) => other !== id) || "");
+    push(id, "player_joined", {
+      partnerName: partner?.username || "Partner",
+      partnerAvatar: partner?.avatar || "😎",
+      playerCount: room.players.length,
+      requiredPlayers: 2,
+      random: room.random,
+    });
+  });
+  room.state = "result"; // "between rounds" until the first round starts
+  later(room, START_DELAY_MS, () => {
+    if (room.round === 0) startRound(room);
+  });
+}
+
+// Tell waiting players when nobody turned up, even if no one else is searching.
+setInterval(pruneQueue, 10_000).unref();
+
+function removeFromQueue(sessionId: string): void {
+  const index = matchQueue.findIndex((ticket) => ticket.sessionId === sessionId);
+  if (index >= 0) matchQueue.splice(index, 1);
+}
+
+/** Drops tickets of players who left, closed the app or waited too long. */
+function pruneQueue(): void {
+  const now = Date.now();
+  for (let i = matchQueue.length - 1; i >= 0; i -= 1) {
+    const ticket = matchQueue[i];
+    const session = sessions.get(ticket.sessionId);
+    if (!session || now - ticket.since > MATCH_WAIT_MS || now - session.lastSeen > 30_000) {
+      matchQueue.splice(i, 1);
+      if (session) push(session.id, "match_timeout");
+    }
+  }
+}
+
+function isBlocked(a: string, b: string): boolean {
+  return Boolean(blockedPairs.get(a)?.has(b) || blockedPairs.get(b)?.has(a));
+}
+
+function block(a: string, b: string): void {
+  if (!blockedPairs.has(a)) blockedPairs.set(a, new Set());
+  blockedPairs.get(a)!.add(b);
+}
+
+/** Phone numbers, links, @handles and app names: kept out of chats between strangers. */
+const CONTACT_WORDS = /(instagram|insta|snapchat|snap|whatsapp|watsap|telegram|tiktok|discord|facebook|twitter|numara|numaram|number|telefon|phone|gmail|hotmail|outlook|mail)/;
+export function sharesContact(text: string): boolean {
+  const lowered = text.toLocaleLowerCase("tr");
+  if (/https?:|www\.|\.(com|net|org|tr|io|me|ly)\b|@\w{2,}/.test(lowered)) return true;
+  if ((lowered.match(/\d/g) || []).length >= 6) return true;
+  const squashed = foldText(text);
+  return CONTACT_WORDS.test(squashed) || /\big\b|\bwp\b|\bdm\b/.test(lowered);
+}
+
 // ── Action handling ────────────────────────────────────────────────────────
 function handleAction(session: Session, event: string, data: Record<string, unknown>): void {
   if (event === "create_room") {
     leaveCurrentRoom(session);
+    removeFromQueue(session.id);
     const locale = getLocale(data.locale);
     if (rooms.size >= MAX_ROOMS) {
       push(session.id, "join_error", { message: msg("busy", locale) });
       return;
     }
-    session.username = cleanText(data.username, "Player", 24);
-    session.avatar = cleanText(data.avatar, "😎", 8);
-    session.locale = locale;
-    const room: Room = {
-      code: createRoomCode(),
-      mode: data.mode === "co-draw" ? "co-draw" : "classic",
-      coReady: new Set(),
-      category: data.category === "daily_challenge" ? "daily_challenge" : normalizeCategory(data.category),
-      locale,
-      players: [session.id],
-      state: "waiting",
-      round: 0,
-      word: "",
-      wordEmoji: "",
-      describerId: "",
-      drawerId: "",
-      phaseEndsAt: 0,
-      timers: [],
-      hintsThisRound: 0,
-      hintOptions: [],
-      guessOptions: [],
-      guess: "",
-      createdAt: Date.now(),
-    };
-    rooms.set(room.code, room);
-    session.roomCode = room.code;
+    rememberPlayer(session, data);
+    const room = openRoom(session, data.mode === "co-draw" ? "co-draw" : "classic", data.category, false);
     push(session.id, "room_created", { code: room.code, role: "host", mode: room.mode, requiredPlayers: 2 });
     return;
   }
@@ -562,7 +665,7 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
     const locale = getLocale(data.locale);
     const code = cleanText(data.code, "", 6).toUpperCase();
     const room = rooms.get(code);
-    if (!room) {
+    if (!room || room.random) {
       push(session.id, "join_error", { message: msg("roomNotFound", locale) });
       return;
     }
@@ -575,25 +678,53 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
       return;
     }
     leaveCurrentRoom(session);
-    session.username = cleanText(data.username, "Player", 24);
-    session.avatar = cleanText(data.avatar, "😎", 8);
-    session.locale = locale;
-    room.players.push(session.id);
-    session.roomCode = room.code;
-    push(session.id, "room_joined", { code: room.code, role: "guest", mode: room.mode });
-    room.players.forEach((id) => {
-      const partner = sessions.get(room.players.find((other) => other !== id) || "");
-      push(id, "player_joined", {
-        partnerName: partner?.username || "Partner",
-        partnerAvatar: partner?.avatar || "😎",
-        playerCount: room.players.length,
-        requiredPlayers: 2,
-      });
-    });
-    room.state = "result"; // "between rounds" until the first round starts
-    later(room, START_DELAY_MS, () => {
-      if (room.round === 0) startRound(room);
-    });
+    removeFromQueue(session.id);
+    rememberPlayer(session, data);
+    seatGuest(room, session);
+    return;
+  }
+
+  // Random match: pairs a woman with a man (as the players chose), same game mode.
+  if (event === "find_match") {
+    const locale = getLocale(data.locale);
+    const gender = data.gender === "f" || data.gender === "m" ? data.gender : null;
+    if (!gender || data.adult !== true) {
+      push(session.id, "join_error", { message: msg("matchRules", locale) });
+      return;
+    }
+    if (rooms.size >= MAX_ROOMS) {
+      push(session.id, "join_error", { message: msg("busy", locale) });
+      return;
+    }
+    leaveCurrentRoom(session);
+    removeFromQueue(session.id);
+    rememberPlayer(session, data);
+    session.gender = gender;
+    const mode: GameMode = data.mode === "co-draw" ? "co-draw" : "classic";
+    pruneQueue();
+    const index = matchQueue.findIndex((ticket) =>
+      ticket.mode === mode
+      && ticket.gender !== gender
+      && ticket.sessionId !== session.id
+      && !isBlocked(ticket.sessionId, session.id)
+      && !sessions.get(ticket.sessionId)?.roomCode);
+    if (index < 0) {
+      matchQueue.push({ sessionId: session.id, gender, mode, category: String(data.category || "mixed"), since: Date.now() });
+      push(session.id, "match_waiting", { mode });
+      return;
+    }
+    const [ticket] = matchQueue.splice(index, 1);
+    const host = sessions.get(ticket.sessionId)!;
+    // The one who waited longer hosts; their category is used.
+    const room = openRoom(host, ticket.mode, ticket.category, true);
+    push(host.id, "room_created", { code: room.code, role: "host", mode: room.mode, requiredPlayers: 2, random: true });
+    seatGuest(room, session);
+    return;
+  }
+
+  if (event === "cancel_match") {
+    removeFromQueue(session.id);
+    push(session.id, "match_cancelled");
     return;
   }
 
@@ -619,11 +750,28 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
     if (!text) return;
     const id = cleanText(data.id, randomUUID(), 64);
     if (hintRevealsWord(text, room.word)) {
-      push(session.id, "hint_rejected", { id, text, message: msg("hintBlocked", room.locale) });
+      push(session.id, "hint_rejected", { id, text, message: msg("hintBlocked", session.locale) });
+      return;
+    }
+    if (room.random && sharesContact(text)) {
+      push(session.id, "hint_rejected", { id, text, message: msg("contactBlocked", session.locale) });
       return;
     }
     room.hintsThisRound += 1;
     pushRoom(room, "hint_received", { text, id }, session.id);
+    return;
+  }
+
+  // Report + block in a random match: ends the game and they never meet again.
+  if (event === "report_partner") {
+    const partnerId = room.players.find((id) => id !== session.id);
+    if (partnerId) {
+      block(session.id, partnerId);
+      const reason = cleanText(data.reason, "other", 40);
+      console.warn(`[report] room=${room.code} random=${room.random} reason=${reason} reporter=${session.id.slice(0, 8)} reported=${partnerId.slice(0, 8)}`);
+    }
+    push(session.id, "report_received");
+    leaveCurrentRoom(session);
     return;
   }
 

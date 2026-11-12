@@ -34,6 +34,7 @@ const EVENTS = [
   "partner_disconnected", "join_error", "protocol_error",
   "co_draw_stroke", "co_draw_react", "co_draw_partner_ready", "co_draw_time_up",
   "hint_rejected", "hint_options", "hint_option_used", "partner_guess",
+  "match_waiting", "match_cancelled", "report_received",
 ];
 
 let baseUrl = "";
@@ -336,6 +337,55 @@ describe("Ortak Tuval (co-draw) mode", () => {
     expect(result.imageData).toBe("");
     host.socket.disconnect();
     guest.socket.disconnect();
+  }, 15_000);
+});
+
+describe("random match", () => {
+  const player = (name: string, gender: "f" | "m") => ({ username: name, avatar: "😎", mode: "classic", category: "animals", locale: "tr", gender, adult: true });
+
+  it("needs gender + 18+, never pairs same gender, pairs a woman with a man", async () => {
+    const a = client(); const b = client(); const c = client();
+    a.socket.emit("find_match", { ...player("A", "m"), adult: false });
+    expect((await waitFor(a.log, "join_error")).data.message).toContain("18");
+
+    a.socket.emit("find_match", player("A", "m"));
+    await waitFor(a.log, "match_waiting");
+    b.socket.emit("find_match", player("B", "m"));
+    await waitFor(b.log, "match_waiting"); // two men: both keep waiting
+    expect(a.log.some((entry) => entry.event === "room_created")).toBe(false);
+
+    c.socket.emit("find_match", player("C", "f"));
+    const created = await waitFor(a.log, "room_created"); // A waited longest → host
+    expect(created.data).toMatchObject({ role: "host", random: true });
+    expect((await waitFor(c.log, "room_joined")).data).toMatchObject({ role: "guest", random: true, code: created.data.code });
+    expect((await waitFor(c.log, "player_joined")).data.partnerName).toBe("A");
+    await waitFor(a.log, "your_role");
+    expect(b.log.some((entry) => entry.event === "room_created" || entry.event === "room_joined")).toBe(false);
+
+    // strangers can't swap contacts through hints
+    const describer = (await waitFor(a.log, "your_role")).data.role === "describer" ? a : c;
+    describer.socket.emit("send_hint", { text: "insta: yusuf_123", id: "h1" });
+    describer.socket.emit("send_hint", { text: "0532 123 45 67", id: "h2" });
+    expect((await waitFor(describer.log, "hint_rejected")).data.message).toContain("sosyal medya");
+    await waitFor(describer.log, "hint_rejected", 2);
+
+    // a random room can't be joined by code
+    const d = client();
+    d.socket.emit("join_room", { code: created.data.code, username: "D", avatar: "😎", locale: "tr" });
+    await waitFor(d.log, "join_error");
+
+    // report → game ends for both; they are never matched again
+    c.socket.emit("report_partner", { reason: "rude" });
+    await waitFor(c.log, "report_received");
+    await waitFor(a.log, "partner_disconnected");
+    b.socket.emit("cancel_match", {});
+    await waitFor(b.log, "match_cancelled");
+    a.socket.emit("find_match", player("A", "m"));
+    await waitFor(a.log, "match_waiting", 2);
+    c.socket.emit("find_match", player("C", "f"));
+    await waitFor(c.log, "match_waiting");
+    expect(a.log.filter((entry) => entry.event === "room_created")).toHaveLength(1);
+    [a, b, c, d].forEach((item) => item.socket.disconnect());
   }, 15_000);
 });
 

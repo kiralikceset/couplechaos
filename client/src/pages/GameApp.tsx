@@ -52,7 +52,7 @@ import {
   updateCompatibility,
 } from "@/lib/retention";
 import { canPlayFree, incrementGamesToday, isBillingEnabled } from "@/lib/premium";
-import { getLocale } from "@/lib/i18n";
+import { getLocale, t } from "@/lib/i18n";
 import { findWordEmoji, getDailyWord } from "@/lib/wordPool";
 import { getRoast } from "@/lib/aiRoast";
 import { earnTokens, TOKEN_REWARD_CORRECT, TOKEN_REWARD_ROUND } from "@/lib/tokens";
@@ -171,6 +171,8 @@ export default function GameApp({
   const [partnerAvatar, setPartnerAvatar] = useState<string | null>(null);
   const [hintOptions, setHintOptions] = useState<HintOptionView[]>([]);
   const [guessOptions, setGuessOptions] = useState<string[]>([]);
+  /** Matched with a stranger: show report/block. */
+  const [isRandom, setIsRandom] = useState(false);
   const [partnerGuess, setPartnerGuess] = useState<string | null>(null);
   const [wordEmoji, setWordEmoji] = useState<string>("");
   const [gameMode, setGameMode] = useState<GameMode>("classic");
@@ -314,11 +316,14 @@ export default function GameApp({
       code,
       role: nextRole,
       mode,
+      random,
     }: {
       code: string;
       role: string;
       mode?: GameMode;
+      random?: boolean;
     }) => {
+      setIsRandom(Boolean(random));
       if (mode) setGameMode(mode);
       setRoomCode(code);
       setRole(nextRole);
@@ -329,11 +334,14 @@ export default function GameApp({
       code,
       role: nextRole,
       mode,
+      random,
     }: {
       code: string;
       role: string;
       mode?: GameMode;
+      random?: boolean;
     }) => {
+      setIsRandom(Boolean(random));
       if (mode) setGameMode(mode);
       setRoomCode(code);
       setRole(nextRole);
@@ -627,7 +635,25 @@ export default function GameApp({
     }
   }
 
+  /** Report + block the stranger: ends the game for both, never matched again. */
+  function reportPartner() {
+    toast(t("report.ask"), {
+      action: {
+        label: t("report.do"),
+        onClick: () => {
+          socket.emit("report_partner", { reason: "user_report" });
+          toast.success(t("report.done"));
+          resetGame();
+          setPartnerName(null);
+          setHistory([]);
+          setScreen("home");
+        },
+      },
+    });
+  }
+
   function resetGame() {
+    setIsRandom(false);
     setRoomCode(null);
     setRole(null);
     setWord(null);
@@ -829,6 +855,7 @@ export default function GameApp({
             partnerGuess={partnerGuess}
             wordEmoji={wordEmoji}
             partnerName={partnerName}
+            onReport={isRandom ? reportPartner : undefined}
           />
         )}
         {/* === RESULTS === */}
@@ -838,6 +865,7 @@ export default function GameApp({
             partnerName={partnerName}
             onShare={() => navigate("share")}
             onPlayAgain={playAgain}
+            onReport={isRandom ? reportPartner : undefined}
             onHome={() => {
               leaveGame();
               setHistory([]);

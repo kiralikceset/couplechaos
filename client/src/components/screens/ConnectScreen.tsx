@@ -5,13 +5,14 @@
  * i18n + sound effects integrated
  */
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { m as motion, AnimatePresence } from "framer-motion";
 import socket from "@/lib/socket";
 import { getProfile } from "@/lib/gameData";
 import { useLocale } from "@/contexts/LocaleContext";
 import { CATEGORIES, normalizeCategory } from "@/lib/wordPool";
-import { getLocale, getLocalizedSurpriseMessage } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n";
+import { saveProfile } from "@/lib/gameData";
 import { playTap, playSend } from "@/lib/sounds";
 import { requestNotificationPermission } from "@/lib/notifications";
 import { toast } from "sonner";
@@ -31,18 +32,40 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
   const isDaily = selectedCategory === "daily_challenge" && gameMode === "classic";
   const { t } = useLocale();
   const [joinCode, setJoinCode] = useState("");
-  const [mode, setMode] = useState<"choose" | "join">("choose");
-  const [funMessage, setFunMessage] = useState("");
+  const [mode, setMode] = useState<"choose" | "join" | "searching">("choose");
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const [gender, setGender] = useState<"f" | "m" | undefined>(getProfile().gender);
+  const [adult, setAdult] = useState(() => { try { return localStorage.getItem("cc_adult_ok") === "1"; } catch { return false; } });
+  const [searchSeconds, setSearchSeconds] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [transport, setTransport] = useState(socket.transport);
   const profile = getProfile();
 
+  const canRandom = !isDaily && transport === "online";
+
+  // Random match: listen for the queue, count the seconds.
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      setFunMessage(getLocalizedSurpriseMessage());
-    }, 2000);
-    return () => clearTimeout(timeout);
-  }, []);
+    if (mode !== "searching") return;
+    setSearchSeconds(0);
+    const started = Date.now();
+    const timer = window.setInterval(() => setSearchSeconds(Math.floor((Date.now() - started) / 1000)), 1000);
+    const onTimeout = () => {
+      setMode("choose");
+      toast(t("match.timeout"));
+    };
+    const onError = () => setMode("choose");
+    socket.on("match_timeout", onTimeout);
+    socket.on("join_error", onError);
+    return () => {
+      window.clearInterval(timer);
+      socket.off("match_timeout", onTimeout);
+      socket.off("join_error", onError);
+    };
+  }, [mode, t]);
+
+  // Leaving the screen while searching = leave the queue.
+  useEffect(() => () => { if (searchingRef.current) socket.emit("cancel_match", {}); }, []);
+
 
   useEffect(() => {
     const handleTransport = ({ transport: nextTransport }: { transport: typeof socket.transport }) => {
@@ -91,6 +114,38 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
     void requestNotificationPermission();
   }
 
+  const searchingRef = useRef(false);
+  searchingRef.current = mode === "searching";
+
+  function sendFindMatch() {
+    socket.emit("find_match", {
+      username: profile.username || "Player",
+      avatar: profile.avatar,
+      mode: gameMode,
+      category: selectedCategory || "mixed",
+      locale: getLocale(),
+      gender,
+      adult,
+    });
+  }
+
+  function startMatch() {
+    if (!gender || !adult) return;
+    playTap();
+    try { localStorage.setItem("cc_adult_ok", "1"); } catch {}
+    if (profile.gender !== gender) saveProfile({ ...getProfile(), gender });
+    setRulesOpen(false);
+    setMode("searching");
+    sendFindMatch();
+    void requestNotificationPermission();
+  }
+
+  function cancelMatch() {
+    playTap();
+    socket.emit("cancel_match", {});
+    setMode("choose");
+  }
+
   function handleJoin() {
     if (joinCode.trim().length !== 6 || submitting) return;
     playSend();
@@ -112,7 +167,7 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,26,108,0.05)_0%,transparent_50%),radial-gradient(circle_at_70%_80%,rgba(139,92,246,0.05)_0%,transparent_50%)] pointer-events-none" />
 
       {/* Header */}
-      <header className="relative z-10 pt-12 px-6 flex items-center justify-between">
+      <header className="relative z-10 pt-10 px-6 flex items-center justify-between">
         <button
           onClick={() => { playTap(); onBack(); }}
           className="size-10 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center active:scale-90 transition-transform"
@@ -121,6 +176,9 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
         </button>
+        <p className="font-display text-base font-bold text-white">
+          {isDaily ? `📅 ${t("home.dailyChallenge")}` : gameMode === "co-draw" ? `🖌️ ${t("home.coDraw")}` : `🎨 ${t("home.classic")}`}
+        </p>
         <button
           onClick={() => { playTap(); onProfile(); }}
           className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/[0.04] border border-white/[0.08] active:scale-95 transition-transform"
@@ -131,106 +189,64 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
       </header>
 
       {/* Content */}
-      <main className="relative z-10 flex-1 flex flex-col justify-center px-6">
+      <main className="relative z-10 flex-1 flex flex-col justify-center px-6 overflow-y-auto">
         <AnimatePresence mode="wait">
-          {mode === "choose" ? (
+          {mode === "searching" ? (
+            <motion.div key="searching" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center text-center gap-4 py-10">
+              <div className="relative size-28 flex items-center justify-center">
+                <span className="absolute inset-0 rounded-full border-2 border-amber-400/40 animate-ping" />
+                <span className="absolute inset-3 rounded-full border-2 border-amber-400/60" />
+                <span className="text-5xl">🎲</span>
+              </div>
+              <h2 className="font-display text-xl font-black text-white">{t("match.searching")}</h2>
+              <p className="text-white/45 text-sm">{t("match.searchingSub")}</p>
+              <p className="text-white/30 text-xs tabular-nums">{searchSeconds}s</p>
+              <button onClick={cancelMatch} className="mt-2 px-6 py-3 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white/70 text-sm font-semibold">
+                {t("match.cancel")}
+              </button>
+            </motion.div>
+          ) : mode === "choose" ? (
             <motion.div
               key="choose"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="space-y-5"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col gap-5"
             >
-              <div>
-                <h2 className="font-display text-3xl font-black tracking-tight text-white mb-2">
-                  {t("connect.title")}
-                </h2>
-                <p className="text-white/40 text-sm">
-                  {t("connect.subtitle")}
-                </p>
-                <span className={`inline-flex items-center gap-1.5 mt-3 px-2.5 py-1 rounded-full text-[0.65rem] font-bold uppercase tracking-wider border ${isDaily ? "bg-amber-400/10 border-amber-400/30 text-amber-300" : gameMode === "co-draw" ? "bg-secondary/10 border-secondary/30 text-secondary" : "bg-primary/10 border-primary/30 text-primary"}`}>
-                  {isDaily ? `📅 ${t("home.dailyChallenge")}` : gameMode === "co-draw" ? `🖌️ ${t("home.coDraw")}` : `🎨 ${t("home.classic")}`}
-                </span>
-                {transport !== "online" && transport !== "connecting" && (
-                  <p className={`mt-3 text-xs font-medium ${transport === "offline" ? "text-red-400/70" : "text-amber-400/70"}`}>
-                    {transport === "offline" ? t("connect.offlineMode") : t("connect.localMode")}
-                  </p>
-                )}
-              </div>
-
-              {/* Category — chosen right here, before creating the room */}
               {isDaily ? (
                 <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-400/[0.07] border border-amber-400/25">
                   <span className="text-3xl">📅</span>
                   <p className="text-white/75 text-sm leading-snug">{t("connect.dailyInfo")}</p>
                 </div>
-              ) : gameMode === "classic" || gameMode === "co-draw" ? (
+              ) : (
                 <div>
-                  <p className="text-[0.55rem] font-bold text-white/35 uppercase tracking-[0.25em] mb-2">{t("connect.category")}</p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <p className="text-xs font-semibold text-white/45 mb-2">{t("connect.category")}</p>
+                  <div className="grid grid-cols-3 gap-1.5">
                     {CATEGORY_CHIPS.map(chip => {
                       const active = normalizeCategory(selectedCategory) === chip.id;
                       return (
-                        <motion.button
+                        <button
                           key={chip.id}
-                          whileTap={{ scale: 0.92 }}
                           onClick={() => { playTap(); onSelectCategory?.(chip.id); }}
                           aria-pressed={active}
-                          className={`flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl border text-xs font-bold transition-colors ${
-                            active ? "bg-amber-400 text-black border-amber-300" : "bg-white/[0.04] text-white/75 border-white/[0.08]"
+                          className={`flex items-center gap-1.5 px-2.5 py-2.5 rounded-xl text-[0.75rem] font-semibold transition-colors ${
+                            active ? "bg-amber-400 text-black" : "bg-white/[0.04] text-white/70"
                           }`}
                         >
-                          <span className="text-xl leading-none">{chip.emoji}</span>
-                          <span className="truncate max-w-full px-1">{t(`cat.${chip.id}`)}</span>
-                        </motion.button>
+                          <span className="text-base leading-none">{chip.emoji}</span>
+                          <span className="truncate">{t(`cat.${chip.id}`)}</span>
+                        </button>
                       );
                     })}
                   </div>
                 </div>
-              ) : null}
+              )}
 
-              {/* Create Room */}
-              <motion.button
-                whileTap={{ scale: 0.98 }}
-                onClick={handleCreate}
-                disabled={submitting}
-                className="w-full p-5 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/25 text-left group relative overflow-hidden disabled:opacity-50"
-              >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-                <div className="relative flex items-center gap-4">
-                  <div className="size-14 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-2xl group-active:scale-90 transition-transform shadow-[0_0_20px_rgba(255,26,108,0.2)]">
-                    ⚡
-                  </div>
-                  <div>
-                    <h3 className="font-display font-bold text-white text-lg">{t("connect.create")}</h3>
-                    <p className="text-white/40 text-sm">{t("connect.create.desc")}</p>
-                  </div>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-white/30 ml-auto">
-                    <path d="M5 12h14M12 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </motion.button>
-
-              {/* Join Room */}
-              <motion.button
-                whileTap={{ scale: 0.98 }}
-                onClick={() => { playTap(); setMode("join"); }}
-                className="w-full p-5 rounded-2xl bg-gradient-to-br from-secondary/15 to-secondary/5 border border-secondary/25 text-left group relative overflow-hidden"
-              >
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-secondary/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
-                <div className="relative flex items-center gap-4">
-                  <div className="size-14 rounded-xl bg-secondary/20 border border-secondary/30 flex items-center justify-center text-2xl group-active:scale-90 transition-transform shadow-[0_0_20px_rgba(139,92,246,0.2)]">
-                    🔗
-                  </div>
-                  <div>
-                    <h3 className="font-display font-bold text-white text-lg">{t("connect.join")}</h3>
-                    <p className="text-white/40 text-sm">{t("connect.join.desc")}</p>
-                  </div>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-white/30 ml-auto">
-                    <path d="M5 12h14M12 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </motion.button>
+              {transport !== "online" && transport !== "connecting" && (
+                <p className={`text-xs font-medium ${transport === "offline" ? "text-red-400/70" : "text-amber-400/70"}`}>
+                  {transport === "offline" ? t("connect.offlineMode") : t("connect.localMode")}
+                </p>
+              )}
             </motion.div>
           ) : (
             <motion.div
@@ -295,16 +311,81 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
         </AnimatePresence>
       </main>
 
-      {/* Fun message */}
-      <AnimatePresence>
-        {funMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="relative z-10 px-6 pb-10 text-center"
+      {/* Actions — at the bottom, where the thumb is */}
+      {mode === "choose" && (
+        <footer className="relative z-10 px-6 pb-8 pt-3 flex flex-col gap-2">
+          <button
+            onClick={handleCreate}
+            disabled={submitting}
+            className="w-full py-4 rounded-2xl bg-primary text-white font-bold text-base active:scale-[0.98] transition-transform disabled:opacity-50"
           >
-            <p className="text-white/20 text-xs italic">{funMessage}</p>
+            ⚡ {t("connect.create")}
+          </button>
+          <div className={`grid gap-2 ${canRandom ? "grid-cols-2" : "grid-cols-1"}`}>
+            <button
+              onClick={() => { playTap(); setMode("join"); }}
+              className="py-3.5 rounded-2xl bg-white/[0.05] border border-white/[0.1] text-white/85 text-sm font-semibold active:scale-[0.98] transition-transform"
+            >
+              🔗 {t("connect.joinShort")}
+            </button>
+            {canRandom && (
+              <button
+                onClick={() => { playTap(); setRulesOpen(true); }}
+                className="py-3.5 rounded-2xl bg-amber-400/10 border border-amber-400/35 text-amber-200 text-sm font-semibold active:scale-[0.98] transition-transform"
+              >
+                🎲 {t("match.button")}
+              </button>
+            )}
+          </div>
+        </footer>
+      )}
+
+      {/* Random match rules: gender + 18+ */}
+      <AnimatePresence>
+        {rulesOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/70 flex items-end"
+            onClick={() => setRulesOpen(false)}
+          >
+            <motion.div
+              initial={{ y: 40 }}
+              animate={{ y: 0 }}
+              exit={{ y: 40 }}
+              onClick={(event) => event.stopPropagation()}
+              className="w-full rounded-t-3xl bg-[#111] border-t border-white/10 p-6 pb-8 space-y-4"
+            >
+              <h3 className="font-display text-xl font-black text-white">🎲 {t("match.rulesTitle")}</h3>
+              <p className="text-white/60 text-sm leading-relaxed">{t("match.rules")}</p>
+              <div>
+                <p className="text-xs font-semibold text-white/45 mb-2">{t("profile.gender")}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["f", "m"] as const).map(value => (
+                    <button
+                      key={value}
+                      onClick={() => { playTap(); setGender(value); }}
+                      aria-pressed={gender === value}
+                      className={`py-3 rounded-xl text-sm font-bold border transition-colors ${gender === value ? "bg-white text-black border-white" : "bg-white/[0.04] text-white/70 border-white/[0.08]"}`}
+                    >
+                      {value === "f" ? `👩 ${t("profile.female")}` : `👨 ${t("profile.male")}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <label className="flex items-center gap-3 py-1 cursor-pointer">
+                <input type="checkbox" checked={adult} onChange={(event) => setAdult(event.currentTarget.checked)} className="size-5 accent-amber-400" />
+                <span className="text-white/80 text-sm font-semibold">{t("match.adult")}</span>
+              </label>
+              <button
+                onClick={startMatch}
+                disabled={!gender || !adult}
+                className="w-full py-4 rounded-2xl bg-amber-400 text-black font-bold text-base disabled:opacity-30"
+              >
+                {t("match.start")}
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

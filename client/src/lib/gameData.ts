@@ -76,6 +76,8 @@ export interface UserProfile {
   avatar: string;
   gamesPlayed: number;
   streak: number;
+  /** Asked when the profile is created; used only for random match (woman ↔ man). */
+  gender?: "f" | "m";
 }
 
 const PROFILE_KEY = "couple_chaos_profile";
@@ -92,6 +94,7 @@ export function getProfile(): UserProfile {
         avatar: typeof parsed.avatar === "string" && parsed.avatar ? parsed.avatar.slice(0, 8) : "😎",
         gamesPlayed: Number.isFinite(gamesPlayed) ? Math.max(0, gamesPlayed) : 0,
         streak: Number.isFinite(streak) ? Math.max(0, streak) : 0,
+        gender: parsed.gender === "f" || parsed.gender === "m" ? parsed.gender : undefined,
       };
     }
   } catch {}
@@ -104,6 +107,7 @@ export function saveProfile(profile: UserProfile): void {
     avatar: String(profile.avatar || "😎").slice(0, 8),
     gamesPlayed: Math.max(0, Math.floor(Number(profile.gamesPlayed) || 0)),
     streak: Math.max(0, Math.floor(Number(profile.streak) || 0)),
+    gender: profile.gender === "f" || profile.gender === "m" ? profile.gender : undefined,
   };
   try {
     localStorage.setItem(PROFILE_KEY, JSON.stringify(safeProfile));
