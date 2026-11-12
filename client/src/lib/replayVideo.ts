@@ -8,6 +8,8 @@ import type { ReplayStroke } from "@/components/game/DrawingCanvas";
 
 export interface ReplayInput {
   strokes: ReplayStroke[];
+  /** Used when there are no strokes (e.g. Co-draw): revealed top to bottom. */
+  imageData?: string;
   aspect: number;
   word: string;
   emoji: string;
@@ -114,7 +116,36 @@ export async function makeReplayVideo(input: ReplayInput): Promise<{ blob: Blob;
   const dy = inner.y + (inner.h - dh) / 2;
   const totalPoints = Math.max(1, input.strokes.reduce((sum, stroke) => sum + stroke.p.length, 0));
 
+  // No strokes: wipe the finished picture in instead.
+  let picture: HTMLImageElement | null = null;
+  if (!input.strokes.length && input.imageData) {
+    picture = await new Promise<HTMLImageElement | null>((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => resolve(null);
+      image.src = input.imageData!;
+    });
+  }
+  let px = inner.x, py = inner.y, pw = inner.w, ph = inner.h;
+  if (picture) {
+    const ratio = picture.width / Math.max(1, picture.height);
+    pw = inner.w; ph = pw / ratio;
+    if (ph > inner.h) { ph = inner.h; pw = ph * ratio; }
+    px = inner.x + (inner.w - pw) / 2;
+    py = inner.y + (inner.h - ph) / 2;
+  }
+
   const drawStrokes = (progress: number) => {
+    if (picture) {
+      if (progress <= 0) return;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(px, py, pw, ph * progress);
+      ctx.clip();
+      ctx.drawImage(picture, px, py, pw, ph);
+      ctx.restore();
+      return;
+    }
     let budget = Math.floor(totalPoints * progress);
     ctx.save();
     roundRect(ctx, inner.x, inner.y, inner.w, inner.h, 22);

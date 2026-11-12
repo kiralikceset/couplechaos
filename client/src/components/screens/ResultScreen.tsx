@@ -61,15 +61,21 @@ export default function ResultScreen({ result, onShare, onPlayAgain, onHome, onR
   }, [correct, score]);
 
   const [videoProgress, setVideoProgress] = useState<number | null>(null);
-  const videoReady = Boolean(result.strokes?.length) && canMakeVideo();
+  // Always offered: strokes redraw themselves; without them the final picture is revealed.
+  const videoReady = true;
 
   const handleVideo = async () => {
-    if (!result.strokes?.length || videoProgress !== null) return;
+    if (videoProgress !== null) return;
     playTap();
+    if (!canMakeVideo()) {
+      toast.error(t("result.videoFailed"));
+      return;
+    }
     setVideoProgress(0);
     try {
       const { blob, extension } = await makeReplayVideo({
-        strokes: result.strokes,
+        strokes: result.strokes || [],
+        imageData: result.imageData,
         aspect: result.strokeAspect || 0.75,
         word: result.word,
         emoji: result.wordEmoji || "",
