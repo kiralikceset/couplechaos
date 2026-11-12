@@ -394,11 +394,17 @@ export function getRandomWordFromFreeCategories(locale: Locale): string {
 }
 
 export function getDailyWord(locale: Locale): { word: string; category: WordCategory; emoji: string } {
-  // Date as seed → everyone gets the same word today.
+  // UTC date as seed → everyone (phone and server, any time zone) gets the same word today.
   const today = new Date();
-  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  const seed = today.getUTCFullYear() * 10000 + (today.getUTCMonth() + 1) * 100 + today.getUTCDate();
   const word = EVERY_WORD[seed % EVERY_WORD.length];
   return { word: localized(word, locale), category: "mixed", emoji: word.emoji };
+}
+
+/** Milliseconds until the daily word changes (next UTC midnight). */
+export function msUntilNextDailyWord(now = new Date()): number {
+  const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  return Math.max(0, next - now.getTime());
 }
 
 /** Finds the reference emoji for a word in any language ("" if unknown). */

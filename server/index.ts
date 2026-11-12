@@ -424,9 +424,9 @@ interface BoardEntry {
 const BOARD_FILE = path.join(process.env.DATA_DIR || path.join(process.cwd(), ".data"), "leaderboard.json");
 let board: { day: string; entries: BoardEntry[] } = { day: "", entries: [] };
 
-/** Same calendar as getDailyWord (server-local date). */
+/** Same calendar as getDailyWord (UTC date). */
 function dayKey(date = new Date()): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return date.toISOString().slice(0, 10);
 }
 
 function currentBoard(): typeof board {

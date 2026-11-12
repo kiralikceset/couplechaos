@@ -1,26 +1,18 @@
 /**
- * DESIGN: Electric Pulse - Home Screen
- * Professional home with game mode selection, streak display, and game history
- * This is the main hub - feels like a premium gaming app
- * Bottom: game history, Top: streak/profile, Middle: game modes
+ * Home — a sketchbook page.
+ * One big pink card for the main game (its doodle draws itself once on load),
+ * two smaller tiles for the other modes, and a dashed "notebook" card for the
+ * daily word with its letter boxes, time left and the leaderboard.
  */
 
-import { useState, useEffect } from "react";
-import { m as motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { playTap } from "@/lib/sounds";
 import { getDailyChallenge, getStreakData } from "@/lib/retention";
 import { arePremiumFeaturesUnlocked, isBillingEnabled } from "@/lib/premium";
-
-interface GameHistoryItem {
-  id: string;
-  mode: string;
-  partner: string;
-  word: string;
-  score: number;
-  date: string;
-  imageData?: string;
-}
+import { getProfile } from "@/lib/gameData";
+import { getDailyWord, msUntilNextDailyWord } from "@/lib/wordPool";
+import { getLocale } from "@/lib/i18n";
 
 interface Props {
   onPlayClassic: () => void;
@@ -34,6 +26,43 @@ interface Props {
   partnerName: string | null;
 }
 
+/** Pen-stroke doodles (white lines, drawn like the game's own canvas). */
+function HeartDoodle() {
+  return (
+    <svg viewBox="0 0 160 120" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="cc-draw w-full h-full">
+      <path pathLength={1} strokeWidth={5} d="M80 104 C 40 78, 14 56, 22 32 C 30 10, 62 10, 76 34 C 88 10, 124 6, 136 30 C 146 54, 116 80, 80 104 Z" />
+      <path pathLength={1} strokeWidth={4} className="cc-draw-2" d="M118 18 l 22 -12 M130 30 l 20 -4 M110 8 l 6 -6" />
+      <path pathLength={1} strokeWidth={3.5} className="cc-draw-3" d="M44 44 q 6 -12 18 -10" />
+    </svg>
+  );
+}
+
+function CanvasDoodle() {
+  return (
+    <svg viewBox="0 0 80 56" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+      <path strokeWidth={4} d="M6 44 C 20 10, 34 10, 40 30 S 62 50, 74 12" />
+      <path strokeWidth={4} opacity={0.55} d="M6 16 C 22 46, 40 48, 48 24 S 66 8, 74 40" />
+    </svg>
+  );
+}
+
+function BotDoodle() {
+  return (
+    <svg viewBox="0 0 64 56" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+      <rect x="10" y="16" width="44" height="32" rx="10" strokeWidth={4} />
+      <path strokeWidth={4} d="M32 16 V 6 M28 6 h 8" />
+      <circle cx="24" cy="31" r="3.5" fill="currentColor" stroke="none" />
+      <circle cx="40" cy="31" r="3.5" fill="currentColor" stroke="none" />
+      <path strokeWidth={3.5} d="M25 40 q 7 5 14 0" />
+    </svg>
+  );
+}
+
+function timeLeft(ms: number, template: string): string {
+  const minutes = Math.floor(ms / 60_000);
+  return template.replace("{h}", String(Math.floor(minutes / 60))).replace("{m}", String(minutes % 60));
+}
+
 export default function HomeScreen({
   onPlayClassic,
   onPlayCoDraw,
@@ -43,205 +72,139 @@ export default function HomeScreen({
   onProfile,
   onPremium,
   onAchievements,
-  partnerName,
 }: Props) {
   const { t } = useLocale();
   const [streak, setStreak] = useState(0);
-  const [history, setHistory] = useState<GameHistoryItem[]>([]);
   const [dailyCompleted, setDailyCompleted] = useState(false);
+  const [msLeft, setMsLeft] = useState(() => msUntilNextDailyWord());
   const premium = arePremiumFeaturesUnlocked();
   const billingEnabled = isBillingEnabled();
+  const profile = getProfile();
+  const name = profile.username.trim();
+  const dailyWord = getDailyWord(getLocale()).word;
+  // One box per letter; a space between words stays a gap.
+  const dailyShape = Array.from(dailyWord);
 
   useEffect(() => {
-    const data = getStreakData();
-    setStreak(data.currentStreak);
+    setStreak(getStreakData().currentStreak);
     setDailyCompleted(Boolean(getDailyChallenge()?.completed));
-
-    // Load game history from localStorage
-    try {
-      const saved = localStorage.getItem("cc_game_history");
-      const parsed = saved ? JSON.parse(saved) : [];
-      if (Array.isArray(parsed)) setHistory(parsed.slice(0, 20));
-    } catch { /* Storage is optional; the game remains playable. */ }
+    const timer = window.setInterval(() => setMsLeft(msUntilNextDailyWord()), 30_000);
+    return () => window.clearInterval(timer);
   }, []);
 
-  const gameModes = [
-    {
-      id: "classic",
-      title: t("home.classic"),
-      desc: t("home.classicDesc"),
-      icon: "🎨",
-      color: "#FF1A6C",
-      image: "/images/onboarding-couple.webp",
-      onClick: onPlayClassic,
-      premium: false,
-      badge: "",
-    },
-    {
-      id: "co-draw",
-      title: t("home.coDraw"),
-      desc: t("home.coDrawDesc"),
-      icon: "🖌️",
-      color: "#8B5CF6",
-      image: "/images/co-draw.svg",
-      onClick: onPlayCoDraw,
-      premium: false,
-    },
-    {
-      id: "solo",
-      title: t("home.solo"),
-      desc: t("home.soloDesc"),
-      icon: "🤖",
-      color: "#FBBF24",
-      image: "",
-      onClick: onPlaySolo,
-      premium: false,
-    },
-  ];
+  const tap = (action: () => void) => () => { playTap(); action(); };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[#050505] overflow-hidden">
-      {/* Header */}
-      <header className="relative z-10 pt-12 px-5 pb-3 flex items-center justify-between">
-        {/* Streak */}
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => { playTap(); onAchievements(); }}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08]"
+    <div className="cc-sketchbook relative flex flex-col h-[100dvh] w-full bg-[#07060A] overflow-hidden text-[#F7F3FF]">
+      <header className="relative z-10 pt-11 px-5 flex items-center justify-between">
+        <button
+          onClick={tap(onAchievements)}
+          className="flex items-center gap-1.5 h-10 pl-3 pr-3.5 rounded-full bg-[#17141D] text-sm font-semibold"
         >
-          <span className="text-base">🔥</span>
-          <span className="text-white font-bold text-sm">{streak}</span>
-          <span className="text-white/30 text-xs">{t("home.streak")}</span>
-        </motion.button>
-
-        {/* Right side buttons */}
+          <span aria-hidden>🔥</span>
+          <span className="tabular-nums">{streak}</span>
+          <span className="text-[#8C8798] font-normal">{t("home.streak")}</span>
+        </button>
         <div className="flex items-center gap-2">
           {billingEnabled && !premium && (
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => { playTap(); onPremium(); }}
-              className="px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/30 flex items-center gap-1.5"
-            >
-              <span className="text-xs">👑</span>
-              <span className="text-amber-400 text-xs font-bold">PRO</span>
-            </motion.button>
+            <button onClick={tap(onPremium)} className="h-10 px-3 rounded-full bg-[#17141D] text-amber-300 text-xs font-bold">
+              👑 Pro
+            </button>
           )}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => { playTap(); onProfile(); }}
+          <button
+            onClick={tap(onProfile)}
             aria-label={t("profile.title")}
-            className="size-10 rounded-full bg-white/[0.06] border border-white/[0.1] flex items-center justify-center"
+            className="size-10 rounded-full bg-[#17141D] flex items-center justify-center text-xl"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-white/60">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </motion.button>
+            {profile.avatar || "😎"}
+          </button>
         </div>
       </header>
 
-      {/* Main content - scrollable */}
-      <div className="flex-1 overflow-y-auto px-5 pb-6 scrollbar-hide">
-        {/* Welcome section */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 mt-2"
+      <main className="relative z-10 flex-1 overflow-y-auto px-5 pt-6 pb-8">
+        <h1 className="font-display text-[2rem] leading-[1.05] font-bold tracking-[-0.02em]">
+          {name ? t("home.hello").replace("{name}", name) : t("home.helloAnon")}
+        </h1>
+        <p className="mt-1.5 text-[#8C8798] text-base">{t("home.whatToDraw")}</p>
+
+        {/* Main game */}
+        <button
+          onClick={tap(onPlayClassic)}
+          className="cc-press mt-6 w-full text-left relative overflow-hidden rounded-[28px] bg-[#FF1A6C] text-white p-5 pb-5 min-h-[208px] flex flex-col justify-end"
         >
-          <h1 className="font-display text-2xl font-black text-white mb-1">
-            {t("home.welcome")} 👋
-          </h1>
-          <p className="text-white/35 text-sm">
-            {t("home.whatToPlay")}
-          </p>
-        </motion.div>
+          <div className="absolute right-3 top-3 w-[54%] max-w-[210px] aspect-[4/3] text-white/95" aria-hidden>
+            <HeartDoodle />
+          </div>
+          <h2 className="relative font-display text-[1.75rem] leading-none font-bold tracking-[-0.02em]">{t("home.classic")}</h2>
+          <div className="relative mt-2 flex items-end justify-between gap-3">
+            <p className="text-white/85 text-sm leading-snug max-w-[60%]">{t("home.classicDesc")}</p>
+            <span className="flex-shrink-0 inline-flex items-center gap-2 h-11 pl-4 pr-3 rounded-full bg-[#07060A] text-white text-sm font-bold">
+              {t("home.play")}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M7 4.5v15l13-7.5z" /></svg>
+            </span>
+          </div>
+        </button>
 
-        {/* Game Modes Grid */}
-        <div className="space-y-3 mb-8">
-          {gameModes.map((mode, idx) => (
-            <motion.button
-              key={mode.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.16 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => {
-                playTap();
-                if (mode.premium && !premium) {
-                  onPremium();
-                } else {
-                  mode.onClick();
-                }
-              }}
-              className="w-full relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] active:bg-white/[0.06] transition-colors"
-            >
-              <div className="flex items-center gap-4 p-4">
-                {/* Mode image thumbnail */}
-                <div className="relative size-16 rounded-xl overflow-hidden flex-shrink-0 bg-gradient-to-br from-amber-400/25 to-primary/15">
-                  {mode.image && <img src={mode.image} alt="" className="w-full h-full object-cover" />}
-                  <div className="absolute inset-0 bg-black/20" />
-                  <div className="absolute inset-0 flex items-center justify-center text-2xl">
-                    {mode.icon}
-                  </div>
-                </div>
-
-                {/* Mode info */}
-                <div className="flex-1 text-left">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-display text-base font-bold text-white">{mode.title}</h3>
-                    {mode.badge && (
-                      <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full bg-secondary/20 text-secondary font-bold border border-secondary/30">{mode.badge}</span>
-                    )}
-                    {mode.premium && !premium && (
-                      <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold border border-amber-500/30">PRO</span>
-                    )}
-                  </div>
-                  <p className="text-white/35 text-xs mt-0.5 line-clamp-2">{mode.desc}</p>
-                </div>
-
-                {/* Arrow */}
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-white/20 flex-shrink-0">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </div>
-
-              {/* Subtle glow accent */}
-              <div
-                className="absolute top-0 left-0 w-1 h-full opacity-60"
-                style={{ backgroundColor: mode.color }}
-              />
-            </motion.button>
-          ))}
+        {/* Other modes */}
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <button
+            onClick={tap(onPlayCoDraw)}
+            className="cc-press text-left rounded-[24px] bg-[#8B5CF6] text-white p-4 min-h-[156px] flex flex-col justify-between"
+          >
+            <div className="w-16 h-11 text-white" aria-hidden><CanvasDoodle /></div>
+            <div>
+              <h3 className="font-display text-lg font-bold leading-tight">{t("home.coDraw")}</h3>
+              <p className="mt-1 text-white/80 text-xs leading-snug">{t("home.coDrawShort")}</p>
+            </div>
+          </button>
+          <button
+            onClick={tap(onPlaySolo)}
+            className="cc-press text-left rounded-[24px] bg-[#FBBF24] text-[#07060A] p-4 min-h-[156px] flex flex-col justify-between"
+          >
+            <div className="w-12 h-11" aria-hidden><BotDoodle /></div>
+            <div>
+              <h3 className="font-display text-lg font-bold leading-tight">{t("home.solo")}</h3>
+              <p className="mt-1 text-[#07060A]/70 text-xs leading-snug">{t("home.soloShort")}</p>
+            </div>
+          </button>
         </div>
 
-        {/* Daily Challenge Banner */}
-        <motion.button
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.16 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => { playTap(); onDailyChallenge(); }}
-          className="w-full mb-2 p-4 rounded-2xl bg-gradient-to-r from-primary/10 via-purple-500/10 to-primary/10 border border-primary/20 relative overflow-hidden text-left"
-        >
-          <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full blur-2xl" />
-          <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-primary/20 flex items-center justify-center text-lg">
-              🎯
+        {/* Daily word: a notebook page */}
+        <div className="mt-3 rounded-[24px] border-2 border-dashed border-[#2A2533] p-4">
+          <button onClick={tap(onDailyChallenge)} className="w-full text-left">
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="font-display text-lg font-bold">{t("home.dailyTitle")}</h3>
+              <span className="text-[#8C8798] text-xs tabular-nums whitespace-nowrap">
+                {dailyCompleted ? `✓ ${t("home.dailyPlayed")}` : timeLeft(msLeft, t("home.dailyLeft"))}
+              </span>
             </div>
-            <div className="flex-1">
-              <h4 className="text-white font-bold text-sm">{t("home.dailyChallenge")}</h4>
-              <p className="text-white/30 text-xs">{t("home.dailyChallengeDesc")}</p>
+            <div className="mt-3 flex flex-wrap gap-1.5" aria-label={t("home.dailyLetters").replace("{n}", String(dailyWord.replace(/\s/g, "").length))}>
+              {dailyShape.map((char, index) =>
+                char === " " ? (
+                  <span key={index} className="w-3" />
+                ) : (
+                  <span key={index} className="w-7 h-8 rounded-[6px] bg-[#17141D] border-b-[3px] border-[#FBBF24]" />
+                ),
+              )}
             </div>
-            {dailyCompleted ? <span className="text-green-400 text-xs font-bold">✓ {t("home.dailyDone")}</span> : <span className="text-white/30 text-lg">›</span>}
+            <p className="mt-3 text-[#8C8798] text-xs">{t("home.dailyLetters").replace("{n}", String(dailyWord.replace(/\s/g, "").length))}</p>
+          </button>
+          <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
+            <button
+              onClick={tap(onDailyChallenge)}
+              className="cc-press h-12 rounded-2xl bg-[#F7F3FF] text-[#07060A] text-sm font-bold"
+            >
+              {t("home.play")}
+            </button>
+            <button
+              onClick={tap(onLeaderboard)}
+              className="cc-press h-12 px-4 rounded-2xl bg-[#17141D] text-sm font-semibold"
+            >
+              🏆 {t("home.board")}
+            </button>
           </div>
-        </motion.button>
-        <button
-          onClick={() => { playTap(); onLeaderboard(); }}
-          className="w-full mb-8 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] text-white/70 text-sm font-semibold active:bg-white/[0.06]"
-        >
-          {t("board.button")}
-        </button>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
