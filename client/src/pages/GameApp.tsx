@@ -54,6 +54,7 @@ import {
 import { canPlayFree, incrementGamesToday, isBillingEnabled } from "@/lib/premium";
 import { getLocale } from "@/lib/i18n";
 import { findWordEmoji, getDailyWord } from "@/lib/wordPool";
+import { getRoast } from "@/lib/aiRoast";
 import { earnTokens, TOKEN_REWARD_CORRECT, TOKEN_REWARD_ROUND } from "@/lib/tokens";
 import OnboardingScreen from "@/components/screens/OnboardingScreen";
 import ConnectScreen from "@/components/screens/ConnectScreen";
@@ -451,7 +452,8 @@ export default function GameApp({
       const nextResult = {
         word: resultWord || word || "Çizim",
         imageData: imageData || "",
-        aiComment: aiComment || "Çizim tamamlandı.",
+        // No AI comment for this language → a funny offline one in this phone's language.
+        aiComment: aiComment || getRoast(numericScore, resultWord || word || undefined),
         aiScore: numericScore,
         outcome,
         opponentScore: Number.isFinite(opponentScore)

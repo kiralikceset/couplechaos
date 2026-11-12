@@ -14,6 +14,10 @@ interface RoastTemplate {
 const roastsByScore: Record<string, RoastTemplate> = {
   terrible: { // 0-20
     tr: [
+      "Jüri olarak istifa ediyorum. Bu çizim beni sanattan soğuttu 🎭",
+      "Bu bir çizim değil, mahkemede delil olarak kullanılacak bir olay 🧑‍⚖️",
+      "Bunu gören müze kendi kendini yaktı 🔥",
+      "Tuval avukat istedi, haklı da 📜",
       "Bu... bu ne? Buzdolabına asılacak seviye değil bu 😭",
       "Picasso bile mezarında döndü şu an 💀",
       "3 yaşındaki yeğenim daha iyi çizer, üzgünüm 🫣",
@@ -26,6 +30,10 @@ const roastsByScore: Record<string, RoastTemplate> = {
       "Çizim yeteneklerin... ilginç bir yerde 📉"
     ],
     en: [
+      "As a judge, I resign. This drawing ended my love for art 🎭",
+      "This isn't a drawing, it's evidence for a court case 🧑‍⚖️",
+      "A museum saw this and set itself on fire 🔥",
+      "The canvas asked for a lawyer, and honestly, fair 📜",
       "What... what is this? This isn't fridge-worthy 😭",
       "Even Picasso is rolling in his grave right now 💀",
       "My 3-year-old nephew draws better, sorry 🫣",
@@ -38,6 +46,9 @@ const roastsByScore: Record<string, RoastTemplate> = {
       "Your drawing skills are... in an interesting place 📉"
     ],
     de: [
+      "Als Juror trete ich zurück. Diese Zeichnung hat mir die Kunst verleidet 🎭",
+      "Das ist keine Zeichnung, das ist ein Beweisstück vor Gericht 🧑‍⚖️",
+      "Die Leinwand hat einen Anwalt verlangt. Verständlich 📜",
       "Was... was ist das? Das gehört nicht an den Kühlschrank 😭",
       "Selbst Picasso dreht sich gerade im Grab um 💀",
       "Mein 3-jähriger Neffe zeichnet besser, sorry 🫣",
@@ -50,6 +61,9 @@ const roastsByScore: Record<string, RoastTemplate> = {
       "Deine Zeichenkünste sind... an einem interessanten Ort 📉"
     ],
     es: [
+      "Como juez, dimito. Este dibujo acabó con mi amor por el arte 🎭",
+      "Esto no es un dibujo, es una prueba en un juicio 🧑‍⚖️",
+      "El lienzo pidió un abogado, y con razón 📜",
       "¿Qué... qué es esto? Esto no merece estar en la nevera 😭",
       "Hasta Picasso se está revolcando en su tumba 💀",
       "Mi sobrino de 3 años dibuja mejor, lo siento 🫣",
@@ -64,6 +78,10 @@ const roastsByScore: Record<string, RoastTemplate> = {
   },
   bad: { // 21-40
     tr: [
+      "Bu çizimi gören bir patates bile kendini daha yakışıklı buldu 🥔",
+      "İpucu veren de çizen de bu turdan sonra terapiye gitmeli 🛋️",
+      "Sanki karanlıkta, eldivenle, deprem sırasında çizilmiş 🧤",
+      "Bunu duvara assan ev değeri düşer 🏚️",
       "Hmm... eğer gözlerimi kısarsam ve kafamı eğersem... hala anlamıyorum 🤔",
       "E for effort diyelim, tamam mı? 😅",
       "Soyut sanat mı yapıyorsun yoksa gerçekten mi denedin? 🎨",
@@ -76,6 +94,10 @@ const roastsByScore: Record<string, RoastTemplate> = {
       "Bu çizimi NFT olarak satarsan belki 1 lira eder 💰"
     ],
     en: [
+      "Even a potato saw this and felt prettier 🥔",
+      "Both the hint giver and the drawer need therapy after this round 🛋️",
+      "Drawn in the dark, with oven mitts, during an earthquake 🧤",
+      "Hang this on a wall and the house loses value 🏚️",
       "Hmm... if I squint and tilt my head... still no idea 🤔",
       "Let's just say E for effort, okay? 😅",
       "Are you doing abstract art or actually trying? 🎨",
@@ -88,6 +110,9 @@ const roastsByScore: Record<string, RoastTemplate> = {
       "If you sell this as an NFT, maybe $1 💰"
     ],
     de: [
+      "Sogar eine Kartoffel fühlte sich danach hübscher 🥔",
+      "Im Dunkeln gezeichnet, mit Ofenhandschuhen, bei einem Erdbeben 🧤",
+      "Häng das auf und der Hauswert sinkt 🏚️",
       "Hmm... wenn ich die Augen zusammenkneife... immer noch keine Ahnung 🤔",
       "Sagen wir einfach E für Einsatz, okay? 😅",
       "Machst du abstrakte Kunst oder versuchst du es wirklich? 🎨",
@@ -100,6 +125,9 @@ const roastsByScore: Record<string, RoastTemplate> = {
       "Als NFT vielleicht 1€ wert 💰"
     ],
     es: [
+      "Hasta una patata se sintió más guapa al ver esto 🥔",
+      "Dibujado a oscuras, con guantes de cocina, durante un terremoto 🧤",
+      "Cuelga esto en la pared y la casa pierde valor 🏚️",
       "Hmm... si entrecierro los ojos... sigo sin entender 🤔",
       "Digamos que E de esfuerzo, ¿vale? 😅",
       "¿Estás haciendo arte abstracto o de verdad intentas? 🎨",
@@ -114,6 +142,9 @@ const roastsByScore: Record<string, RoastTemplate> = {
   },
   okay: { // 41-60
     tr: [
+      "Ne iyi ne kötü. Pazartesi sabahı gibi bir çizim 🫤",
+      "Belli belirsiz tanıdık. Rüyada görülen kuzen gibi 💭",
+      "Jüri kararsız. Biri ağladı, biri güldü, biri uyudu 😴",
       "Fena değil! Ama harika da değil 😏",
       "Ortalama bir çizim — tıpkı ilişkiniz gibi 💀 (şaka şaka)",
       "Bunu tanıyabiliyorum! İlerleme var 📈",
@@ -126,6 +157,9 @@ const roastsByScore: Record<string, RoastTemplate> = {
       "Orta düzey kaos — kabul edilebilir 🌪️"
     ],
     en: [
+      "Not good, not bad. A Monday-morning kind of drawing 🫤",
+      "Vaguely familiar, like a cousin you saw in a dream 💭",
+      "The jury is split: one cried, one laughed, one fell asleep 😴",
       "Not bad! But not great either 😏",
       "Average drawing — just like your relationship 💀 (jk jk)",
       "I can recognize this! Progress! 📈",
@@ -138,6 +172,8 @@ const roastsByScore: Record<string, RoastTemplate> = {
       "Medium chaos — acceptable 🌪️"
     ],
     de: [
+      "Nicht gut, nicht schlecht. Eine Montagmorgen-Zeichnung 🫤",
+      "Die Jury ist gespalten: einer weinte, einer lachte, einer schlief 😴",
       "Nicht schlecht! Aber auch nicht toll 😏",
       "Durchschnittliche Zeichnung — wie eure Beziehung 💀 (Spaß)",
       "Ich kann das erkennen! Fortschritt! 📈",
@@ -150,6 +186,8 @@ const roastsByScore: Record<string, RoastTemplate> = {
       "Mittleres Chaos — akzeptabel 🌪️"
     ],
     es: [
+      "Ni bien ni mal. Un dibujo de lunes por la mañana 🫤",
+      "El jurado está dividido: uno lloró, uno rió, uno se durmió 😴",
       "¡No está mal! Pero tampoco genial 😏",
       "Dibujo promedio — como su relación 💀 (es broma)",
       "¡Puedo reconocer esto! ¡Progreso! 📈",
@@ -164,6 +202,9 @@ const roastsByScore: Record<string, RoastTemplate> = {
   },
   good: { // 61-80
     tr: [
+      "Kabul ediyorum, iyi. Ama bunu söylemek bana fiziksel acı veriyor 😤",
+      "Sergide asılır. Tuvaletin yanındaki duvarda ama olsun 🖼️",
+      "Fena değil. Annen buzdolabına asardı, ben asmam 🧲",
       "Ooo bu iyi! Partnerin şanslı 👀",
       "Bak bak bak, yetenek var burada! 🌟",
       "Bu çizim gerçekten güzel — şaşırdım açıkçası 😮",
@@ -176,6 +217,9 @@ const roastsByScore: Record<string, RoastTemplate> = {
       "Partnerin gurur duyuyor olmalı 💕"
     ],
     en: [
+      "Fine, it's good. Saying that physically hurts me 😤",
+      "It would hang in a gallery. Next to the restroom, but still 🖼️",
+      "Not bad. Your mom would put it on the fridge. I wouldn't 🧲",
       "Ooo this is good! Your partner is lucky 👀",
       "Look at that, there's talent here! 🌟",
       "This drawing is actually nice — I'm surprised 😮",
@@ -188,6 +232,8 @@ const roastsByScore: Record<string, RoastTemplate> = {
       "Your partner must be proud 💕"
     ],
     de: [
+      "Na gut, es ist gut. Das zu sagen tut mir körperlich weh 😤",
+      "Würde in einer Galerie hängen. Neben der Toilette, aber immerhin 🖼️",
       "Ooo das ist gut! Dein Partner hat Glück 👀",
       "Schau mal, da ist Talent! 🌟",
       "Diese Zeichnung ist echt schön — ich bin überrascht 😮",
@@ -200,6 +246,8 @@ const roastsByScore: Record<string, RoastTemplate> = {
       "Dein Partner muss stolz sein 💕"
     ],
     es: [
+      "Vale, está bien. Decirlo me duele físicamente 😤",
+      "Colgaría en una galería. Junto al baño, pero cuenta 🖼️",
       "¡Ooo esto está bien! Tu pareja tiene suerte 👀",
       "¡Mira, hay talento aquí! 🌟",
       "Este dibujo es bonito — estoy sorprendido 😮",
@@ -214,6 +262,9 @@ const roastsByScore: Record<string, RoastTemplate> = {
   },
   amazing: { // 81-100
     tr: [
+      "Bu kadar iyi çizmek şüpheli. Hile mi yaptınız, yoksa sevgi mi bu? 🕵️",
+      "Jüri ayakta. Biri bayıldı, ambulans yolda 🚑",
+      "Bu çizimden sonra emekli oluyorum, buradan dönüş yok 🏆",
       "SANATÇI! Bu ne güzellik! 🎨✨",
       "Dur dur dur... bu gerçekten SEN mi çizdin?! 🤯",
       "Partnerin seni hak etmiyor bu yetenekle 💀😂",
@@ -226,6 +277,9 @@ const roastsByScore: Record<string, RoastTemplate> = {
       "Partnerin şu an aşık oluyor tekrar 💘"
     ],
     en: [
+      "Drawing this well is suspicious. Cheating, or is this love? 🕵️",
+      "The jury is on its feet. One fainted, ambulance is on the way 🚑",
+      "I'm retiring after this one. Nothing tops it 🏆",
       "ARTIST! What beauty! 🎨✨",
       "Wait wait wait... YOU drew this?! 🤯",
       "Your partner doesn't deserve you with this talent 💀😂",
@@ -238,6 +292,8 @@ const roastsByScore: Record<string, RoastTemplate> = {
       "Your partner is falling in love again 💘"
     ],
     de: [
+      "So gut zu zeichnen ist verdächtig. Geschummelt oder Liebe? 🕵️",
+      "Die Jury steht. Einer ist ohnmächtig, der Krankenwagen kommt 🚑",
       "KÜNSTLER! Was für eine Schönheit! 🎨✨",
       "Warte... DU hast das gezeichnet?! 🤯",
       "Dein Partner verdient dich nicht mit diesem Talent 💀😂",
@@ -250,6 +306,8 @@ const roastsByScore: Record<string, RoastTemplate> = {
       "Dein Partner verliebt sich gerade neu 💘"
     ],
     es: [
+      "Dibujar tan bien es sospechoso. ¿Trampa o es amor? 🕵️",
+      "El jurado de pie. Uno se desmayó, la ambulancia viene 🚑",
       "¡ARTISTA! ¡Qué belleza! 🎨✨",
       "Espera... ¿TÚ dibujaste esto?! 🤯",
       "Tu pareja no te merece con este talento 💀😂",

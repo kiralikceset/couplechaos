@@ -82,7 +82,6 @@ export default function HomeScreen({
       image: "/images/co-draw.svg",
       onClick: onPlayCoDraw,
       premium: false,
-      badge: "NEW",
     },
   ];
 
@@ -219,70 +218,10 @@ export default function HomeScreen({
               <h4 className="text-white font-bold text-sm">{t("home.dailyChallenge")}</h4>
               <p className="text-white/30 text-xs">{t("home.dailyChallengeDesc")}</p>
             </div>
-            <motion.div
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="text-primary text-xs font-bold"
-            >
-              {dailyCompleted ? `✓ ${t("home.dailyDone")}` : "NEW"}
-            </motion.div>
+            {dailyCompleted ? <span className="text-green-400 text-xs font-bold">✓ {t("home.dailyDone")}</span> : <span className="text-white/30 text-lg">›</span>}
           </div>
         </motion.button>
 
-        {/* Game History */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-display text-base font-bold text-white">{t("home.history")}</h3>
-            {history.length > 0 && (
-              <span className="text-white/20 text-xs">{history.length} {t("home.games")}</span>
-            )}
-          </div>
-
-          {history.length === 0 ? (
-            <div className="py-8 text-center">
-              <div className="text-3xl mb-3">🎮</div>
-              <p className="text-white/25 text-sm">{t("home.noHistory")}</p>
-              <p className="text-white/15 text-xs mt-1">{t("home.noHistoryDesc")}</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {history.slice(0, 5).map((item, idx) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.16 }}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.05]"
-                >
-                  {/* Mini drawing preview */}
-                  <div className="size-10 rounded-lg bg-white/[0.05] flex items-center justify-center overflow-hidden flex-shrink-0">
-                    {item.imageData ? (
-                      <img src={item.imageData} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-lg">🎨</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-white text-sm font-medium truncate">{item.word}</span>
-                      <span className="text-white/15 text-[0.6rem]">•</span>
-                      <span className="text-white/25 text-xs">{item.partner}</span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-white/20 text-[0.6rem]">{item.mode}</span>
-                      <span className="text-white/15 text-[0.6rem]">{item.date}</span>
-                    </div>
-                  </div>
-                  {/* Score */}
-                  <div className="flex items-center gap-1">
-                    <span className="text-amber-400 text-sm font-bold">{item.score}</span>
-                    <span className="text-amber-400/50 text-[0.6rem]">/100</span>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

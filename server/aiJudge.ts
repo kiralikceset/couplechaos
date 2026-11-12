@@ -24,13 +24,19 @@ export interface JudgeInput {
   imageData: string;
   word: string;
   locale: Locale;
+  /** Every player's app language: each one gets the comment in their own language. */
+  locales?: Locale[];
   mode?: "classic" | "co-draw";
 }
 
 export interface JudgeResult {
   score: number;
+  /** Comment / guess in the first language. */
   comment: string;
   guess?: string;
+  /** Per-language comment / guess (always contains the first language). */
+  comments: Partial<Record<Locale, string>>;
+  guesses: Partial<Record<Locale, string>>;
   source: "ai";
 }
 
@@ -79,25 +85,42 @@ function underDailyLimit(): boolean {
   return true;
 }
 
-function buildPrompt(word: string, locale: Locale, mode: "classic" | "co-draw" = "classic"): string {
-  const language = LANGUAGE_NAMES[locale];
+function languagesOf(locale: Locale, locales?: Locale[]): Locale[] {
+  const list = [locale, ...(locales || [])].filter((value): value is Locale => value in LANGUAGE_NAMES);
+  return Array.from(new Set(list));
+}
+
+function buildPrompt(word: string, locale: Locale, mode: "classic" | "co-draw" = "classic", locales?: Locale[]): string {
+  const languages = languagesOf(locale, locales);
   const setup = mode === "co-draw"
-    ? "Both partners knew the word and drew it TOGETHER on one shared canvas at the same time, each from their own phone, for about 20 seconds, without being able to talk. Their strokes overlap and fight each other. In your roast, tease how well (or badly) they cooperated."
-    : "The drawer never saw the word. Their partner described it with short text hints, then the drawer had only about 10 seconds to draw it on a phone with a finger.";
+    ? "Both partners knew the word and drew it TOGETHER on one shared canvas at the same time, each from their own phone, for about 20 seconds, without being able to talk. Their strokes overlap and fight each other."
+    : "The drawer never saw the word. Their partner described it with short text hints, then the drawer had about 30 seconds to draw it on a phone with a finger.";
+  const output = languages.length === 1
+    ? [
+        `Write "guess" and "comment" in ${LANGUAGE_NAMES[languages[0]]}.`,
+        "Reply with ONLY this JSON, nothing else:",
+        "{\"score\": <number>, \"guess\": \"<what it looks like>\", \"comment\": \"<verdict>\"}",
+      ]
+    : [
+        `The two players use different app languages. Write "guess" and "comment" once per language code: ${languages.map((code) => `${code} = ${LANGUAGE_NAMES[code]}`).join(", ")}. Same joke, natural in each language (not a word-for-word translation).`,
+        "Reply with ONLY this JSON, nothing else:",
+        `{"score": <number>, "guess": {${languages.map((code) => `"${code}": "..."`).join(", ")}}, "comment": {${languages.map((code) => `"${code}": "..."`).join(", ")}}}`,
+      ];
   return [
     "You are the judge of \"Couple Chaos\", a party drawing game for couples and friends.",
+    "Your persona: a dramatic, snobbish art critic who takes this terrible phone doodle FAR too seriously, like a pretentious gallery judge or a disappointed talent-show juror.",
     `The secret word was: "${word}".`,
     setup,
     "Look at the drawing (light strokes on a dark background).",
     "",
     "Your job:",
-    "1. Decide what the drawing ACTUALLY looks like to you. Be absurd and specific (e.g. \"a depressed potato riding a broom\").",
-    "2. Write a short, savage-but-loving roast that makes both players laugh. Tease the drawing and the teamwork, never the people's looks, body, identity or intelligence. No sexual content, no profanity.",
-    "3. Give a score from 1 to 100 for how recognizable the secret word is in the drawing. An empty canvas is 1-3.",
+    "1. \"guess\": what the drawing ACTUALLY looks like. Be absurd and oddly specific, like \"a tax inspector melting in a sauna\" or \"a potato that just got dumped\". Never just repeat the secret word, even for a good drawing — find the funny detail.",
+    "2. \"comment\": a short, judgmental, over-the-top verdict that makes both players laugh. Use absurd comparisons, fake-serious drama and exaggeration (e.g. \"I have seen better art on a foggy bus window\", \"this horse filed for divorce\"). Mock the drawing, the teamwork and the hints — never the people's looks, body, identity or intelligence. No sexual content, no profanity, no slurs.",
+    "   Even a great drawing gets a backhanded compliment, never plain praise.",
+    "3. \"score\": 1 to 100 for how recognizable the secret word is. Be honest here even though the comment is a joke. An empty canvas is 1-3.",
     "",
-    `Write the comment and guess in ${language}. Comment: max 2 sentences, max 200 characters, 1-2 emoji.`,
-    "Reply with ONLY this JSON, nothing else:",
-    "{\"score\": <number>, \"guess\": \"<what it looks like>\", \"comment\": \"<roast>\"}",
+    "Comment: max 2 short sentences, max 180 characters, 1-2 emoji. Guess: max 8 words.",
+    ...output,
   ].join("\n");
 }
 
@@ -106,19 +129,37 @@ function splitDataUrl(dataUrl: string): { mediaType: string; base64: string } | 
   return match ? { mediaType: match[1], base64: match[2] } : null;
 }
 
-function parseJudgeJson(text: string): JudgeResult | null {
+function pickText(value: unknown, languages: Locale[], max: number): Partial<Record<Locale, string>> {
+  const out: Partial<Record<Locale, string>> = {};
+  if (typeof value === "string" && value.trim()) {
+    out[languages[0]] = value.trim().slice(0, max);
+  } else if (value && typeof value === "object") {
+    for (const code of languages) {
+      const text = (value as Record<string, unknown>)[code];
+      if (typeof text === "string" && text.trim()) out[code] = text.trim().slice(0, max);
+    }
+  }
+  return out;
+}
+
+function parseJudgeJson(text: string, languages: Locale[] = ["tr"]): JudgeResult | null {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
   if (start < 0 || end <= start) return null;
   try {
     const parsed = JSON.parse(text.slice(start, end + 1)) as { score?: unknown; comment?: unknown; guess?: unknown };
     const score = Math.round(Number(parsed.score));
-    const comment = typeof parsed.comment === "string" ? parsed.comment.trim().slice(0, 300) : "";
+    const comments = pickText(parsed.comment, languages, 300);
+    const guesses = pickText(parsed.guess, languages, 80);
+    const comment = comments[languages[0]] || Object.values(comments)[0] || "";
     if (!Number.isFinite(score) || !comment) return null;
+    if (!comments[languages[0]]) comments[languages[0]] = comment;
     return {
       score: Math.max(1, Math.min(100, score)),
       comment,
-      guess: typeof parsed.guess === "string" ? parsed.guess.trim().slice(0, 80) : undefined,
+      guess: guesses[languages[0]] || Object.values(guesses)[0],
+      comments,
+      guesses,
       source: "ai",
     };
   } catch {
@@ -142,7 +183,7 @@ async function callAnthropic(input: JudgeInput, image: { mediaType: string; base
         role: "user",
         content: [
           { type: "image", source: { type: "base64", media_type: image.mediaType, data: image.base64 } },
-          { type: "text", text: buildPrompt(input.word, input.locale, input.mode) },
+          { type: "text", text: buildPrompt(input.word, input.locale, input.mode, input.locales) },
         ],
       }],
     }),
@@ -170,7 +211,7 @@ async function callOpenAICompatible(name: Exclude<ProviderName, "anthropic">, in
       messages: [{
         role: "user",
         content: [
-          { type: "text", text: buildPrompt(input.word, input.locale, input.mode) },
+          { type: "text", text: buildPrompt(input.word, input.locale, input.mode, input.locales) },
           { type: "image_url", image_url: isOpenAI ? { url: input.imageData, detail: "low" } : { url: input.imageData } },
         ],
       }],
@@ -198,7 +239,7 @@ export async function judgeDrawing(input: JudgeInput): Promise<JudgeResult | nul
     const text = selected === "anthropic"
       ? await callAnthropic(input, image, controller.signal)
       : await callOpenAICompatible(selected, input, controller.signal);
-    const result = parseJudgeJson(text);
+    const result = parseJudgeJson(text, languagesOf(input.locale, input.locales));
     if (!result) console.warn("[ai] unparseable answer:", text.slice(0, 200));
     return result;
   } catch (error) {

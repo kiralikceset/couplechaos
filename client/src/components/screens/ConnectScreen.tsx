@@ -28,6 +28,7 @@ interface Props {
 const CATEGORY_CHIPS = CATEGORIES.map(({ id, emoji }) => ({ id, emoji }));
 
 export default function ConnectScreen({ onBack, onProfile, onCategory, selectedCategory, mode: gameMode = "classic", onSelectCategory }: Props) {
+  const isDaily = selectedCategory === "daily_challenge" && gameMode === "classic";
   const { t } = useLocale();
   const [joinCode, setJoinCode] = useState("");
   const [mode, setMode] = useState<"choose" | "join">("choose");
@@ -138,17 +139,17 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="space-y-6"
+              className="space-y-5"
             >
-              <div className="mb-8">
+              <div>
                 <h2 className="font-display text-3xl font-black tracking-tight text-white mb-2">
                   {t("connect.title")}
                 </h2>
                 <p className="text-white/40 text-sm">
                   {t("connect.subtitle")}
                 </p>
-                <span className={`inline-flex items-center gap-1.5 mt-3 px-2.5 py-1 rounded-full text-[0.65rem] font-bold uppercase tracking-wider border ${gameMode === "co-draw" ? "bg-secondary/10 border-secondary/30 text-secondary" : "bg-primary/10 border-primary/30 text-primary"}`}>
-                  {gameMode === "co-draw" ? `🖌️ ${t("home.coDraw")}` : `🎨 ${t("home.classic")}`}
+                <span className={`inline-flex items-center gap-1.5 mt-3 px-2.5 py-1 rounded-full text-[0.65rem] font-bold uppercase tracking-wider border ${isDaily ? "bg-amber-400/10 border-amber-400/30 text-amber-300" : gameMode === "co-draw" ? "bg-secondary/10 border-secondary/30 text-secondary" : "bg-primary/10 border-primary/30 text-primary"}`}>
+                  {isDaily ? `📅 ${t("home.dailyChallenge")}` : gameMode === "co-draw" ? `🖌️ ${t("home.coDraw")}` : `🎨 ${t("home.classic")}`}
                 </span>
                 {transport !== "online" && transport !== "connecting" && (
                   <p className={`mt-3 text-xs font-medium ${transport === "offline" ? "text-red-400/70" : "text-amber-400/70"}`}>
@@ -158,7 +159,12 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
               </div>
 
               {/* Category — chosen right here, before creating the room */}
-              {gameMode === "classic" || gameMode === "co-draw" ? (
+              {isDaily ? (
+                <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-400/[0.07] border border-amber-400/25">
+                  <span className="text-3xl">📅</span>
+                  <p className="text-white/75 text-sm leading-snug">{t("connect.dailyInfo")}</p>
+                </div>
+              ) : gameMode === "classic" || gameMode === "co-draw" ? (
                 <div>
                   <p className="text-[0.55rem] font-bold text-white/35 uppercase tracking-[0.25em] mb-2">{t("connect.category")}</p>
                   <div className="grid grid-cols-3 gap-2">

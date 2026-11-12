@@ -9,8 +9,8 @@ afterEach(() => {
 
 describe("word pool", () => {
   it("contains the complete categorized and localized pool", () => {
-    expect(getTotalWordCount()).toBe(233);
-    expect(getCategoryWordCount("mixed")).toBe(233);
+    expect(getTotalWordCount()).toBe(259);
+    expect(getCategoryWordCount("mixed")).toBe(259);
     for (const category of CATEGORIES) expect(getCategoryWordCount(category.id)).toBeGreaterThan(0);
     for (const locale of ["tr", "en", "de", "es"] as Locale[]) {
       for (const category of CATEGORIES) expect(getRandomWord(category.id, locale).trim()).not.toBe("");

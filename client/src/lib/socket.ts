@@ -465,7 +465,7 @@ export class GameSocket {
     if (!this.localRoom) return;
     const score = Math.max(1, Math.min(100, Number(data.score) || 3));
     const imageData = typeof data.imageData === "string" ? data.imageData : "";
-    const aiComment = comment || (typeof data.comment === "string" ? data.comment : "Çizim tamamlandı.");
+    const aiComment = comment || (typeof data.comment === "string" ? data.comment : "");
     this.dispatch("generating_result");
     window.setTimeout(() => {
       this.dispatch("show_result", {

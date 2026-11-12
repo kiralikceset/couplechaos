@@ -343,8 +343,23 @@ describe("AI judge parsing", () => {
   it("accepts JSON with chatter around it and clamps the score", async () => {
     const { __test } = await import("../../../server/aiJudge");
     const parsed = __test.parseJudgeJson('Sure! {"score": 140, "guess": "uçan patates", "comment": "Bu bir uçak değil 🥔"} ok');
-    expect(parsed).toEqual({ score: 100, guess: "uçan patates", comment: "Bu bir uçak değil 🥔", source: "ai" });
+    expect(parsed).toMatchObject({ score: 100, guess: "uçan patates", comment: "Bu bir uçak değil 🥔", comments: { tr: "Bu bir uçak değil 🥔" }, source: "ai" });
     expect(__test.parseJudgeJson("no json")).toBeNull();
     expect(__test.buildPrompt("Kedi", "tr")).toContain("Turkish");
+  });
+
+  it("asks for, and reads, one comment per player language", async () => {
+    const { __test } = await import("../../../server/aiJudge");
+    const prompt = __test.buildPrompt("Kedi", "tr", "classic", ["tr", "en"]);
+    expect(prompt).toContain("tr = Turkish");
+    expect(prompt).toContain("en = English");
+    expect(__test.buildPrompt("Cat", "en", "classic", ["en", "en"])).not.toContain("different app languages");
+    const parsed = __test.parseJudgeJson(
+      '{"score": 30, "guess": {"tr": "erimiş vergi müfettişi", "en": "a melted tax inspector"}, "comment": {"tr": "Jüri istifa etti 🎭", "en": "The jury resigned 🎭"}}',
+      ["tr", "en"],
+    );
+    expect(parsed?.comments).toEqual({ tr: "Jüri istifa etti 🎭", en: "The jury resigned 🎭" });
+    expect(parsed?.guesses.en).toBe("a melted tax inspector");
+    expect(parsed?.comment).toBe("Jüri istifa etti 🎭");
   });
 });

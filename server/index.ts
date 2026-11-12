@@ -72,6 +72,8 @@ interface Session {
   roomCode: string | null;
   username: string;
   avatar: string;
+  /** App language of this player (AI comments come in this language). */
+  locale: Locale;
   seenActions: Set<string>;
   seenActionOrder: string[];
 }
@@ -109,7 +111,7 @@ interface Room {
 
 const sessions = new Map<string, Session>();
 const rooms = new Map<string, Room>();
-const VALID_CATEGORIES = new Set(["mixed", "animals", "food", "objects", "places", "people", "love", "daily_challenge"]);
+const VALID_CATEGORIES = new Set(["mixed", "animals", "food", "objects", "vehicles", "places", "people", "fun", "love", "daily_challenge"]);
 const VALID_LOCALES = new Set<Locale>(["tr", "en", "de", "es"]);
 const ROOM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const CO_REACTIONS = new Set(["😂", "🔥", "😱", "😍", "🤡", "👏"]);
@@ -195,12 +197,13 @@ function createRoomCode(): string {
 }
 
 function chooseWord(room: Room): string {
-  if (room.category === "daily_challenge") {
+  // Daily challenge: today's word (same for everyone) in round 1, then normal mixed words.
+  if (room.category === "daily_challenge" && room.round <= 1) {
     const daily = getDailyWord(room.locale);
     room.wordEmoji = daily.emoji;
     return daily.word;
   }
-  const picked = pickWord(normalizeCategory(room.category), room.locale);
+  const picked = pickWord(room.category === "daily_challenge" ? "mixed" : normalizeCategory(room.category), room.locale);
   room.wordEmoji = picked.emoji;
   return picked.word;
 }
@@ -473,13 +476,18 @@ async function finishRound(room: Room, submission: { imageData: string; score: n
   let score = submission.score;
   let comment = submission.comment;
   let guess: string | undefined;
+  let comments: Partial<Record<Locale, string>> = {};
+  let guesses: Partial<Record<Locale, string>> = {};
   let judgedBy: "ai" | "offline" = "offline";
   if (submission.imageData) {
-    const verdict = await judgeDrawing({ imageData: submission.imageData, word: room.word, locale: room.locale, mode: room.mode });
+    const locales = room.players.map((id) => sessions.get(id)?.locale).filter((value): value is Locale => Boolean(value));
+    const verdict = await judgeDrawing({ imageData: submission.imageData, word: room.word, locale: room.locale, locales, mode: room.mode });
     if (verdict) {
       score = verdict.score;
       comment = verdict.comment;
       guess = verdict.guess;
+      comments = verdict.comments;
+      guesses = verdict.guesses;
       judgedBy = "ai";
     }
   }
@@ -489,18 +497,24 @@ async function finishRound(room: Room, submission: { imageData: string; score: n
   later(room, wait, () => {
     if (room.state !== "judging" || room.round !== round) return;
     room.state = "result";
-    pushRoom(room, "show_result", {
+    room.players.forEach((id) => {
+      // Each player reads the comment in their own app language. If there is none in
+      // that language, the phone writes its own (offline) comment in that language.
+      const playerLocale = sessions.get(id)?.locale || room.locale;
+      const sameLanguage = playerLocale === room.locale;
+      push(id, "show_result", {
       word: room.word,
       wordEmoji: room.wordEmoji,
       imageData: submission.imageData,
       aiScore: score,
-      aiComment: comment,
-      aiGuess: guess,
+      aiComment: judgedBy === "ai" ? comments[playerLocale] || (sameLanguage ? comment : undefined) : undefined,
+      aiGuess: guesses[playerLocale] || (sameLanguage ? guess : undefined),
       judgedBy,
       round,
       mode: room.mode,
       playerGuess: room.mode === "classic" ? room.guess || null : undefined,
       guessCorrect: room.mode === "classic" ? Boolean(room.guess) && foldText(room.guess) === foldText(room.word) : undefined,
+      });
     });
   });
 }
@@ -516,6 +530,7 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
     }
     session.username = cleanText(data.username, "Player", 24);
     session.avatar = cleanText(data.avatar, "😎", 8);
+    session.locale = locale;
     const room: Room = {
       code: createRoomCode(),
       mode: data.mode === "co-draw" ? "co-draw" : "classic",
@@ -562,6 +577,7 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
     leaveCurrentRoom(session);
     session.username = cleanText(data.username, "Player", 24);
     session.avatar = cleanText(data.avatar, "😎", 8);
+    session.locale = locale;
     room.players.push(session.id);
     session.roomCode = room.code;
     push(session.id, "room_joined", { code: room.code, role: "guest", mode: room.mode });
@@ -824,6 +840,7 @@ function createGameServer() {
       avatar: "😎",
       seenActions: new Set(),
       seenActionOrder: [],
+      locale: "tr",
     });
     response.status(201).json({ sessionId: id, token, protocol: 2 });
   });
