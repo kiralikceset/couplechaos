@@ -109,3 +109,36 @@ export async function shareOrDownloadImage(dataUrl: string, filename: string, ti
   window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
   return "downloaded";
 }
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+/** Same as shareOrDownloadImage, for any file (e.g. the replay video). */
+export async function shareOrDownloadFile(blob: Blob, filename: string, title: string, text: string): Promise<"shared" | "downloaded"> {
+  if (isNativeApp()) return shareNatively(await blobToDataUrl(blob), filename, title, text);
+  const file = new File([blob], filename, { type: blob.type });
+  if (navigator.share && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ title, text, files: [file] });
+      return "shared";
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") throw error;
+    }
+  }
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = url;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  return "downloaded";
+}
+

@@ -394,6 +394,31 @@ describe("random match", () => {
   }, 15_000);
 });
 
+describe("invite links and replay strokes", () => {
+  it("shows who invites, sends strokes with the result, serves assetlinks", async () => {
+    const host = client(); const guest = client();
+    host.socket.emit("create_room", { username: "Yusuf", avatar: "🔥", mode: "classic", category: "animals", locale: "tr" });
+    const code = (await waitFor(host.log, "room_created")).data.code;
+    expect(await (await fetch(`${baseUrl}/api/room/${code}`)).json()).toEqual({ open: true, mode: "classic", hostName: "Yusuf", hostAvatar: "🔥" });
+    expect(await (await fetch(`${baseUrl}/api/room/ZZZZZZ`)).json()).toEqual({ open: false });
+    const links = await (await fetch(`${baseUrl}/.well-known/assetlinks.json`)).json();
+    expect(links[0].target.package_name).toBe("com.couplechaos.app");
+
+    guest.socket.emit("join_room", { code, username: "Elif", avatar: "🦄", locale: "tr" });
+    await waitFor(guest.log, "room_joined");
+    expect(await (await fetch(`${baseUrl}/api/room/${code}`)).json()).toEqual({ open: false }); // full now
+    const drawer = (await Promise.race([waitFor(host.log, "start_drawing", 1, 8000).then(() => host), waitFor(guest.log, "start_drawing", 1, 8000).then(() => guest)]));
+    drawer.socket.emit("submit_drawing", {
+      code, imageData: TINY_JPEG, score: 40, comment: "x", aspect: 0.6,
+      strokes: [{ c: "#FF1A6C", w: 0.02, p: [[0.1, 0.2], [0.5, 0.55555], [9, -3]] }, { c: "javascript:", w: 99, p: [["a", 1]] }],
+    });
+    const result = (await waitFor(host.log, "show_result", 1, 8000)).data;
+    expect(result.strokes).toEqual([{ c: "#FF1A6C", w: 0.02, p: [[0.1, 0.2], [0.5, 0.556], [1, 0]] }]);
+    expect(result.strokeAspect).toBe(0.6);
+    [host, guest].forEach((item) => item.socket.disconnect());
+  }, 15_000);
+});
+
 describe("solo vs AI", () => {
   it("the AI gives hints, the player draws and guesses, rounds keep coming", async () => {
     const me = client();

@@ -1,8 +1,18 @@
 import { useRef, useEffect, useState, forwardRef, useImperativeHandle, useCallback } from "react";
 import { playTap } from "@/lib/sounds";
 
+export interface ReplayStroke {
+  c: string;
+  /** Line width as a fraction of the canvas width. */
+  w: number;
+  /** Points, 0..1. */
+  p: number[][];
+}
+
 export interface DrawingCanvasRef {
   getImageData: () => string;
+  /** The drawing as strokes (for the replay video) and its width/height ratio. */
+  getStrokes: () => { strokes: ReplayStroke[]; aspect: number };
   clear: () => void;
 }
 
@@ -119,6 +129,20 @@ const DrawingCanvas = forwardRef<DrawingCanvasRef, { disabled?: boolean; onLive?
       outCtx.fillRect(0, 0, out.width, out.height);
       outCtx.drawImage(canvas, 0, 0, out.width, out.height);
       return out.toDataURL("image/jpeg", 0.85);
+    },
+    getStrokes: () => {
+      const { w, h } = sizeRef.current;
+      const strokes = strokesRef.current.map((stroke) => ({
+        c: stroke.color,
+        w: Math.round((stroke.width / Math.max(1, w)) * 10000) / 10000,
+        // Thin out dense finger input: keep a point every ~1.5 px.
+        p: stroke.points.filter((point, index, all) => {
+          if (index === 0 || index === all.length - 1) return true;
+          const prev = all[index - 1];
+          return Math.abs(point.x - prev.x) + Math.abs(point.y - prev.y) > 1.5;
+        }).map((point) => [round3(point.x / Math.max(1, w)), round3(point.y / Math.max(1, h))]),
+      }));
+      return { strokes, aspect: Math.round((w / Math.max(1, h)) * 1000) / 1000 };
     },
     clear: () => {
       strokesRef.current = [];

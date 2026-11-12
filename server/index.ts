@@ -122,12 +122,21 @@ interface Room {
   solo: boolean;
   /** Hints given this round (the AI drawer reads them). */
   hintLog: string[];
+  /** This round's drawing as strokes, for the replay video. */
+  strokes: ReplayStroke[];
+  strokeAspect: number;
   /** AI drawer: its current doodle and pending timers. */
   bot: { version: number; strokes: number[][][]; think?: ReturnType<typeof setTimeout>; submit?: ReturnType<typeof setTimeout> };
   createdAt: number;
 }
 
 type Gender = "f" | "m";
+
+interface ReplayStroke {
+  c: string;
+  w: number;
+  p: number[][];
+}
 
 interface MatchTicket {
   sessionId: string;
@@ -434,6 +443,8 @@ function botHandIn(room: Room, round: number): void {
   if (room.round !== round || room.state !== "drawing") return;
   const strokes = room.bot.strokes.length ? room.bot.strokes : offlineBotDrawing(room).strokes;
   const imageData = sketchToPng(strokes.map((points, index) => ({ color: BOT_COLORS[index % BOT_COLORS.length], points })));
+  room.strokes = strokes.map((points, index) => ({ c: BOT_COLORS[index % BOT_COLORS.length], w: 0.02, p: points }));
+  room.strokeAspect = 0.75;
   void finishRound(room, { imageData, score: 25, comment: "" });
 }
 
@@ -577,6 +588,7 @@ function startRound(room: Room): void {
   room.state = "describing";
   room.hintsThisRound = 0;
   room.hintLog = [];
+  room.strokes = [];
   room.bot = { version: room.bot?.version || 0, strokes: [] };
   room.guess = "";
   room.guessOptions = [];
@@ -704,6 +716,27 @@ function num01(value: unknown): number | null {
   return Number.isFinite(n) ? Math.round(Math.max(0, Math.min(1, n)) * 10000) / 10000 : null;
 }
 
+/** Strokes for the replay video: capped so a submission stays small. */
+function cleanReplay(value: unknown): ReplayStroke[] {
+  if (!Array.isArray(value)) return [];
+  const out: ReplayStroke[] = [];
+  let budget = 4000;
+  for (const raw of value.slice(0, 300)) {
+    if (!raw || typeof raw !== "object" || budget <= 0) break;
+    const item = raw as Record<string, unknown>;
+    const color = typeof item.c === "string" && /^#[0-9a-f]{6}$/i.test(item.c) ? item.c : "#FFFFFF";
+    const width = Math.max(0.002, Math.min(0.1, Number(item.w) || 0.012));
+    const points = (Array.isArray(item.p) ? item.p : [])
+      .slice(0, budget)
+      .filter((point): point is number[] => Array.isArray(point) && Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1])))
+      .map((point) => [Math.max(0, Math.min(1, Math.round(Number(point[0]) * 1000) / 1000)), Math.max(0, Math.min(1, Math.round(Number(point[1]) * 1000) / 1000))]);
+    if (!points.length) continue;
+    budget -= points.length;
+    out.push({ c: color, w: width, p: points });
+  }
+  return out;
+}
+
 function cleanLiveOp(data: Record<string, unknown>): Record<string, unknown> | null {
   if (data.t === "u" || data.t === "x") return { t: data.t };
   if (data.t !== "s") return null;
@@ -790,6 +823,8 @@ async function finishRound(room: Room, submission: { imageData: string; score: n
       dailyTotal: daily?.total,
       solo: room.solo,
       botDrew: room.solo && isBot(room.drawerId),
+      strokes: room.mode === "classic" ? room.strokes : undefined,
+      strokeAspect: room.strokeAspect,
       });
     });
   });
@@ -825,6 +860,8 @@ function openRoom(host: Session, mode: GameMode, category: unknown, random: bool
     random,
     solo: false,
     hintLog: [],
+    strokes: [],
+    strokeAspect: 0.75,
     bot: { version: 0, strokes: [] },
     createdAt: Date.now(),
   };
@@ -1082,6 +1119,9 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
     if (session.id !== room.drawerId || room.state !== "drawing") return;
     const guess = cleanText(data.guess, "", 60);
     if (guess && room.guessOptions.includes(guess)) room.guess = guess;
+    room.strokes = cleanReplay(data.strokes);
+    const aspect = Number(data.aspect);
+    room.strokeAspect = Number.isFinite(aspect) ? Math.max(0.3, Math.min(3, aspect)) : 0.75;
     void finishRound(room, {
       imageData: cleanImage(data.imageData),
       score: cleanScore(data.score),
@@ -1220,6 +1260,25 @@ function createGameServer() {
       features: { randomMatch: RANDOM_MATCH, solo: true, leaderboard: true },
       auth: { apple: isProviderConfigured("apple"), google: isProviderConfigured("google") },
     });
+  });
+
+  // Who is inviting? Lets an invite link show "Yusuf invites you" before joining.
+  app.get("/api/room/:code", (request, response) => {
+    const room = rooms.get(String(request.params.code || "").toUpperCase().slice(0, 6));
+    const host = room ? sessions.get(room.players[0]) : undefined;
+    const open = Boolean(room && !room.random && !room.solo && room.state === "waiting" && room.players.length < 2);
+    response.setHeader("Cache-Control", "no-store");
+    response.json(open && room ? { open, mode: room.mode, hostName: host?.username || "", hostAvatar: host?.avatar || "😎" } : { open: false });
+  });
+
+  // Android App Links: lets /join/... links open the installed app directly.
+  app.get("/.well-known/assetlinks.json", (_request, response) => {
+    const fingerprints = (process.env.ANDROID_CERT_SHA256 || "4E:80:1E:01:C5:BA:E9:8A:BC:BC:2C:7B:CF:9C:63:2A:D0:84:46:1D:D0:8B:AD:A1:D3:BC:53:32:29:B4:FD:9E")
+      .split(",").map((value) => value.trim()).filter(Boolean);
+    response.json([{
+      relation: ["delegate_permission/common.handle_all_urls"],
+      target: { namespace: "android_app", package_name: "com.couplechaos.app", sha256_cert_fingerprints: fingerprints },
+    }]);
   });
 
   // Today's daily-challenge leaderboard (top 50). The word itself is not revealed.

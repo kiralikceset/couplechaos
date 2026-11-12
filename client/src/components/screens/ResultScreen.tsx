@@ -9,7 +9,10 @@ import type { GameResult } from "@/pages/GameApp";
 import { useLocale } from "@/contexts/LocaleContext";
 import { playConfetti, playSuccess, playTap, playWordReveal, playError } from "@/lib/sounds";
 import { getRoast, getScoreLabel, getScoreColor } from "@/lib/aiRoast";
-import { shareOrDownloadImage } from "@/lib/imageUtils";
+import { shareOrDownloadFile, shareOrDownloadImage } from "@/lib/imageUtils";
+import { canMakeVideo, makeReplayVideo } from "@/lib/replayVideo";
+import { maybeAskForReview } from "@/lib/review";
+import { getProfile } from "@/lib/gameData";
 import { foldText } from "@/lib/hintFilter";
 import { toast } from "sonner";
 
@@ -49,6 +52,41 @@ export default function ResultScreen({ result, onShare, onPlayAgain, onHome, onR
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
   }, [score, classic, correct]);
+
+  // Ask for a store rating right after a happy moment (rate-limited inside).
+  useEffect(() => {
+    const happy = correct || score >= 70;
+    const timer = window.setTimeout(() => void maybeAskForReview(happy, getProfile().gamesPlayed ?? 0), 2200);
+    return () => window.clearTimeout(timer);
+  }, [correct, score]);
+
+  const [videoProgress, setVideoProgress] = useState<number | null>(null);
+  const videoReady = Boolean(result.strokes?.length) && canMakeVideo();
+
+  const handleVideo = async () => {
+    if (!result.strokes?.length || videoProgress !== null) return;
+    playTap();
+    setVideoProgress(0);
+    try {
+      const { blob, extension } = await makeReplayVideo({
+        strokes: result.strokes,
+        aspect: result.strokeAspect || 0.75,
+        word: result.word,
+        emoji: result.wordEmoji || "",
+        comment,
+        score,
+        verdict: verdict && classic ? { text: verdict.title, good: correct } : undefined,
+        labels: { should: t("video.should"), cta: t("video.cta") },
+        onProgress: setVideoProgress,
+      });
+      setVideoProgress(null);
+      await shareOrDownloadFile(blob, `couple-chaos-${foldText(result.word) || "cizim"}.${extension}`, "Couple Chaos", `“${result.word}” ${result.wordEmoji || ""} #couplechaos`.trim());
+    } catch (error) {
+      setVideoProgress(null);
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      toast.error(t("result.videoFailed"));
+    }
+  };
 
   const handleSave = async () => {
     if (!result.imageData) return;
@@ -171,7 +209,17 @@ export default function ResultScreen({ result, onShare, onPlayAgain, onHome, onR
           >
             {t("result.playAgain")}
           </button>
-          <div className="grid grid-cols-2 gap-2">
+          <div className={`grid gap-2 ${videoReady ? "grid-cols-3" : "grid-cols-2"}`}>
+            {videoReady && (
+              <button
+                onClick={() => void handleVideo()}
+                disabled={videoProgress !== null}
+                className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-amber-400 text-black text-sm font-bold active:scale-[0.98] transition-transform disabled:opacity-60"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M7 4.5v15l13-7.5z" /></svg>
+                {t("result.video")}
+              </button>
+            )}
             <button
               onClick={() => void handleSave()}
               disabled={!result.imageData}
@@ -200,6 +248,15 @@ export default function ResultScreen({ result, onShare, onPlayAgain, onHome, onR
           </div>
         </div>
       </footer>
+      {videoProgress !== null && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center gap-4 px-10" role="status" aria-live="polite">
+          <span className="text-4xl">🎬</span>
+          <p className="text-white font-bold">{t("result.videoMaking")}</p>
+          <div className="w-full max-w-[260px] h-2 rounded-full bg-white/10 overflow-hidden">
+            <div className="h-full bg-amber-400 transition-[width] duration-200" style={{ width: `${Math.round(videoProgress * 100)}%` }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

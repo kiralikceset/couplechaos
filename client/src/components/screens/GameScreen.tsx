@@ -180,10 +180,13 @@ export default function GameScreen({
     setSubmitting(true);
     playTap();
     const imageData = canvasRef.current.getImageData();
+    const replay = canvasRef.current.getStrokes();
     const assessment = await assessDrawing(imageData, word || "");
     socket.emit("submit_drawing", {
       code,
       imageData,
+      strokes: replay.strokes,
+      aspect: replay.aspect,
       score: assessment.score,
       comment: assessment.comment,
       guess: guessRef.current || undefined,

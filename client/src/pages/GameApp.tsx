@@ -59,6 +59,9 @@ import { earnTokens, TOKEN_REWARD_CORRECT, TOKEN_REWARD_ROUND } from "@/lib/toke
 import OnboardingScreen from "@/components/screens/OnboardingScreen";
 import ConnectScreen from "@/components/screens/ConnectScreen";
 import LeaderboardScreen from "@/components/screens/LeaderboardScreen";
+import InviteScreen from "@/components/screens/InviteScreen";
+import type { ReplayStroke } from "@/components/game/DrawingCanvas";
+import { INVITE_EVENT, takePendingInvite } from "@/lib/invite";
 import WaitingScreen from "@/components/screens/WaitingScreen";
 import AchievementPopup from "@/components/game/AchievementPopup";
 import CoDrawScreen from "@/components/screens/CoDrawScreen";
@@ -98,7 +101,8 @@ export type ScreenState =
   | "category"
   | "premium"
   | "achievements"
-  | "leaderboard";
+  | "leaderboard"
+  | "invite";
 
 export interface GameResult {
   word: string;
@@ -119,6 +123,9 @@ export interface GameResult {
   dailyTotal?: number;
   /** Solo: the AI drew this one (the player gave the hints). */
   botDrew?: boolean;
+  /** The drawing as strokes, for the replay video. */
+  strokes?: ReplayStroke[];
+  strokeAspect?: number;
 }
 
 export interface HintOptionView {
@@ -185,6 +192,19 @@ export default function GameApp({
   const [gameMode, setGameMode] = useState<GameMode>("classic");
   const [seat, setSeat] = useState(0);
   const [transport, setTransport] = useState(socket.transport);
+  /** Room code from an invite link (shows the invite screen). */
+  const [inviteCode, setInviteCode] = useState<string | null>(() => (initialScreen === "invite" ? takePendingInvite() : null));
+  useEffect(() => {
+    const onInvite = () => {
+      const code = takePendingInvite();
+      if (!code) return;
+      setInviteCode(code);
+      setHistory(["home"]);
+      setScreen("invite");
+    };
+    window.addEventListener(INVITE_EVENT, onInvite);
+    return () => window.removeEventListener(INVITE_EVENT, onInvite);
+  }, []);
   /** Connect screen opened for "play with AI". */
   const [soloMode, setSoloMode] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
@@ -468,6 +488,8 @@ export default function GameApp({
       dailyRank,
       dailyTotal,
       botDrew,
+      strokes,
+      strokeAspect,
     }: GameResult) => {
       const numericScore = Number.isFinite(aiScore)
         ? Math.max(1, Math.min(100, Math.round(aiScore!)))
@@ -492,6 +514,8 @@ export default function GameApp({
         dailyRank,
         dailyTotal,
         botDrew,
+        strokes: Array.isArray(strokes) ? strokes : undefined,
+        strokeAspect,
       };
       earnTokens(nextResult.tokensEarned);
       if (guessCorrect && !botDrew) {
@@ -834,6 +858,16 @@ export default function GameApp({
             selectedCategory={selectedCategory}
             mode={gameMode}
             solo={soloMode}
+          />
+        )}
+        {screen === "invite" && inviteCode && (
+          <InviteScreen
+            code={inviteCode}
+            onCancel={() => {
+              setInviteCode(null);
+              setHistory([]);
+              setScreen("home");
+            }}
           />
         )}
         {screen === "leaderboard" && (

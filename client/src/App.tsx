@@ -12,6 +12,7 @@ import {
   loadHomeScreen,
 } from "@/lib/preparedScreens";
 import type { GameAppStart } from "./pages/GameApp";
+import { INVITE_EVENT, initInviteLinks, peekPendingInvite } from "./lib/invite";
 
 const loadRuntime = async () => {
   const runtime = import("./GameRuntime");
@@ -63,8 +64,9 @@ function initialTransport(): "offline" | "local" {
 }
 
 function Startup() {
+  // An invite link skips the intro: straight to "X invites you".
   const [runtime, setRuntime] = useState<GameAppStart | null>(() =>
-    hasOnboarded() ? {} : null
+    peekPendingInvite() ? { initialScreen: "invite" } : hasOnboarded() ? {} : null
   );
   const [instructions, setInstructions] = useState(false);
   const [transport] = useState(initialTransport);
@@ -118,6 +120,14 @@ function Startup() {
     return () => window.removeEventListener("popstate", back);
   }, [instructions, runtime]);
 
+  // App opened from a link while the intro is showing.
+  useEffect(() => {
+    if (runtime) return;
+    const onInvite = () => enterRuntime({ initialScreen: "invite" }, prepareRuntime);
+    window.addEventListener(INVITE_EVENT, onInvite);
+    return () => window.removeEventListener(INVITE_EVENT, onInvite);
+  }, [runtime]);
+
   if (loadError) throw loadError;
   if (runtime) return <GameRuntime {...runtime} />;
   return (
@@ -168,6 +178,7 @@ function Startup() {
 
 export default function App() {
   useEffect(() => initAudio(), []);
+  useEffect(() => { void initInviteLinks(); }, []);
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
