@@ -26,6 +26,8 @@ interface Props {
   onPlayClassic: () => void;
   onPlayCoDraw: () => void;
   onDailyChallenge: () => void;
+  onPlaySolo: () => void;
+  onLeaderboard: () => void;
   onProfile: () => void;
   onPremium: () => void;
   onAchievements: () => void;
@@ -36,6 +38,8 @@ export default function HomeScreen({
   onPlayClassic,
   onPlayCoDraw,
   onDailyChallenge,
+  onPlaySolo,
+  onLeaderboard,
   onProfile,
   onPremium,
   onAchievements,
@@ -81,6 +85,16 @@ export default function HomeScreen({
       color: "#8B5CF6",
       image: "/images/co-draw.svg",
       onClick: onPlayCoDraw,
+      premium: false,
+    },
+    {
+      id: "solo",
+      title: t("home.solo"),
+      desc: t("home.soloDesc"),
+      icon: "🤖",
+      color: "#FBBF24",
+      image: "",
+      onClick: onPlaySolo,
       premium: false,
     },
   ];
@@ -163,8 +177,8 @@ export default function HomeScreen({
             >
               <div className="flex items-center gap-4 p-4">
                 {/* Mode image thumbnail */}
-                <div className="relative size-16 rounded-xl overflow-hidden flex-shrink-0">
-                  <img src={mode.image} alt="" className="w-full h-full object-cover" />
+                <div className="relative size-16 rounded-xl overflow-hidden flex-shrink-0 bg-gradient-to-br from-amber-400/25 to-primary/15">
+                  {mode.image && <img src={mode.image} alt="" className="w-full h-full object-cover" />}
                   <div className="absolute inset-0 bg-black/20" />
                   <div className="absolute inset-0 flex items-center justify-center text-2xl">
                     {mode.icon}
@@ -207,7 +221,7 @@ export default function HomeScreen({
           transition={{ duration: 0.16 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => { playTap(); onDailyChallenge(); }}
-          className="w-full mb-8 p-4 rounded-2xl bg-gradient-to-r from-primary/10 via-purple-500/10 to-primary/10 border border-primary/20 relative overflow-hidden text-left"
+          className="w-full mb-2 p-4 rounded-2xl bg-gradient-to-r from-primary/10 via-purple-500/10 to-primary/10 border border-primary/20 relative overflow-hidden text-left"
         >
           <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full blur-2xl" />
           <div className="flex items-center gap-3">
@@ -221,7 +235,12 @@ export default function HomeScreen({
             {dailyCompleted ? <span className="text-green-400 text-xs font-bold">✓ {t("home.dailyDone")}</span> : <span className="text-white/30 text-lg">›</span>}
           </div>
         </motion.button>
-
+        <button
+          onClick={() => { playTap(); onLeaderboard(); }}
+          className="w-full mb-8 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] text-white/70 text-sm font-semibold active:bg-white/[0.06]"
+        >
+          {t("board.button")}
+        </button>
       </div>
     </div>
   );

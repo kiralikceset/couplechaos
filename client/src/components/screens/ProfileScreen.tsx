@@ -17,7 +17,7 @@ import { deleteAccountAndData, getAccount, getAvailableProviders, signOut, type 
 import PrivacySheet from "@/components/PrivacySheet";
 import { toast } from "sonner";
 
-const APP_VERSION = "1.0.8";
+const APP_VERSION = "1.0.9";
 import { getPlayerStats, getStreakData } from "@/lib/retention";
 import { getTokens } from "@/lib/tokens";
 
@@ -63,7 +63,7 @@ interface Props {
 export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn, onAccountDeleted }: Props) {
   const { t, locale, setLocale } = useLocale();
   const [profile, setProfile] = useState(getProfile());
-  const [editing, setEditing] = useState(!profile.username.trim() || !profile.gender);
+  const [editing, setEditing] = useState(!profile.username.trim());
   const [editData, setEditData] = useState<{ username: string; avatar: string; gender?: "f" | "m" }>({ username: profile.username, avatar: profile.avatar, gender: profile.gender });
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const premium = isPremiumUser();
@@ -94,7 +94,7 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
   }
 
   function handleSave() {
-    if (!editData.username.trim() || !editData.gender) return;
+    if (!editData.username.trim()) return;
     playSuccess();
     const updated = {
       ...profile,
@@ -247,25 +247,6 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
               />
             </div>
 
-            {/* Gender: only used to pair a woman with a man in random match */}
-            <div className="space-y-2">
-              <label className="text-[0.55rem] font-bold text-white/25 uppercase tracking-widest">{t("profile.gender")}</label>
-              <div className="grid grid-cols-2 gap-2">
-                {(["f", "m"] as const).map(value => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => { playTap(); setEditData(d => ({ ...d, gender: value })); }}
-                    aria-pressed={editData.gender === value}
-                    className={`py-3 rounded-xl text-sm font-bold border transition-colors ${editData.gender === value ? "bg-white text-black border-white" : "bg-white/[0.03] text-white/70 border-white/[0.08]"}`}
-                  >
-                    {value === "f" ? `👩 ${t("profile.female")}` : `👨 ${t("profile.male")}`}
-                  </button>
-                ))}
-              </div>
-              <p className="text-white/30 text-[0.65rem]">{t("profile.genderWhy")}</p>
-            </div>
-
             {/* Avatar selection */}
             <div className="space-y-2">
               <label className="text-[0.55rem] font-bold text-white/25 uppercase tracking-widest">{t("profile.chooseAvatar")}</label>
@@ -291,7 +272,7 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={handleSave}
-                disabled={!editData.username.trim() || !editData.gender}
+                disabled={!editData.username.trim()}
                 className="flex-1 bg-primary text-white font-bold py-3.5 rounded-xl transition-all disabled:opacity-40 glow-primary"
               >
                 {profile.username ? t("profile.save") : t("profile.start")}

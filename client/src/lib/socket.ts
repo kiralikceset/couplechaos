@@ -103,6 +103,11 @@ export class GameSocket {
   private generation = 0;
   private requests = new Set<AbortController>();
 
+  /** Server base URL ("" in single-device mode). */
+  get baseUrl(): string {
+    return this.serverUrl;
+  }
+
   constructor(serverUrlOverride?: string) {
     this.serverUrl = toHttpBaseUrl(serverUrlOverride ?? (STORED_SERVER_URL || ENV_SERVER_URL));
     this.connected = !this.serverUrl;

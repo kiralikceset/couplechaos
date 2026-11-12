@@ -24,11 +24,13 @@ interface Props {
   selectedCategory?: string | null;
   mode?: "classic" | "co-draw";
   onSelectCategory?: (category: string) => void;
+  /** Opened from "play with AI": one start button, no rooms. */
+  solo?: boolean;
 }
 
 const CATEGORY_CHIPS = CATEGORIES.map(({ id, emoji }) => ({ id, emoji }));
 
-export default function ConnectScreen({ onBack, onProfile, onCategory, selectedCategory, mode: gameMode = "classic", onSelectCategory }: Props) {
+export default function ConnectScreen({ onBack, onProfile, onCategory, selectedCategory, mode: gameMode = "classic", onSelectCategory, solo = false }: Props) {
   const isDaily = selectedCategory === "daily_challenge" && gameMode === "classic";
   const { t } = useLocale();
   const [joinCode, setJoinCode] = useState("");
@@ -41,7 +43,20 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
   const [transport, setTransport] = useState(socket.transport);
   const profile = getProfile();
 
-  const canRandom = !isDaily && transport === "online";
+  // Random match only shows when the server has it switched on.
+  const [randomEnabled, setRandomEnabled] = useState(false);
+  useEffect(() => {
+    const base = socket.baseUrl;
+    if (!base) return;
+    const controller = new AbortController();
+    fetch(`${base}/api/health`, { signal: controller.signal })
+      .then((response) => response.json())
+      .then((data: { features?: { randomMatch?: boolean } }) => setRandomEnabled(Boolean(data?.features?.randomMatch)))
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, []);
+  const canRandom = randomEnabled && !solo && !isDaily && gameMode === "classic" && transport === "online";
+  const canSolo = transport === "online" && gameMode === "classic" && (solo || isDaily);
 
   // Random match: listen for the queue, count the seconds.
   useEffect(() => {
@@ -146,6 +161,18 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
     setMode("choose");
   }
 
+  function handleSolo() {
+    if (submitting) return;
+    playTap();
+    setSubmitting(true);
+    socket.emit("start_solo", {
+      username: profile.username || "Player",
+      avatar: profile.avatar,
+      category: selectedCategory || "mixed",
+      locale: getLocale(),
+    });
+  }
+
   function handleJoin() {
     if (joinCode.trim().length !== 6 || submitting) return;
     playSend();
@@ -177,7 +204,7 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
           </svg>
         </button>
         <p className="font-display text-base font-bold text-white">
-          {isDaily ? `📅 ${t("home.dailyChallenge")}` : gameMode === "co-draw" ? `🖌️ ${t("home.coDraw")}` : `🎨 ${t("home.classic")}`}
+          {isDaily ? `📅 ${t("home.dailyChallenge")}` : solo ? `🤖 ${t("home.solo")}` : gameMode === "co-draw" ? `🖌️ ${t("home.coDraw")}` : `🎨 ${t("home.classic")}`}
         </p>
         <button
           onClick={() => { playTap(); onProfile(); }}
@@ -312,7 +339,18 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
       </main>
 
       {/* Actions — at the bottom, where the thumb is */}
-      {mode === "choose" && (
+      {mode === "choose" && solo && (
+        <footer className="relative z-10 px-6 pb-8 pt-3">
+          <button
+            onClick={handleSolo}
+            disabled={submitting || !canSolo}
+            className="w-full py-4 rounded-2xl bg-amber-400 text-black font-bold text-base active:scale-[0.98] transition-transform disabled:opacity-40"
+          >
+            {t("connect.soloStart")}
+          </button>
+        </footer>
+      )}
+      {mode === "choose" && !solo && (
         <footer className="relative z-10 px-6 pb-8 pt-3 flex flex-col gap-2">
           <button
             onClick={handleCreate}
@@ -321,13 +359,22 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
           >
             ⚡ {t("connect.create")}
           </button>
-          <div className={`grid gap-2 ${canRandom ? "grid-cols-2" : "grid-cols-1"}`}>
+          <div className={`grid gap-2 ${canRandom || canSolo ? "grid-cols-2" : "grid-cols-1"}`}>
             <button
               onClick={() => { playTap(); setMode("join"); }}
               className="py-3.5 rounded-2xl bg-white/[0.05] border border-white/[0.1] text-white/85 text-sm font-semibold active:scale-[0.98] transition-transform"
             >
               🔗 {t("connect.joinShort")}
             </button>
+            {canSolo && (
+              <button
+                onClick={handleSolo}
+                disabled={submitting}
+                className="py-3.5 rounded-2xl bg-amber-400/10 border border-amber-400/35 text-amber-200 text-sm font-semibold active:scale-[0.98] transition-transform disabled:opacity-50"
+              >
+                {t("connect.withAi")}
+              </button>
+            )}
             {canRandom && (
               <button
                 onClick={() => { playTap(); setRulesOpen(true); }}

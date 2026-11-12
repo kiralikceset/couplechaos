@@ -21,9 +21,11 @@ interface Props {
   partnerName?: string | null;
   /** Only for random matches: report + block the stranger. */
   onReport?: () => void;
+  /** Daily challenge: open today's leaderboard. */
+  onLeaderboard?: () => void;
 }
 
-export default function ResultScreen({ result, onShare, onPlayAgain, onHome, onReport }: Props) {
+export default function ResultScreen({ result, onShare, onPlayAgain, onHome, onReport, onLeaderboard }: Props) {
   const { t } = useLocale();
   const score = useRef(Number.isFinite(result.aiScore) ? Math.max(1, Math.min(100, Math.round(result.aiScore!))) : 3).current;
   const comment = useRef(result.aiComment || getRoast(score, result.word)).current;
@@ -107,6 +109,17 @@ export default function ResultScreen({ result, onShare, onPlayAgain, onHome, onR
                 </span>
               )}
             </motion.div>
+          )}
+
+          {/* Daily challenge: place on today's leaderboard */}
+          {result.dailyRank && (
+            <button
+              onClick={() => { playTap(); onLeaderboard?.(); }}
+              className="flex items-center justify-between px-4 py-2.5 rounded-2xl bg-amber-400/10 border border-amber-400/30 text-amber-200 text-sm font-bold"
+            >
+              <span>🏆 {t("board.rank").replace("{rank}", String(result.dailyRank)).replace("{total}", String(result.dailyTotal || result.dailyRank))}</span>
+              <span className="text-amber-200/60">›</span>
+            </button>
           )}
 
           {/* Drawing vs. reality */}

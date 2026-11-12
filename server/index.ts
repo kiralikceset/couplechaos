@@ -16,6 +16,7 @@
 import express, { type NextFunction, type Request, type Response } from "express";
 import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getDailyWord, getDistractors, normalizeCategory, pickWord } from "../client/src/lib/wordPool";
@@ -44,6 +45,12 @@ const SUBMIT_GRACE_MS = num("SUBMIT_GRACE_MS", 6000); // wait for the drawing up
 const RESULT_MIN_MS = num("RESULT_MIN_MS", 700);
 const MAX_SESSIONS = num("MAX_SESSIONS", 20_000);
 const MAX_ROOMS = num("MAX_ROOMS", 10_000);
+/** Random match with strangers: off until there are enough players (RANDOM_MATCH=1 turns it on). */
+const RANDOM_MATCH = process.env.RANDOM_MATCH === "1";
+/** Solo vs AI: the AI hint-giver gets a short head start before the canvas opens. */
+const SOLO_DESCRIBE_SECONDS = num("SOLO_DESCRIBE_SECONDS", 6);
+const BOT_PREFIX = "bot:";
+const isBot = (id: string) => id.startsWith(BOT_PREFIX);
 const MAX_EVENTS_PER_SESSION = 400;
 const MAX_IMAGE_CHARS = 4_000_000;
 
@@ -110,6 +117,8 @@ interface Room {
   guess: string;
   /** Strangers matched by "random match": stricter hint rules, report button. */
   random: boolean;
+  /** Solo vs AI: the second player is a bot that gives the hints. */
+  solo: boolean;
   createdAt: number;
 }
 
@@ -143,6 +152,14 @@ const MESSAGES: Record<string, Record<Locale, string>> = {
     de: "Telefonnummern, Links und Social-Media-Namen sind bei Zufallsspielen nicht erlaubt.",
     es: "No se pueden compartir teléfonos, enlaces ni redes con jugadores aleatorios.",
   },
+  botName: { tr: "Yapay Zekâ", en: "AI", de: "KI", es: "IA" },
+  matchOff: {
+    tr: "Rastgele eşleşme şu an kapalı.",
+    en: "Random match is turned off for now.",
+    de: "Zufallsspiele sind gerade aus.",
+    es: "El emparejamiento aleatorio está desactivado por ahora.",
+  },
+  categoryHint: { tr: "Kategori", en: "Category", de: "Kategorie", es: "Categoría" },
   matchRules: {
     tr: "Rastgele eşleşme için cinsiyet seçimi ve 18 yaş onayı gerekli.",
     en: "Random match needs your gender and an 18+ confirmation.",
@@ -341,6 +358,134 @@ function addAiHints(room: Room, round: number): void {
   });
 }
 
+/**
+ * The AI partner in solo mode: sends a hint every few seconds, from vague to obvious.
+ * Uses AI-written hints when an AI key is set; otherwise category, letters, first letter, emoji.
+ */
+function runBotDescriber(room: Room, round: number): void {
+  const option = (kind: HintOption["kind"]) => room.hintOptions.find((item) => item.kind === kind)?.text;
+  const category = room.category === "daily_challenge" ? "" : `🗂️ ${msg("categoryHint", room.locale)}: ${categoryName(room.category, room.locale)}`;
+  const offline = [category, option("letters"), option("first"), option("emoji")].filter((text): text is string => Boolean(text));
+  let sent = 0;
+  const send = (text: string) => {
+    if (room.round !== round || room.state === "closed" || room.state === "result") return;
+    sent += 1;
+    push(room.drawerId, "hint_received", { text, id: `bot-${round}-${sent}`, kind: "bot" });
+  };
+  const schedule = (texts: string[]) => texts.forEach((text, index) => later(room, 900 + index * 3800, () => send(text)));
+  if (!isAiJudgeEnabled()) {
+    schedule(offline);
+    return;
+  }
+  // Wait briefly for AI hints, then mix them in front of the giveaway ones.
+  let started = false;
+  const fallback = setTimeout(() => {
+    if (!started) { started = true; schedule(offline); }
+  }, 3500);
+  room.timers.push(fallback);
+  void generateHints(room.word, room.locale).then((hints) => {
+    if (started || room.round !== round) return;
+    started = true;
+    clearTimeout(fallback);
+    const ai = hints.filter((hint) => !hintRevealsWord(hint, room.word)).slice(0, 3).map((hint) => `✨ ${hint}`);
+    const mixed = [ai[0], option("letters"), ai[1], ai[2], option("first"), option("emoji")].filter((text): text is string => Boolean(text));
+    schedule(mixed.length ? mixed : offline);
+  }).catch(() => undefined);
+}
+
+const CATEGORY_NAMES: Record<string, Record<Locale, string>> = {
+  mixed: { tr: "Karışık", en: "Mixed", de: "Gemischt", es: "Mezcla" },
+  animals: { tr: "Hayvanlar", en: "Animals", de: "Tiere", es: "Animales" },
+  food: { tr: "Yiyecek", en: "Food", de: "Essen", es: "Comida" },
+  objects: { tr: "Eşyalar", en: "Objects", de: "Dinge", es: "Objetos" },
+  vehicles: { tr: "Taşıtlar", en: "Vehicles", de: "Fahrzeuge", es: "Vehículos" },
+  places: { tr: "Doğa", en: "Nature", de: "Natur", es: "Naturaleza" },
+  people: { tr: "Karakterler", en: "Characters", de: "Figuren", es: "Personajes" },
+  fun: { tr: "Hobiler", en: "Hobbies", de: "Hobbys", es: "Aficiones" },
+  love: { tr: "Aşk", en: "Love", de: "Liebe", es: "Amor" },
+};
+
+function categoryName(category: string, locale: Locale): string {
+  return CATEGORY_NAMES[normalizeCategory(category)]?.[locale] || CATEGORY_NAMES.mixed[locale];
+}
+
+// ── Daily challenge leaderboard ────────────────────────────────────────────
+// Kept in memory and mirrored to a small JSON file, reset every day.
+interface BoardEntry {
+  id: string;
+  names: string;
+  avatars: string;
+  score: number;
+  correct: boolean;
+  solo: boolean;
+  at: number;
+}
+
+const BOARD_FILE = path.join(process.env.DATA_DIR || path.join(process.cwd(), ".data"), "leaderboard.json");
+let board: { day: string; entries: BoardEntry[] } = { day: "", entries: [] };
+
+/** Same calendar as getDailyWord (server-local date). */
+function dayKey(date = new Date()): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function currentBoard(): typeof board {
+  const today = dayKey();
+  if (board.day !== today) board = { day: today, entries: [] };
+  return board;
+}
+
+function loadBoard(): void {
+  try {
+    const stored = JSON.parse(readFileSync(BOARD_FILE, "utf8")) as typeof board;
+    if (stored?.day === dayKey() && Array.isArray(stored.entries)) board = { day: stored.day, entries: stored.entries.slice(0, 200) };
+  } catch {
+    // first start or unreadable file: start empty
+  }
+}
+
+let boardSaveTimer: ReturnType<typeof setTimeout> | null = null;
+function saveBoardSoon(): void {
+  if (boardSaveTimer) return;
+  boardSaveTimer = setTimeout(() => {
+    boardSaveTimer = null;
+    try {
+      mkdirSync(path.dirname(BOARD_FILE), { recursive: true });
+      writeFileSync(BOARD_FILE, JSON.stringify(board));
+    } catch (error) {
+      console.warn("[leaderboard] save failed", error);
+    }
+  }, 2000);
+  boardSaveTimer.unref();
+}
+
+/** Adds this room's daily result (best per room) and returns its rank. */
+function recordDaily(room: Room, score: number, correct: boolean): { rank: number; total: number } {
+  const today = currentBoard();
+  const humans = room.players.filter((id) => !isBot(id)).map((id) => sessions.get(id)).filter((s): s is Session => Boolean(s));
+  const id = `${today.day}:${room.code}`;
+  const entry: BoardEntry = {
+    id,
+    names: humans.map((s) => s.username).join(" & ") || "Player",
+    avatars: humans.map((s) => s.avatar).join(""),
+    score,
+    correct,
+    solo: room.solo,
+    at: Date.now(),
+  };
+  const existing = today.entries.findIndex((item) => item.id === id);
+  if (existing >= 0) {
+    if (today.entries[existing].score >= score) entry.score = today.entries[existing].score;
+    today.entries.splice(existing, 1);
+  }
+  today.entries.push(entry);
+  today.entries.sort((a, b) => b.score - a.score || Number(b.correct) - Number(a.correct) || a.at - b.at);
+  if (today.entries.length > 200) today.entries.length = 200;
+  saveBoardSoon();
+  const rank = today.entries.findIndex((item) => item.id === id) + 1;
+  return { rank: rank || today.entries.length + 1, total: today.entries.length };
+}
+
 function startRound(room: Room): void {
   if (room.players.length < 2 || room.state === "closed") return;
   if (room.mode === "co-draw") {
@@ -354,10 +499,11 @@ function startRound(room: Room): void {
   room.hintsThisRound = 0;
   room.guess = "";
   room.guessOptions = [];
-  const describerIndex = (room.round - 1) % 2;
+  const describerIndex = room.solo ? 1 : (room.round - 1) % 2; // solo: the bot (index 1) always describes
   room.describerId = room.players[describerIndex];
   room.drawerId = room.players[1 - describerIndex];
-  room.phaseEndsAt = Date.now() + DESCRIBE_SECONDS * 1000;
+  const describeSeconds = room.solo ? SOLO_DESCRIBE_SECONDS : DESCRIBE_SECONDS;
+  room.phaseEndsAt = Date.now() + describeSeconds * 1000;
   room.hintOptions = buildHintOptions(room);
 
   pushRoom(room, "game_started", { mode: "classic", round: room.round });
@@ -375,11 +521,18 @@ function startRound(room: Room): void {
     mode: "classic",
     role: "drawer",
     word: null,
-    timeLimit: DESCRIBE_SECONDS,
+    timeLimit: describeSeconds,
     endsAt: room.phaseEndsAt,
     round: room.round,
   });
   const round = room.round;
+  if (room.solo) {
+    runBotDescriber(room, round);
+    later(room, describeSeconds * 1000, () => {
+      if (room.round === round && room.state === "describing") beginDrawing(room);
+    });
+    return;
+  }
   addAiHints(room, round);
   if (DESCRIBE_SECONDS <= 0) {
     beginDrawing(room);
@@ -528,6 +681,11 @@ async function finishRound(room: Room, submission: { imageData: string; score: n
   later(room, wait, () => {
     if (room.state !== "judging" || room.round !== round) return;
     room.state = "result";
+    const correct = room.mode === "classic" && Boolean(room.guess) && foldText(room.guess) === foldText(room.word);
+    // Daily challenge leaderboard: today's word (round 1), scored by the AI only (phones can't fake it).
+    const daily = room.category === "daily_challenge" && round === 1 && judgedBy === "ai" && submission.imageData
+      ? recordDaily(room, score, correct)
+      : null;
     room.players.forEach((id) => {
       // Each player reads the comment in their own app language. If there is none in
       // that language, the phone writes its own (offline) comment in that language.
@@ -544,7 +702,10 @@ async function finishRound(room: Room, submission: { imageData: string; score: n
       round,
       mode: room.mode,
       playerGuess: room.mode === "classic" ? room.guess || null : undefined,
-      guessCorrect: room.mode === "classic" ? Boolean(room.guess) && foldText(room.guess) === foldText(room.word) : undefined,
+      guessCorrect: room.mode === "classic" ? correct : undefined,
+      dailyRank: daily?.rank,
+      dailyTotal: daily?.total,
+      solo: room.solo,
       });
     });
   });
@@ -578,6 +739,7 @@ function openRoom(host: Session, mode: GameMode, category: unknown, random: bool
     guessOptions: [],
     guess: "",
     random,
+    solo: false,
     createdAt: Date.now(),
   };
   rooms.set(room.code, room);
@@ -687,6 +849,10 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
   // Random match: pairs a woman with a man (as the players chose), same game mode.
   if (event === "find_match") {
     const locale = getLocale(data.locale);
+    if (!RANDOM_MATCH) {
+      push(session.id, "join_error", { message: msg("matchOff", locale) });
+      return;
+    }
     const gender = data.gender === "f" || data.gender === "m" ? data.gender : null;
     if (!gender || data.adult !== true) {
       push(session.id, "join_error", { message: msg("matchRules", locale) });
@@ -719,6 +885,27 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
     const room = openRoom(host, ticket.mode, ticket.category, true);
     push(host.id, "room_created", { code: room.code, role: "host", mode: room.mode, requiredPlayers: 2, random: true });
     seatGuest(room, session);
+    return;
+  }
+
+  // Solo vs AI: a room with a bot partner that always gives the hints.
+  if (event === "start_solo") {
+    if (rooms.size >= MAX_ROOMS) {
+      push(session.id, "join_error", { message: msg("busy", getLocale(data.locale)) });
+      return;
+    }
+    leaveCurrentRoom(session);
+    removeFromQueue(session.id);
+    rememberPlayer(session, data);
+    const room = openRoom(session, "classic", data.category, false);
+    room.solo = true;
+    room.players.push(`${BOT_PREFIX}${room.code}`);
+    push(session.id, "room_joined", { code: room.code, role: "guest", mode: "classic", solo: true });
+    push(session.id, "player_joined", { partnerName: msg("botName", session.locale), partnerAvatar: "🤖", playerCount: 2, requiredPlayers: 2, solo: true });
+    room.state = "result";
+    later(room, START_DELAY_MS, () => {
+      if (room.round === 0) startRound(room);
+    });
     return;
   }
 
@@ -889,6 +1076,7 @@ function sweep(): void {
   rooms.forEach((room) => {
     const grace = room.state === "waiting" ? WAITING_GRACE_MS : PLAY_GRACE_MS;
     for (const id of room.players) {
+      if (isBot(id)) continue;
       const session = sessions.get(id);
       const silent = !session || (session.waiters.size === 0 && now - session.lastSeen > grace);
       if (silent) {
@@ -930,6 +1118,7 @@ function createGameServer() {
   });
   app.use("/api", express.json({ limit: "6mb" }));
 
+  loadBoard();
   app.get("/api/health", (_request, response) => {
     response.json({
       status: "ok",
@@ -938,7 +1127,26 @@ function createGameServer() {
       rooms: rooms.size,
       sessions: sessions.size,
       ai: isAiJudgeEnabled(),
+      features: { randomMatch: RANDOM_MATCH, solo: true, leaderboard: true },
       auth: { apple: isProviderConfigured("apple"), google: isProviderConfigured("google") },
+    });
+  });
+
+  // Today's daily-challenge leaderboard (top 50). The word itself is not revealed.
+  app.get("/api/leaderboard", (_request, response) => {
+    const today = currentBoard();
+    response.setHeader("Cache-Control", "no-store");
+    response.json({
+      day: today.day,
+      total: today.entries.length,
+      entries: today.entries.slice(0, 50).map((entry, index) => ({
+        rank: index + 1,
+        names: entry.names,
+        avatars: entry.avatars,
+        score: entry.score,
+        correct: entry.correct,
+        solo: entry.solo,
+      })),
     });
   });
 

@@ -14,7 +14,12 @@ process.env.SUBMIT_GRACE_MS = "400";
 process.env.PLAY_GRACE_MS = "1500";
 process.env.CO_DRAW_SECONDS = "2";
 process.env.CO_COUNTDOWN_SECONDS = "0";
+process.env.RANDOM_MATCH = "1";
+process.env.SOLO_DESCRIBE_SECONDS = "1";
+process.env.DATA_DIR = `${process.env.TMPDIR || "/tmp"}/cc-test-${process.pid}`;
 delete process.env.ANTHROPIC_API_KEY;
+delete process.env.GROQ_API_KEY;
+delete process.env.GEMINI_API_KEY;
 delete process.env.OPENAI_API_KEY;
 
 const storage = new Map<string, string>();
@@ -387,6 +392,73 @@ describe("random match", () => {
     expect(a.log.filter((entry) => entry.event === "room_created")).toHaveLength(1);
     [a, b, c, d].forEach((item) => item.socket.disconnect());
   }, 15_000);
+});
+
+describe("solo vs AI", () => {
+  it("the AI gives hints, the player draws and guesses, rounds keep coming", async () => {
+    const me = client();
+    me.socket.emit("start_solo", { username: "Yusuf", avatar: "😎", category: "animals", locale: "tr" });
+    expect((await waitFor(me.log, "room_joined")).data).toMatchObject({ role: "guest", solo: true });
+    expect((await waitFor(me.log, "player_joined")).data).toMatchObject({ partnerName: "Yapay Zekâ", partnerAvatar: "🤖" });
+    expect((await waitFor(me.log, "your_role")).data.role).toBe("drawer");
+    const firstHint = (await waitFor(me.log, "hint_received")).data;
+    expect(firstHint.text).toContain("Hayvanlar"); // offline bot starts with the category
+    const options = (await waitFor(me.log, "start_drawing")).data.options as string[];
+    expect(options).toHaveLength(4);
+    me.socket.emit("submit_drawing", { imageData: TINY_JPEG, score: 50, comment: "x", guess: options[0] });
+    const result = (await waitFor(me.log, "show_result")).data;
+    expect(result.solo).toBe(true);
+    expect(typeof result.guessCorrect).toBe("boolean");
+    me.socket.emit("play_again", {});
+    expect((await waitFor(me.log, "your_role", 2)).data.role).toBe("drawer"); // always the drawer in solo
+    me.socket.disconnect();
+  }, 15_000);
+});
+
+describe("daily challenge leaderboard", () => {
+  it("ranks AI-judged daily results and never reveals the word", async () => {
+    // Fake AI provider for this test only
+    process.env.GROQ_API_KEY = "test";
+    process.env.AI_PROVIDER = "groq";
+    const realFetch = globalThis.fetch;
+    let nextScore = 77;
+    vi.stubGlobal("fetch", async (input: any, init?: any) => {
+      const url = String(input?.url || input);
+      if (!url.includes("groq.com")) return realFetch(input, init);
+      const content = JSON.stringify({ score: nextScore, guess: "erimiş müfettiş", comment: "Jüri istifa etti 🎭" });
+      return new Response(JSON.stringify({ choices: [{ message: { content } }] }), { status: 200, headers: { "content-type": "application/json" } });
+    });
+    try {
+      const host = client(); const guest = client();
+      host.socket.emit("create_room", { username: "Ada", avatar: "🦊", mode: "classic", category: "daily_challenge", locale: "tr" });
+      const code = (await waitFor(host.log, "room_created")).data.code;
+      guest.socket.emit("join_room", { code, username: "Can", avatar: "🐺", locale: "tr" });
+      await waitFor(guest.log, "start_drawing", 1, 8000);
+      guest.socket.emit("submit_drawing", { code, imageData: TINY_JPEG, score: 5, comment: "x" });
+      const result = (await waitFor(guest.log, "show_result", 1, 8000)).data;
+      expect(result.aiScore).toBe(77);
+      expect(result.dailyRank).toBe(1);
+
+      nextScore = 90;
+      const solo = client();
+      solo.socket.emit("start_solo", { username: "Zeynep", avatar: "🌸", category: "daily_challenge", locale: "tr" });
+      await waitFor(solo.log, "start_drawing", 1, 8000);
+      solo.socket.emit("submit_drawing", { imageData: TINY_JPEG, score: 5, comment: "x" });
+      expect((await waitFor(solo.log, "show_result", 1, 8000)).data.dailyRank).toBe(1);
+
+      const board = await (await realFetch(`${baseUrl}/api/leaderboard`)).json();
+      expect(board.entries.slice(0, 2)).toMatchObject([
+        { rank: 1, names: "Zeynep", score: 90, solo: true },
+        { rank: 2, names: "Ada & Can", avatars: "🦊🐺", score: 77, solo: false },
+      ]);
+      expect(JSON.stringify(board)).not.toContain(result.word);
+      [host, guest, solo].forEach((item) => item.socket.disconnect());
+    } finally {
+      vi.stubGlobal("fetch", realFetch);
+      delete process.env.GROQ_API_KEY;
+      delete process.env.AI_PROVIDER;
+    }
+  }, 20_000);
 });
 
 describe("AI judge parsing", () => {

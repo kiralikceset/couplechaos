@@ -58,6 +58,7 @@ import { getRoast } from "@/lib/aiRoast";
 import { earnTokens, TOKEN_REWARD_CORRECT, TOKEN_REWARD_ROUND } from "@/lib/tokens";
 import OnboardingScreen from "@/components/screens/OnboardingScreen";
 import ConnectScreen from "@/components/screens/ConnectScreen";
+import LeaderboardScreen from "@/components/screens/LeaderboardScreen";
 import WaitingScreen from "@/components/screens/WaitingScreen";
 import AchievementPopup from "@/components/game/AchievementPopup";
 import CoDrawScreen from "@/components/screens/CoDrawScreen";
@@ -96,7 +97,8 @@ export type ScreenState =
   | "profile"
   | "category"
   | "premium"
-  | "achievements";
+  | "achievements"
+  | "leaderboard";
 
 export interface GameResult {
   word: string;
@@ -112,6 +114,9 @@ export interface GameResult {
   playerGuess?: string | null;
   guessCorrect?: boolean;
   tokensEarned?: number;
+  /** Daily challenge: place on today's leaderboard. */
+  dailyRank?: number;
+  dailyTotal?: number;
 }
 
 export interface HintOptionView {
@@ -178,6 +183,8 @@ export default function GameApp({
   const [gameMode, setGameMode] = useState<GameMode>("classic");
   const [seat, setSeat] = useState(0);
   const [transport, setTransport] = useState(socket.transport);
+  /** Connect screen opened for "play with AI". */
+  const [soloMode, setSoloMode] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     "mixed"
   );
@@ -335,16 +342,19 @@ export default function GameApp({
       role: nextRole,
       mode,
       random,
+      solo,
     }: {
       code: string;
       role: string;
       mode?: GameMode;
       random?: boolean;
+      solo?: boolean;
     }) => {
       setIsRandom(Boolean(random));
       if (mode) setGameMode(mode);
       setRoomCode(code);
       setRole(nextRole);
+      if (solo) return; // solo vs AI: the round starts right away, no waiting room
       setHistory(["home", "connect"]);
       setScreen("waiting");
     };
@@ -453,6 +463,8 @@ export default function GameApp({
       aiGuess,
       playerGuess,
       guessCorrect,
+      dailyRank,
+      dailyTotal,
     }: GameResult) => {
       const numericScore = Number.isFinite(aiScore)
         ? Math.max(1, Math.min(100, Math.round(aiScore!)))
@@ -474,6 +486,8 @@ export default function GameApp({
         playerGuess,
         guessCorrect,
         tokensEarned: TOKEN_REWARD_ROUND + (guessCorrect ? TOKEN_REWARD_CORRECT : 0),
+        dailyRank,
+        dailyTotal,
       };
       earnTokens(nextResult.tokensEarned);
       if (guessCorrect) {
@@ -723,7 +737,15 @@ export default function GameApp({
   }
 
   // Start game mode
+  function handlePlaySolo() {
+    setSoloMode(true);
+    setGameMode("classic");
+    if (selectedCategory === "daily_challenge") setSelectedCategory("mixed");
+    navigate("connect");
+  }
+
   function handlePlayCoDraw() {
+    setSoloMode(false);
     setGameMode("co-draw");
     if (selectedCategory === "daily_challenge") setSelectedCategory("mixed");
     if (!canPlayFree()) {
@@ -734,6 +756,7 @@ export default function GameApp({
   }
 
   function handlePlayClassic() {
+    setSoloMode(false);
     setGameMode("classic");
     if (selectedCategory === "daily_challenge") setSelectedCategory("mixed");
     if (!canPlayFree()) {
@@ -744,6 +767,7 @@ export default function GameApp({
   }
 
   function handleDailyChallenge() {
+    setSoloMode(false);
     setGameMode("classic");
     setSelectedCategory("daily_challenge");
     const daily = getDailyWord(getLocale());
@@ -787,6 +811,8 @@ export default function GameApp({
             onPlayClassic={handlePlayClassic}
             onPlayCoDraw={handlePlayCoDraw}
             onDailyChallenge={handleDailyChallenge}
+            onPlaySolo={handlePlaySolo}
+            onLeaderboard={() => navigate("leaderboard")}
             onProfile={() => navigate("profile")}
             onPremium={() => navigate("premium")}
             onAchievements={() => navigate("achievements")}
@@ -803,7 +829,11 @@ export default function GameApp({
             onSelectCategory={setSelectedCategory}
             selectedCategory={selectedCategory}
             mode={gameMode}
+            solo={soloMode}
           />
+        )}
+        {screen === "leaderboard" && (
+          <LeaderboardScreen onBack={goBack} onPlayDaily={handleDailyChallenge} />
         )}
         {screen === "category" && (
           <CategoryScreen
@@ -866,6 +896,7 @@ export default function GameApp({
             onShare={() => navigate("share")}
             onPlayAgain={playAgain}
             onReport={isRandom ? reportPartner : undefined}
+            onLeaderboard={result.dailyRank ? () => navigate("leaderboard") : undefined}
             onHome={() => {
               leaveGame();
               setHistory([]);
