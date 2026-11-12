@@ -187,6 +187,8 @@ export default function GameApp({
   const [guessOptions, setGuessOptions] = useState<string[]>([]);
   /** Matched with a stranger: show report/block. */
   const [isRandom, setIsRandom] = useState(false);
+  /** Playing against the AI (play again can always restart). */
+  const [isSolo, setIsSolo] = useState(false);
   const [partnerGuess, setPartnerGuess] = useState<string | null>(null);
   const [wordEmoji, setWordEmoji] = useState<string>("");
   const [gameMode, setGameMode] = useState<GameMode>("classic");
@@ -373,6 +375,7 @@ export default function GameApp({
       solo?: boolean;
     }) => {
       setIsRandom(Boolean(random));
+      setIsSolo(Boolean(solo));
       if (mode) setGameMode(mode);
       setRoomCode(code);
       setRole(nextRole);
@@ -566,6 +569,14 @@ export default function GameApp({
     };
     const onJoinError = ({ message }: { message?: string } = {}) => {
       playError();
+      if (screen === "result") {
+        // The room is gone (partner left long ago / server restarted): back to the start.
+        toast.error(t("game.roomClosed"));
+        resetGame();
+        setHistory([]);
+        setScreen("home");
+        return;
+      }
       if (screen !== "connect") toast.error(message || "Odaya bağlanılamadı.");
     };
     const onProtocolError = ({ message }: { message?: string } = {}) => {
@@ -696,6 +707,7 @@ export default function GameApp({
 
   function resetGame() {
     setIsRandom(false);
+    setIsSolo(false);
     setRoomCode(null);
     setRole(null);
     setWord(null);
@@ -714,7 +726,11 @@ export default function GameApp({
       return;
     }
 
-    socket.emit("play_again", { code: roomCode });
+    // Solo: if the room was dropped meanwhile, the server simply starts a new game.
+    const profile = getProfile();
+    socket.emit("play_again", isSolo
+      ? { code: roomCode, solo: true, category: selectedCategory || "mixed", username: profile.username || "Player", avatar: profile.avatar, locale: getLocale() }
+      : { code: roomCode });
   }
 
   // Request notification permission

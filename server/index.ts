@@ -39,6 +39,8 @@ const CO_STROKE_LATE_MS = 500; // strokes still in flight when the timer ends
 const LONG_POLL_MS = num("LONG_POLL_MS", 8000);
 const PLAY_GRACE_MS = num("PLAY_GRACE_MS", 25_000); // partner silent this long during a game → gone
 const WAITING_GRACE_MS = num("WAITING_GRACE_MS", 10 * 60_000); // host may go to WhatsApp to share the code
+const RESULT_GRACE_MS = num("RESULT_GRACE_MS", 5 * 60_000); // result screen: people leave the app to share the video
+const SOLO_GRACE_MS = num("SOLO_GRACE_MS", 15 * 60_000); // solo: nobody is waiting on you
 const SESSION_TTL_MS = num("SESSION_TTL_MS", 30 * 60_000);
 const START_DELAY_MS = num("START_DELAY_MS", 650);
 const PHASE_GRACE_MS = num("PHASE_GRACE_MS", 1500); // latency allowance after a client-side timer
@@ -1042,6 +1044,11 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
   if (event === "round_word") return;
 
   const room = session.roomCode ? rooms.get(session.roomCode) : undefined;
+  if (!room && event === "play_again" && data.solo === true) {
+    // The solo room is gone (app was in the background for long, or the server restarted): start a new one.
+    handleAction(session, "start_solo", data);
+    return;
+  }
   if (!room) {
     if (event !== "cancel_room") push(session.id, "join_error", { message: msg("noRoom", getLocale(data.locale)) });
     return;
@@ -1204,7 +1211,10 @@ function allowSessionCreate(ip: string): boolean {
 function sweep(): void {
   const now = Date.now();
   rooms.forEach((room) => {
-    const grace = room.state === "waiting" ? WAITING_GRACE_MS : PLAY_GRACE_MS;
+    const grace = room.solo ? SOLO_GRACE_MS
+      : room.state === "waiting" ? WAITING_GRACE_MS
+      : room.state === "result" ? RESULT_GRACE_MS
+      : PLAY_GRACE_MS;
     for (const id of room.players) {
       if (isBot(id)) continue;
       const session = sessions.get(id);

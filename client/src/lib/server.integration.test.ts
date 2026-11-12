@@ -12,6 +12,7 @@ process.env.RESULT_MIN_MS = "40";
 process.env.PHASE_GRACE_MS = "200";
 process.env.SUBMIT_GRACE_MS = "400";
 process.env.PLAY_GRACE_MS = "1500";
+process.env.RESULT_GRACE_MS = "1500";
 process.env.CO_DRAW_SECONDS = "2";
 process.env.CO_COUNTDOWN_SECONDS = "0";
 process.env.RANDOM_MATCH = "1";
@@ -456,6 +457,28 @@ describe("solo vs AI", () => {
     expect((await waitFor(me.log, "your_role", 3)).data.role).toBe("drawer");
     me.socket.disconnect();
   }, 20_000);
+});
+
+describe("solo play again after the room is gone", () => {
+  it("starts a fresh solo game instead of failing", async () => {
+    const me = client();
+    me.socket.emit("start_solo", { username: "Yusuf", avatar: "😎", category: "food", locale: "tr" });
+    await waitFor(me.log, "room_joined");
+    me.socket.emit("cancel_room", {}); // e.g. the room was dropped while the app was in the background
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    me.socket.emit("play_again", { solo: true, category: "food", username: "Yusuf", avatar: "😎", locale: "tr" });
+    expect((await waitFor(me.log, "room_joined", 2)).data).toMatchObject({ solo: true });
+    expect((await waitFor(me.log, "your_role")).data.role).toBe("drawer");
+    expect(me.log.some((entry) => entry.event === "join_error")).toBe(false);
+    me.socket.disconnect();
+  }, 10_000);
+
+  it("a lost two-player room still says so", async () => {
+    const me = client();
+    me.socket.emit("play_again", { code: "ABCDEF" });
+    expect((await waitFor(me.log, "join_error")).data.message).toContain("oda");
+    me.socket.disconnect();
+  });
 });
 
 describe("daily challenge leaderboard", () => {
