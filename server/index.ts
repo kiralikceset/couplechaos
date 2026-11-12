@@ -1371,7 +1371,7 @@ function createGameServer() {
     const reply = () => {
       if (response.writableEnded) return;
       session.lastSeen = Date.now();
-      response.json({ events: pending(session, after), cursor: session.nextEventId, serverTime: Date.now(), pollAfterMs: 150 });
+      response.json({ events: pending(session, after), cursor: session.nextEventId, serverTime: Date.now(), pollAfterMs: 0 });
     };
     if (pending(session, after).length || LONG_POLL_MS === 0) {
       reply();

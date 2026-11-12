@@ -125,6 +125,8 @@ export interface GameResult {
   botDrew?: boolean;
   /** The drawing as strokes, for the replay video. */
   strokes?: ReplayStroke[];
+  /** Played against the AI. */
+  solo?: boolean;
   strokeAspect?: number;
 }
 
@@ -493,6 +495,7 @@ export default function GameApp({
       botDrew,
       strokes,
       strokeAspect,
+      solo,
     }: GameResult) => {
       const numericScore = Number.isFinite(aiScore)
         ? Math.max(1, Math.min(100, Math.round(aiScore!)))
@@ -519,6 +522,7 @@ export default function GameApp({
         botDrew,
         strokes: Array.isArray(strokes) ? strokes : undefined,
         strokeAspect,
+        solo,
       };
       earnTokens(nextResult.tokensEarned);
       if (guessCorrect && !botDrew) {

@@ -286,21 +286,20 @@ export function scoreFromBlind(look: BlindLook, word: string): number {
   return Math.max(floors[rank], Math.min(caps[rank], raw));
 }
 
-function commentPrompt(word: string, look: BlindLook, score: number, mode: "classic" | "co-draw", languages: Locale[]): string {
-  const seen = look.guesses.map((guess) => `${guess.label} (${guess.confidence}%)`).join(", ");
+function commentPrompt(word: string, mode: "classic" | "co-draw", languages: Locale[]): string {
   const output = languages.length === 1
-    ? [`Write "guess" and "comment" in ${LANGUAGE_NAMES[languages[0]]}.`, 'Reply with ONLY this JSON: {"guess": "...", "comment": "..."}']
+    ? [`Write "guess" and "comment" in ${LANGUAGE_NAMES[languages[0]]}.`, 'Reply with ONLY this JSON: {"recognisable": true|false, "guess": "...", "comment": "..."}']
     : [
         `Write "guess" and "comment" once per language code: ${languages.map((code) => `${code} = ${LANGUAGE_NAMES[code]}`).join(", ")}. Same joke, natural in each language.`,
-        `Reply with ONLY this JSON: {"guess": {${languages.map((code) => `"${code}": "..."`).join(", ")}}, "comment": {${languages.map((code) => `"${code}": "..."`).join(", ")}}}`,
+        `Reply with ONLY this JSON: {"recognisable": true|false, "guess": {${languages.map((code) => `"${code}": "..."`).join(", ")}}, "comment": {${languages.map((code) => `"${code}": "..."`).join(", ")}}}`,
       ];
   return [
     "You are the judge of \"Couple Chaos\", a party drawing game: a dramatic, snobbish art critic who takes terrible phone doodles far too seriously.",
     `The secret word was "${word}". ${mode === "co-draw" ? "Both partners drew it together on one canvas." : "The drawer only had text hints from their partner."}`,
-    `Looking at the drawing WITHOUT knowing the word, it looked like: "${look.looksLike}". Top guesses: ${seen}.`,
-    `The fair score is ${score}/100 (already decided; do not change it). ${score >= 70 ? "It is genuinely recognisable: give a backhanded compliment." : score >= 35 ? "Half recognisable: tease the near miss." : "Not recognisable: roast it, gently absurd."}`,
-    "\"guess\": what it actually looks like, absurd and oddly specific (max 8 words). Base it on what it looked like, not on the secret word.",
-    "\"comment\": max 2 short sentences, max 180 characters, 1-2 emoji, judgmental and funny. Mock the drawing and teamwork, never people's looks, bodies, identity or intelligence. No sexual content, profanity or slurs.",
+    "Be STRICT: would a stranger who did NOT know the word recognise it? Do not see the word in random lines.",
+    "\"recognisable\": your honest answer to that.",
+    "\"guess\": what it actually looks like, absurd and oddly specific (max 8 words).",
+    "\"comment\": max 2 short sentences, max 180 characters, 1-2 emoji. Recognisable: a backhanded compliment. Not recognisable: roast it, absurd and judgmental. Mock the drawing and teamwork, never people's looks, bodies, identity or intelligence. No sexual content, profanity or slurs.",
     ...output,
   ].join("\n");
 }
@@ -333,33 +332,36 @@ export async function judgeDrawing(input: JudgeInput): Promise<JudgeResult | nul
   }
   const languages = languagesOf(input.locale, input.locales);
   const mode = input.mode || "classic";
-  try {
-    const look = await lookBlind(selected, input.imageData, image, mode);
-    if (!look) return null;
-    const score = scoreFromBlind(look, input.word);
-
-    // Step 2: the joke (text only, cheap). If it fails, the phone writes an offline one.
-    let comments: Partial<Record<Locale, string>> = {};
-    let guesses: Partial<Record<Locale, string>> = {};
+  // Both looks run at the same time: the blind one decides the score, the other writes the joke.
+  const commentCall = (async () => {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), Number(process.env.AI_COMMENT_TIMEOUT_MS) || 6000);
+    const timeout = setTimeout(() => controller.abort(), Number(process.env.AI_TIMEOUT_MS) || 7000);
     try {
-      const text = await textCompletion(commentPrompt(input.word, look, score, mode, languages), controller.signal, 400);
+      const prompt = commentPrompt(input.word, mode, languages);
+      const text = selected === "anthropic"
+        ? await callAnthropic(prompt, image, controller.signal)
+        : await callOpenAICompatible(selected, prompt, input.imageData, controller.signal);
       const start = text.indexOf("{");
       const end = text.lastIndexOf("}");
-      if (start >= 0 && end > start) {
-        const parsed = JSON.parse(text.slice(start, end + 1)) as { guess?: unknown; comment?: unknown };
-        comments = pickText(parsed.comment, languages, 300);
-        guesses = pickText(parsed.guess, languages, 80);
-      }
+      if (start < 0 || end <= start) return null;
+      return JSON.parse(text.slice(start, end + 1)) as { recognisable?: unknown; guess?: unknown; comment?: unknown };
     } catch (error) {
       console.warn("[ai] comment failed:", String(error).slice(0, 200));
+      return null;
     } finally {
       clearTimeout(timeout);
     }
+  })();
+  try {
+    const [look, joke] = await Promise.all([lookBlind(selected, input.imageData, image, mode), commentCall]);
+    if (!look) return null;
+    const score = scoreFromBlind(look, input.word);
+    // Keep the joke only if its tone matches the fair score (no "great honey!" for a cage).
+    const agrees = joke && (typeof joke.recognisable !== "boolean" || joke.recognisable === score >= 45);
+    const comments = agrees ? pickText(joke.comment, languages, 300) : {};
+    const guesses = joke ? pickText(joke.guess, languages, 80) : {};
     if (languages[0] === "en" && !guesses.en && look.looksLike) guesses.en = look.looksLike;
-    const comment = comments[languages[0]] || "";
-    return { score, comment, guess: guesses[languages[0]], comments, guesses, source: "ai" };
+    return { score, comment: comments[languages[0]] || "", guess: guesses[languages[0]], comments, guesses, source: "ai" };
   } catch (error) {
     console.warn("[ai] judge failed:", String(error).slice(0, 300));
     return null;

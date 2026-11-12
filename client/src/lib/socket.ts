@@ -322,7 +322,9 @@ export class GameSocket {
       const events = Array.isArray(payload.events) ? payload.events : [];
       this.handleServerEvents(events, payload.serverTime);
       this.polling = false;
-      this.schedulePoll(Math.max(150, Math.min(3000, Number(payload.pollAfterMs) || 250)));
+      // Ask again right away: the server holds the request until something happens.
+      const after = Number(payload.pollAfterMs);
+      this.schedulePoll(Math.max(0, Math.min(3000, Number.isFinite(after) ? after : 250)));
     } catch {
       if (this.stopped || generation !== this.generation) return;
       this.polling = false;

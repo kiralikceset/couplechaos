@@ -493,9 +493,9 @@ describe("daily challenge leaderboard", () => {
       const url = String(input?.url || input);
       if (!url.includes("groq.com")) return realFetch(input, init);
       // Step 1 (with the image) is blind; step 2 (text) writes the joke.
-      const content = String(init?.body || "").includes("image_url")
+      const content = String(init?.body || "").includes("do NOT know")
         ? JSON.stringify({ guesses: [{ label: getDailyWord("en").word, confidence: nextScore }, { label: "potato", confidence: 20 }], looks_like: "a melted tax inspector" })
-        : JSON.stringify({ guess: "erimiş müfettiş", comment: "Jüri istifa etti 🎭" });
+        : JSON.stringify({ recognisable: true, guess: "erimiş müfettiş", comment: "Jüri istifa etti 🎭" });
       return new Response(JSON.stringify({ choices: [{ message: { content } }] }), { status: 200, headers: { "content-type": "application/json" } });
     });
     try {
@@ -542,7 +542,7 @@ describe("fair AI scoring (blind look)", () => {
     expect(__test.scoreFromBlind(look([["horse", 30]]), "At")).toBe(55); // recognised but unsure → still a fair floor
     expect(__test.blindPrompt("classic")).not.toMatch(/secret word/i);
     expect(__test.parseBlind('{"guesses":[{"label":"cat","confidence":"70"}],"looks_like":"x"}')?.guesses[0]).toEqual({ label: "cat", confidence: 70 });
-    expect(__test.commentPrompt("Bal", look([["cage", 80]]), 8, "classic", ["tr"])).toContain("8/100");
+    expect(__test.commentPrompt("Bal", "classic", ["tr"])).toContain("STRICT");
   });
 });
 

@@ -28,7 +28,7 @@ interface Props {
   onLeaderboard?: () => void;
 }
 
-export default function ResultScreen({ result, onShare, onPlayAgain, onHome, onReport, onLeaderboard }: Props) {
+export default function ResultScreen({ result, onShare, onPlayAgain, onHome, onReport, onLeaderboard, partnerName }: Props) {
   const { t } = useLocale();
   const score = useRef(Number.isFinite(result.aiScore) ? Math.max(1, Math.min(100, Math.round(result.aiScore!))) : 3).current;
   const comment = useRef(result.aiComment || getRoast(score, result.word)).current;
@@ -64,6 +64,14 @@ export default function ResultScreen({ result, onShare, onPlayAgain, onHome, onR
   // Always offered: strokes redraw themselves; without them the final picture is revealed.
   const videoReady = true;
 
+  // "Yusuf 💞 Elif" (or "Yusuf 🤖 Yapay Zekâ" against the AI)
+  const playerNames = () => {
+    const me = getProfile().username.trim();
+    const partner = (partnerName || "").trim();
+    if (me && partner) return `${me} ${result.solo ? "🤖" : "💞"} ${partner}`;
+    return me || partner || undefined;
+  };
+
   const handleVideo = async () => {
     if (videoProgress !== null) return;
     playTap();
@@ -83,6 +91,7 @@ export default function ResultScreen({ result, onShare, onPlayAgain, onHome, onR
         score,
         verdict: verdict && classic ? { text: verdict.title, good: correct } : undefined,
         labels: { should: t("video.should"), cta: t("video.cta") },
+        players: playerNames(),
         onProgress: setVideoProgress,
       });
       setVideoProgress(null);

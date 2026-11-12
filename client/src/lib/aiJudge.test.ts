@@ -21,16 +21,17 @@ describe("server AI judge", () => {
     process.env.ANTHROPIC_API_KEY = "test-key";
     // 1st call (blind look, with the image), 2nd call (the joke, text only)
     const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => new Response(JSON.stringify({
-      content: [{ type: "text", text: String(init?.body).includes('"image"')
+      content: [{ type: "text", text: String(init?.body).includes("do NOT know")
         ? '{"guesses": [{"label": "potato", "confidence": 70}, {"label": "cat", "confidence": 30}], "looks_like": "a sad potato"}'
-        : '{"guess": "üzgün patates", "comment": "Bu kedi değil, vergi borcu olan bir patates 🥔"}' }],
+        : '{"recognisable": false, "guess": "üzgün patates", "comment": "Bu kedi değil, vergi borcu olan bir patates 🥔"}' }],
     })));
     vi.stubGlobal("fetch", fetchMock);
     const { judgeDrawing } = await import("../../../server/aiJudge");
     const verdict = await judgeDrawing({ imageData: IMAGE, word: "Kedi", locale: "tr" });
     expect(verdict?.score).toBe(42); // "cat" was only the 2nd blind guess → 30% × 0.8, floor 42
-    expect(verdict?.comment).toContain("patates");
-    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(verdict?.guess).toBe("üzgün patates");
+    const calls = fetchMock.mock.calls as unknown as Array<[string, RequestInit]>;
+    const [url, init] = calls.find(([, request]) => String(request.body).includes("do NOT know"))!;
     expect(url).toBe("https://api.anthropic.com/v1/messages");
     expect((init.headers as Record<string, string>)["x-api-key"]).toBe("test-key");
     const body = JSON.parse(String(init.body));
@@ -44,16 +45,16 @@ describe("server AI judge", () => {
   ])("uses the free %s provider through its OpenAI-compatible endpoint", async (envName, expectedUrl) => {
     process.env[envName] = "free-key";
     const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => new Response(JSON.stringify({
-      choices: [{ message: { content: String(init?.body).includes("image_url")
+      choices: [{ message: { content: String(init?.body).includes("do NOT know")
         ? "```json\n{\"guesses\": [{\"label\": \"cloud\", \"confidence\": 60}, {\"label\": \"cat\", \"confidence\": 50}], \"looks_like\": \"x\"}\n```"
-        : "{\"comment\": \"Bu bir bulut mu kedi mi 🤔\"}" } }],
+        : "{\"recognisable\": false, \"comment\": \"Bu bir bulut mu kedi mi 🤔\"}" } }],
     })));
     vi.stubGlobal("fetch", fetchMock);
     const { judgeDrawing } = await import("../../../server/aiJudge");
     const verdict = await judgeDrawing({ imageData: IMAGE, word: "Kedi", locale: "tr" });
     expect(verdict?.score).toBe(42);
-    expect(verdict?.comment).toContain("bulut");
-    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(verdict?.comment).toContain("bulut"); // no "recognisable" field → the joke is kept
+    const [url, init] = (fetchMock.mock.calls as unknown as Array<[string, RequestInit]>).find(([, request]) => String(request.body).includes("do NOT know"))!;
     expect(url).toBe(expectedUrl);
     expect((init.headers as Record<string, string>).authorization).toBe("Bearer free-key");
     const body = JSON.parse(String(init.body));
@@ -66,5 +67,18 @@ describe("server AI judge", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("boom", { status: 500 })));
     const { judgeDrawing } = await import("../../../server/aiJudge");
     expect(await judgeDrawing({ imageData: IMAGE, word: "Kedi", locale: "en" })).toBeNull();
+  });
+
+  it("keeps the joke when its tone matches the fair score", async () => {
+    process.env.GROQ_API_KEY = "k";
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => new Response(JSON.stringify({
+      choices: [{ message: { content: String(init?.body).includes("do NOT know")
+        ? '{"guesses": [{"label": "cage", "confidence": 80}, {"label": "grid", "confidence": 60}], "looks_like": "a cage"}'
+        : '{"recognisable": false, "guess": "kaçak kafes", "comment": "Ruhumu bu hücreye hapsettiniz ⛓️"}' } }],
+    }))));
+    const { judgeDrawing } = await import("../../../server/aiJudge");
+    const verdict = await judgeDrawing({ imageData: IMAGE, word: "Bal", locale: "tr" });
+    expect(verdict?.score).toBeLessThan(20);
+    expect(verdict?.comment).toContain("hücreye");
   });
 });

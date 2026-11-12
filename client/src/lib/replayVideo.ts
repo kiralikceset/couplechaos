@@ -16,6 +16,8 @@ export interface ReplayInput {
   comment: string;
   score: number;
   verdict?: { text: string; good: boolean };
+  /** Who played, e.g. "Yusuf 💞 Elif". */
+  players?: string;
   labels: { should: string; cta: string };
   onProgress?: (progress: number) => void;
 }
@@ -106,7 +108,7 @@ export async function makeReplayVideo(input: ReplayInput): Promise<{ blob: Blob;
   for (let y = 12; y < H; y += 26) for (let x = 12; x < W; x += 26) bg.fillRect(x, y, 2, 2);
 
   // Drawing area: pink frame, dark inside, drawing fitted with its own ratio.
-  const frame = { x: 60, y: 240, w: 600, h: 640 };
+  const frame = { x: 60, y: 262, w: 600, h: 620 };
   const inner = { x: frame.x + 18, y: frame.y + 18, w: frame.w - 36, h: frame.h - 36 };
   const aspect = input.aspect > 0.2 && input.aspect < 4 ? input.aspect : 0.75;
   let dw = inner.w;
@@ -185,27 +187,37 @@ export async function makeReplayVideo(input: ReplayInput): Promise<{ blob: Blob;
     ctx.font = `700 40px ${DISPLAY}`;
     ctx.textBaseline = "alphabetic";
     ctx.textAlign = "left";
-    ctx.fillText("Couple Chaos", 60, 100);
+    ctx.fillText("Couple Chaos", 60, 96);
+    if (input.players) {
+      ctx.fillStyle = "#B9B3C7";
+      let playerSize = 30;
+      ctx.font = `600 ${playerSize}px ${BODY}`;
+      while (ctx.measureText(input.players).width > 600 && playerSize > 20) {
+        playerSize -= 2;
+        ctx.font = `600 ${playerSize}px ${BODY}`;
+      }
+      ctx.fillText(input.players, 60, 142);
+    }
     if (input.verdict) {
       ctx.font = `700 26px ${BODY}`;
       const label = input.verdict.text;
       const width = ctx.measureText(label).width + 40;
       ctx.fillStyle = input.verdict.good ? "#22C55E" : "#EF4444";
-      roundRect(ctx, W - 60 - width, 64, width, 50, 25);
+      roundRect(ctx, W - 60 - width, 60, width, 50, 25);
       ctx.fill();
       ctx.fillStyle = "#07060A";
-      ctx.fillText(label, W - 60 - width + 20, 98);
+      ctx.fillText(label, W - 60 - width + 20, 94);
     }
 
     // The word
     ctx.fillStyle = PAPER;
-    let size = 76;
+    let size = 70;
     ctx.font = `700 ${size}px ${DISPLAY}`;
     while (ctx.measureText(input.word).width > 600 && size > 40) {
       size -= 4;
       ctx.font = `700 ${size}px ${DISPLAY}`;
     }
-    ctx.fillText(input.word, 60, 200);
+    ctx.fillText(input.word, 60, 230);
 
     // Drawing
     ctx.fillStyle = PINK;
