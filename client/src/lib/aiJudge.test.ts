@@ -19,19 +19,23 @@ describe("server AI judge", () => {
 
   it("sends the drawing to Claude and returns its roast", async () => {
     process.env.ANTHROPIC_API_KEY = "test-key";
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: '{"score": 22, "guess": "üzgün patates", "comment": "Bu kedi değil, vergi borcu olan bir patates 🥔"}' }],
+    // 1st call (blind look, with the image), 2nd call (the joke, text only)
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => new Response(JSON.stringify({
+      content: [{ type: "text", text: String(init?.body).includes('"image"')
+        ? '{"guesses": [{"label": "potato", "confidence": 70}, {"label": "cat", "confidence": 30}], "looks_like": "a sad potato"}'
+        : '{"guess": "üzgün patates", "comment": "Bu kedi değil, vergi borcu olan bir patates 🥔"}' }],
     })));
     vi.stubGlobal("fetch", fetchMock);
     const { judgeDrawing } = await import("../../../server/aiJudge");
     const verdict = await judgeDrawing({ imageData: IMAGE, word: "Kedi", locale: "tr" });
-    expect(verdict?.score).toBe(22);
+    expect(verdict?.score).toBe(42); // "cat" was only the 2nd blind guess → 30% × 0.8, floor 42
     expect(verdict?.comment).toContain("patates");
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("https://api.anthropic.com/v1/messages");
     expect((init.headers as Record<string, string>)["x-api-key"]).toBe("test-key");
     const body = JSON.parse(String(init.body));
     expect(body.messages[0].content[0].source).toEqual({ type: "base64", media_type: "image/jpeg", data: "AAAA" });
+    expect(JSON.stringify(body)).not.toContain("Kedi"); // the blind look never sees the word
   });
 
   it.each([
@@ -39,13 +43,16 @@ describe("server AI judge", () => {
     ["GROQ_API_KEY", "https://api.groq.com/openai/v1/chat/completions"],
   ])("uses the free %s provider through its OpenAI-compatible endpoint", async (envName, expectedUrl) => {
     process.env[envName] = "free-key";
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
-      choices: [{ message: { content: "```json\n{\"score\": 40, \"comment\": \"Bu bir bulut mu kedi mi 🤔\"}\n```" } }],
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => new Response(JSON.stringify({
+      choices: [{ message: { content: String(init?.body).includes("image_url")
+        ? "```json\n{\"guesses\": [{\"label\": \"cloud\", \"confidence\": 60}, {\"label\": \"cat\", \"confidence\": 50}], \"looks_like\": \"x\"}\n```"
+        : "{\"comment\": \"Bu bir bulut mu kedi mi 🤔\"}" } }],
     })));
     vi.stubGlobal("fetch", fetchMock);
     const { judgeDrawing } = await import("../../../server/aiJudge");
     const verdict = await judgeDrawing({ imageData: IMAGE, word: "Kedi", locale: "tr" });
-    expect(verdict?.score).toBe(40);
+    expect(verdict?.score).toBe(42);
+    expect(verdict?.comment).toContain("bulut");
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe(expectedUrl);
     expect((init.headers as Record<string, string>).authorization).toBe("Bearer free-key");

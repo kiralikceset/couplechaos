@@ -1,3 +1,4 @@
+import { hintRevealsWord } from "../client/src/lib/hintFilter";
 /**
  * AI drawing judge.
  *
@@ -167,7 +168,7 @@ function parseJudgeJson(text: string, languages: Locale[] = ["tr"]): JudgeResult
   }
 }
 
-async function callAnthropic(input: JudgeInput, image: { mediaType: string; base64: string }, signal: AbortSignal): Promise<string> {
+async function callAnthropic(prompt: string, image: { mediaType: string; base64: string }, signal: AbortSignal): Promise<string> {
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     signal,
@@ -183,7 +184,7 @@ async function callAnthropic(input: JudgeInput, image: { mediaType: string; base
         role: "user",
         content: [
           { type: "image", source: { type: "base64", media_type: image.mediaType, data: image.base64 } },
-          { type: "text", text: buildPrompt(input.word, input.locale, input.mode, input.locales) },
+          { type: "text", text: prompt },
         ],
       }],
     }),
@@ -193,7 +194,7 @@ async function callAnthropic(input: JudgeInput, image: { mediaType: string; base
   return (payload.content || []).filter((part) => part.type === "text").map((part) => part.text || "").join("");
 }
 
-async function callOpenAICompatible(name: Exclude<ProviderName, "anthropic">, input: JudgeInput, signal: AbortSignal): Promise<string> {
+async function callOpenAICompatible(name: Exclude<ProviderName, "anthropic">, prompt: string, imageData: string, signal: AbortSignal): Promise<string> {
   const target = OPENAI_COMPATIBLE[name];
   const isOpenAI = name === "openai";
   const response = await fetch(target.url, {
@@ -211,8 +212,8 @@ async function callOpenAICompatible(name: Exclude<ProviderName, "anthropic">, in
       messages: [{
         role: "user",
         content: [
-          { type: "text", text: buildPrompt(input.word, input.locale, input.mode, input.locales) },
-          { type: "image_url", image_url: isOpenAI ? { url: input.imageData, detail: "low" } : { url: input.imageData } },
+          { type: "text", text: prompt },
+          { type: "image_url", image_url: isOpenAI ? { url: imageData, detail: "low" } : { url: imageData } },
         ],
       }],
     }),
@@ -220,6 +221,104 @@ async function callOpenAICompatible(name: Exclude<ProviderName, "anthropic">, in
   if (!response.ok) throw new Error(`${name}_http_${response.status}: ${(await response.text()).slice(0, 200)}`);
   const payload = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
   return payload.choices?.[0]?.message?.content || "";
+}
+
+// ── Fair scoring: the AI looks at the drawing WITHOUT knowing the word ─────
+// Knowing the word makes a model "see" it everywhere (a grid becomes honey).
+// So step 1 is blind: "what is this?" → ranked guesses. The score comes from
+// where the real word lands in that list. Step 2 (text only) writes the joke.
+
+interface BlindGuess {
+  label: string;
+  confidence: number;
+}
+
+interface BlindLook {
+  guesses: BlindGuess[];
+  looksLike: string;
+}
+
+function blindPrompt(mode: "classic" | "co-draw"): string {
+  return [
+    "This is a quick finger doodle from a phone drawing game (light strokes on a dark background).",
+    mode === "co-draw" ? "Two people drew it at the same time on one canvas." : "One person drew it in about 30 seconds.",
+    "You do NOT know what it was supposed to be. Look only at the drawing.",
+    "List the 5 things it most likely shows, most likely first, as short English nouns (1-3 words),",
+    "each with a confidence 0-100 that it is really that. Be honest: a vague scribble gets low confidence.",
+    "If the canvas is empty or just random lines, say so as the first guess.",
+    "Also describe what it literally looks like in max 8 words, oddly specific and funny.",
+    'Reply with ONLY this JSON: {"guesses": [{"label": "...", "confidence": 0}], "looks_like": "..."}',
+  ].join("\n");
+}
+
+export function parseBlind(text: string): BlindLook | null {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  try {
+    const parsed = JSON.parse(text.slice(start, end + 1)) as { guesses?: unknown; looks_like?: unknown };
+    const guesses = (Array.isArray(parsed.guesses) ? parsed.guesses : [])
+      .map((item) => ({
+        label: String((item as { label?: unknown })?.label || "").trim().slice(0, 60),
+        confidence: Math.max(0, Math.min(100, Number((item as { confidence?: unknown })?.confidence) || 0)),
+      }))
+      .filter((item) => item.label)
+      .slice(0, 5);
+    if (!guesses.length) return null;
+    return { guesses, looksLike: String(parsed.looks_like || "").trim().slice(0, 80) };
+  } catch {
+    return null;
+  }
+}
+
+/** Where the real word lands among the blind guesses decides the score. */
+export function scoreFromBlind(look: BlindLook, word: string): number {
+  const rank = look.guesses.findIndex((guess) => hintRevealsWord(guess.label, word));
+  if (rank < 0) {
+    // Not recognised at all. A confident "it's clearly something else" scores lowest.
+    const top = look.guesses[0]?.confidence || 0;
+    return Math.max(3, Math.round(20 - top * 0.15));
+  }
+  const weights = [1, 0.8, 0.65, 0.5, 0.4];
+  const floors = [55, 42, 33, 26, 20];
+  const caps = [98, 75, 60, 48, 38];
+  const raw = Math.round(look.guesses[rank].confidence * weights[rank]);
+  return Math.max(floors[rank], Math.min(caps[rank], raw));
+}
+
+function commentPrompt(word: string, look: BlindLook, score: number, mode: "classic" | "co-draw", languages: Locale[]): string {
+  const seen = look.guesses.map((guess) => `${guess.label} (${guess.confidence}%)`).join(", ");
+  const output = languages.length === 1
+    ? [`Write "guess" and "comment" in ${LANGUAGE_NAMES[languages[0]]}.`, 'Reply with ONLY this JSON: {"guess": "...", "comment": "..."}']
+    : [
+        `Write "guess" and "comment" once per language code: ${languages.map((code) => `${code} = ${LANGUAGE_NAMES[code]}`).join(", ")}. Same joke, natural in each language.`,
+        `Reply with ONLY this JSON: {"guess": {${languages.map((code) => `"${code}": "..."`).join(", ")}}, "comment": {${languages.map((code) => `"${code}": "..."`).join(", ")}}}`,
+      ];
+  return [
+    "You are the judge of \"Couple Chaos\", a party drawing game: a dramatic, snobbish art critic who takes terrible phone doodles far too seriously.",
+    `The secret word was "${word}". ${mode === "co-draw" ? "Both partners drew it together on one canvas." : "The drawer only had text hints from their partner."}`,
+    `Looking at the drawing WITHOUT knowing the word, it looked like: "${look.looksLike}". Top guesses: ${seen}.`,
+    `The fair score is ${score}/100 (already decided; do not change it). ${score >= 70 ? "It is genuinely recognisable: give a backhanded compliment." : score >= 35 ? "Half recognisable: tease the near miss." : "Not recognisable: roast it, gently absurd."}`,
+    "\"guess\": what it actually looks like, absurd and oddly specific (max 8 words). Base it on what it looked like, not on the secret word.",
+    "\"comment\": max 2 short sentences, max 180 characters, 1-2 emoji, judgmental and funny. Mock the drawing and teamwork, never people's looks, bodies, identity or intelligence. No sexual content, profanity or slurs.",
+    ...output,
+  ].join("\n");
+}
+
+async function lookBlind(selected: ProviderName, imageData: string, image: { mediaType: string; base64: string }, mode: "classic" | "co-draw"): Promise<BlindLook | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), Number(process.env.AI_TIMEOUT_MS) || 7000);
+  try {
+    const prompt = blindPrompt(mode);
+    const text = selected === "anthropic"
+      ? await callAnthropic(prompt, image, controller.signal)
+      : await callOpenAICompatible(selected, prompt, imageData, controller.signal);
+    const look = parseBlind(text);
+    if (!look) console.warn("[ai] unparseable blind look:", text.slice(0, 200));
+    return look;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 /** Returns an AI verdict, or null when AI is off / slow / failing (caller falls back). */
@@ -232,25 +331,42 @@ export async function judgeDrawing(input: JudgeInput): Promise<JudgeResult | nul
     console.warn("[ai] daily limit reached, using offline comments");
     return null;
   }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), Number(process.env.AI_TIMEOUT_MS) || 7000);
+  const languages = languagesOf(input.locale, input.locales);
+  const mode = input.mode || "classic";
   try {
-    const text = selected === "anthropic"
-      ? await callAnthropic(input, image, controller.signal)
-      : await callOpenAICompatible(selected, input, controller.signal);
-    const result = parseJudgeJson(text, languagesOf(input.locale, input.locales));
-    if (!result) console.warn("[ai] unparseable answer:", text.slice(0, 200));
-    return result;
+    const look = await lookBlind(selected, input.imageData, image, mode);
+    if (!look) return null;
+    const score = scoreFromBlind(look, input.word);
+
+    // Step 2: the joke (text only, cheap). If it fails, the phone writes an offline one.
+    let comments: Partial<Record<Locale, string>> = {};
+    let guesses: Partial<Record<Locale, string>> = {};
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), Number(process.env.AI_COMMENT_TIMEOUT_MS) || 6000);
+    try {
+      const text = await textCompletion(commentPrompt(input.word, look, score, mode, languages), controller.signal, 400);
+      const start = text.indexOf("{");
+      const end = text.lastIndexOf("}");
+      if (start >= 0 && end > start) {
+        const parsed = JSON.parse(text.slice(start, end + 1)) as { guess?: unknown; comment?: unknown };
+        comments = pickText(parsed.comment, languages, 300);
+        guesses = pickText(parsed.guess, languages, 80);
+      }
+    } catch (error) {
+      console.warn("[ai] comment failed:", String(error).slice(0, 200));
+    } finally {
+      clearTimeout(timeout);
+    }
+    if (languages[0] === "en" && !guesses.en && look.looksLike) guesses.en = look.looksLike;
+    const comment = comments[languages[0]] || "";
+    return { score, comment, guess: guesses[languages[0]], comments, guesses, source: "ai" };
   } catch (error) {
     console.warn("[ai] judge failed:", String(error).slice(0, 300));
     return null;
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
-export const __test = { parseJudgeJson, buildPrompt };
+export const __test = { parseJudgeJson, buildPrompt, parseBlind, scoreFromBlind, blindPrompt, commentPrompt };
 
 // ── Smart hints ("Akıllı ipucu") for the describer ─────────────────────────
 function hintPrompt(word: string, locale: Locale): string {

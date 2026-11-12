@@ -2,6 +2,7 @@
  * End-to-end: the real game server + two real GameSocket clients (the exact
  * transport code shipped in the app), talking over HTTP on localhost.
  */
+import { getDailyWord } from "./wordPool";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 process.env.DESCRIBE_SECONDS = "1";
@@ -491,7 +492,10 @@ describe("daily challenge leaderboard", () => {
     vi.stubGlobal("fetch", async (input: any, init?: any) => {
       const url = String(input?.url || input);
       if (!url.includes("groq.com")) return realFetch(input, init);
-      const content = JSON.stringify({ score: nextScore, guess: "erimiş müfettiş", comment: "Jüri istifa etti 🎭" });
+      // Step 1 (with the image) is blind; step 2 (text) writes the joke.
+      const content = String(init?.body || "").includes("image_url")
+        ? JSON.stringify({ guesses: [{ label: getDailyWord("en").word, confidence: nextScore }, { label: "potato", confidence: 20 }], looks_like: "a melted tax inspector" })
+        : JSON.stringify({ guess: "erimiş müfettiş", comment: "Jüri istifa etti 🎭" });
       return new Response(JSON.stringify({ choices: [{ message: { content } }] }), { status: 200, headers: { "content-type": "application/json" } });
     });
     try {
@@ -525,6 +529,21 @@ describe("daily challenge leaderboard", () => {
       delete process.env.AI_PROVIDER;
     }
   }, 20_000);
+});
+
+describe("fair AI scoring (blind look)", () => {
+  it("scores by where the real word lands among blind guesses", async () => {
+    const { __test } = await import("../../../server/aiJudge");
+    const look = (labels: Array<[string, number]>) => ({ guesses: labels.map(([label, confidence]) => ({ label, confidence })), looksLike: "" });
+    // the reported case: a yellow grid for "Bal" (honey) that the AI calls a cage
+    expect(__test.scoreFromBlind(look([["cage", 80], ["grid", 60], ["net", 40]]), "Bal")).toBeLessThan(20);
+    expect(__test.scoreFromBlind(look([["honey jar", 85], ["pot", 40]]), "Bal")).toBe(85);
+    expect(__test.scoreFromBlind(look([["beehive", 60], ["cage", 50], ["honeycomb", 50]]), "Bal")).toBe(33);
+    expect(__test.scoreFromBlind(look([["horse", 30]]), "At")).toBe(55); // recognised but unsure → still a fair floor
+    expect(__test.blindPrompt("classic")).not.toMatch(/secret word/i);
+    expect(__test.parseBlind('{"guesses":[{"label":"cat","confidence":"70"}],"looks_like":"x"}')?.guesses[0]).toEqual({ label: "cat", confidence: 70 });
+    expect(__test.commentPrompt("Bal", look([["cage", 80]]), 8, "classic", ["tr"])).toContain("8/100");
+  });
 });
 
 describe("AI judge parsing", () => {
