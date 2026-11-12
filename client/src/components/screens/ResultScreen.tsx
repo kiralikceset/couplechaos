@@ -64,9 +64,9 @@ export default function ResultScreen({ result, onShare, onPlayAgain, onHome, onR
 
   const verdict = classic
     ? correct
-      ? { icon: "🎯", title: t("result.guessCorrect").replace(/\s*🎯\s*$/, ""), tone: "text-green-300", ring: "border-green-400/35 bg-green-500/[0.08]" }
+      ? { icon: "🎯", title: result.botDrew ? t("result.aiRight") : t("result.guessCorrect").replace(/\s*🎯\s*$/, ""), tone: "text-green-300", ring: "border-green-400/35 bg-green-500/[0.08]" }
       : result.playerGuess
-        ? { icon: "✕", title: t("result.guessWrong").replace(/\s*❌\s*$/, ""), tone: "text-red-300", ring: "border-red-400/30 bg-red-500/[0.07]" }
+        ? { icon: "✕", title: result.botDrew ? t("result.aiWrong") : t("result.guessWrong").replace(/\s*❌\s*$/, ""), tone: "text-red-300", ring: "border-red-400/30 bg-red-500/[0.07]" }
         : { icon: "⏱", title: t("result.guessNone").replace(/\s*🤷\s*$/, ""), tone: "text-white/70", ring: "border-white/10 bg-white/[0.03]" }
     : null;
 
@@ -126,9 +126,9 @@ export default function ResultScreen({ result, onShare, onPlayAgain, onHome, onR
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="grid grid-cols-2 gap-2.5">
             <figure className="relative aspect-square rounded-2xl overflow-hidden border border-white/[0.12] bg-[#0a0a0a]">
               {result.imageData
-                ? <img src={result.imageData} alt={t("result.yourDrawing")} className="w-full h-full object-contain" />
+                ? <img src={result.imageData} alt={result.botDrew ? t("result.aiDrawing") : t("result.yourDrawing")} className="w-full h-full object-contain" />
                 : <div className="w-full h-full flex items-center justify-center text-4xl">🎨</div>}
-              <figcaption className="absolute left-2 top-2 px-2 py-0.5 rounded-md bg-black/70 text-[0.55rem] font-bold text-white/70 uppercase tracking-wider">{t("result.yourDrawing")}</figcaption>
+              <figcaption className="absolute left-2 top-2 px-2 py-0.5 rounded-md bg-black/70 text-[0.55rem] font-bold text-white/70 uppercase tracking-wider">{result.botDrew ? t("result.aiDrawing") : t("result.yourDrawing")}</figcaption>
             </figure>
             <figure className="relative aspect-square rounded-2xl overflow-hidden border border-white/[0.12] bg-gradient-to-br from-secondary/15 via-[#0d0b14] to-primary/10 flex items-center justify-center">
               <span className="text-[4.5rem] leading-none" role="img" aria-label={result.word}>{result.wordEmoji || "❓"}</span>

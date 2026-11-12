@@ -117,6 +117,8 @@ export interface GameResult {
   /** Daily challenge: place on today's leaderboard. */
   dailyRank?: number;
   dailyTotal?: number;
+  /** Solo: the AI drew this one (the player gave the hints). */
+  botDrew?: boolean;
 }
 
 export interface HintOptionView {
@@ -465,6 +467,7 @@ export default function GameApp({
       guessCorrect,
       dailyRank,
       dailyTotal,
+      botDrew,
     }: GameResult) => {
       const numericScore = Number.isFinite(aiScore)
         ? Math.max(1, Math.min(100, Math.round(aiScore!)))
@@ -488,9 +491,10 @@ export default function GameApp({
         tokensEarned: TOKEN_REWARD_ROUND + (guessCorrect ? TOKEN_REWARD_CORRECT : 0),
         dailyRank,
         dailyTotal,
+        botDrew,
       };
       earnTokens(nextResult.tokensEarned);
-      if (guessCorrect) {
+      if (guessCorrect && !botDrew) {
         try {
           localStorage.setItem("cc_correct_guesses", String((Number(localStorage.getItem("cc_correct_guesses")) || 0) + 1));
         } catch { /* ignore */ }

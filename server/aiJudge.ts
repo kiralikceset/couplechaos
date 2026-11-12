@@ -263,7 +263,7 @@ function hintPrompt(word: string, locale: Locale): string {
   ].join("\n");
 }
 
-async function textCompletion(prompt: string, signal: AbortSignal): Promise<string> {
+async function textCompletion(prompt: string, signal: AbortSignal, maxTokens = 200): Promise<string> {
   const selected = provider();
   if (!selected) return "";
   if (selected === "anthropic") {
@@ -271,7 +271,7 @@ async function textCompletion(prompt: string, signal: AbortSignal): Promise<stri
       method: "POST",
       signal,
       headers: { "content-type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY!.trim(), "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({ model: process.env.AI_MODEL?.trim() || "claude-haiku-5-5", max_tokens: 200, messages: [{ role: "user", content: prompt }] }),
+      body: JSON.stringify({ model: process.env.AI_MODEL?.trim() || "claude-haiku-5-5", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] }),
     });
     if (!response.ok) throw new Error(`anthropic_http_${response.status}`);
     const payload = await response.json() as { content?: Array<{ type: string; text?: string }> };
@@ -282,7 +282,7 @@ async function textCompletion(prompt: string, signal: AbortSignal): Promise<stri
     method: "POST",
     signal,
     headers: { "content-type": "application/json", authorization: `Bearer ${process.env[target.keyEnv]!.trim()}` },
-    body: JSON.stringify({ model: process.env.AI_MODEL?.trim() || target.model, max_tokens: 200, messages: [{ role: "user", content: prompt }] }),
+    body: JSON.stringify({ model: process.env.AI_MODEL?.trim() || target.model, max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] }),
   });
   if (!response.ok) throw new Error(`${selected}_http_${response.status}`);
   const payload = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
@@ -317,3 +317,60 @@ export async function generateHints(word: string, locale: Locale): Promise<strin
     clearTimeout(timeout);
   }
 }
+
+// ── The AI as the drawer (solo mode, when the player gives the hints) ──────
+export interface BotDrawing {
+  guess: string;
+  /** Strokes as [x, y] points, 0..1 on a 3:4 canvas. */
+  strokes: number[][][];
+}
+
+function botDrawPrompt(hints: string[], options: string[], locale: Locale): string {
+  return [
+    "You are playing a drawing party game as the DRAWER. You never saw the secret word.",
+    `Your partner's hints so far (${LANGUAGE_NAMES[locale]}): ${hints.length ? hints.map((hint) => `"${hint}"`).join(", ") : "(none yet)"}.`,
+    `The answer is one of: ${options.map((option) => `"${option}"`).join(", ")}.`,
+    "1. Pick the option the hints point to (if there are no hints, guess).",
+    "2. Draw that thing as a simple, slightly clumsy phone doodle: 2 to 6 strokes, each 4 to 20 points.",
+    "Canvas is 100 wide and 130 tall, (0,0) top-left. Keep it centered and big.",
+    'Reply with ONLY this JSON: {"guess": "<one option exactly>", "strokes": [[[x,y],[x,y],...], ...]}',
+  ].join("\n");
+}
+
+export function parseBotDrawing(text: string, options: string[]): BotDrawing | null {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  try {
+    const parsed = JSON.parse(text.slice(start, end + 1)) as { guess?: unknown; strokes?: unknown };
+    const guess = options.find((option) => option.toLocaleLowerCase("tr") === String(parsed.guess || "").trim().toLocaleLowerCase("tr"));
+    if (!guess || !Array.isArray(parsed.strokes)) return null;
+    const strokes = parsed.strokes
+      .slice(0, 8)
+      .map((stroke) => (Array.isArray(stroke) ? stroke : [])
+        .slice(0, 40)
+        .map((point) => (Array.isArray(point) ? [Number(point[0]) / 100, Number(point[1]) / 130] : [NaN, NaN]))
+        .filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y))
+        .map(([x, y]) => [Math.max(0, Math.min(1, Math.round(x * 1000) / 1000)), Math.max(0, Math.min(1, Math.round(y * 1000) / 1000))]))
+      .filter((stroke) => stroke.length >= 2);
+    return strokes.length ? { guess, strokes } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Asks the AI what it thinks the hints mean and how it would draw it. */
+export async function botDraw(hints: string[], options: string[], locale: Locale): Promise<BotDrawing | null> {
+  if (!provider() || !options.length || !underDailyLimit()) return null;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), Number(process.env.AI_HINT_TIMEOUT_MS) || 8000);
+  try {
+    return parseBotDrawing(await textCompletion(botDrawPrompt(hints, options, locale), controller.signal, 900), options);
+  } catch (error) {
+    console.warn("[ai] bot drawing failed:", String(error).slice(0, 200));
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+

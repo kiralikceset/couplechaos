@@ -21,7 +21,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getDailyWord, getDistractors, normalizeCategory, pickWord } from "../client/src/lib/wordPool";
 import { foldText, hintRevealsWord } from "../client/src/lib/hintFilter";
-import { generateHints, isAiJudgeEnabled, judgeDrawing, type Locale } from "./aiJudge";
+import { botDraw, generateHints, isAiJudgeEnabled, judgeDrawing, type BotDrawing, type Locale } from "./aiJudge";
+import { sketchToPng } from "./sketch";
 import { AuthError, isProviderConfigured, verifyIdToken } from "./auth";
 
 // ── Tunables (env-overridable, mostly for tests) ───────────────────────────
@@ -117,8 +118,12 @@ interface Room {
   guess: string;
   /** Strangers matched by "random match": stricter hint rules, report button. */
   random: boolean;
-  /** Solo vs AI: the second player is a bot that gives the hints. */
+  /** Solo vs AI: the second player is a bot; roles alternate every round. */
   solo: boolean;
+  /** Hints given this round (the AI drawer reads them). */
+  hintLog: string[];
+  /** AI drawer: its current doodle and pending timers. */
+  bot: { version: number; strokes: number[][][]; think?: ReturnType<typeof setTimeout>; submit?: ReturnType<typeof setTimeout> };
   createdAt: number;
 }
 
@@ -358,6 +363,80 @@ function addAiHints(room: Room, round: number): void {
   });
 }
 
+// ── The AI as the drawer (solo, even rounds) ───────────────────────────────
+const BOT_COLORS = ["#FFFFFF", "#FBBF24", "#FF1A6C", "#60A5FA"];
+/** How long the AI keeps its pen still before handing in (new hints restart it). */
+const BOT_HAND_IN_MS = num("BOT_HAND_IN_MS", 6000);
+
+function startBotDrawer(room: Room): void {
+  const round = room.round;
+  void thinkAndDraw(room, round);
+  // Hard stop: always hand in before the round's timer runs out.
+  later(room, Math.max(300, DRAW_SECONDS * 1000 - 400), () => botHandIn(room, round));
+}
+
+/** A new hint arrived while the AI draws: let it rethink shortly (debounced). */
+function wakeBotDrawer(room: Room): void {
+  if (room.state !== "drawing") return;
+  const round = room.round;
+  if (room.bot.think) clearTimeout(room.bot.think);
+  room.bot.think = setTimeout(() => void thinkAndDraw(room, round), 1200);
+  room.timers.push(room.bot.think);
+}
+
+/** Offline fallback: read the clues we can (letter count, first letter), otherwise guess. */
+function offlineBotDrawing(room: Room): BotDrawing {
+  const clues = room.hintLog.join(" ").toLocaleLowerCase(room.locale);
+  let options = room.guessOptions.slice();
+  const count = /(\d+)\s*(harf|letter|buchstab|letra)/.exec(clues);
+  const narrow = (keep: (option: string) => boolean) => {
+    const left = options.filter(keep);
+    if (left.length) options = left;
+  };
+  if (count) narrow((option) => option.replace(/\s/g, "").length === Number(count[1]));
+  const first = /(ilk harf|first letter|erster buchstabe|primera letra)\s*:?\s*(\S)/.exec(clues);
+  if (first) narrow((option) => option.toLocaleLowerCase(room.locale).startsWith(first[2]));
+  const guess = options[Math.floor(Math.random() * options.length)];
+  // A wobbly, confident-looking blob: the AI clearly has no idea.
+  const wobble = (cx: number, cy: number, r: number) =>
+    Array.from({ length: 16 }, (_, i) => {
+      const angle = (i / 15) * Math.PI * 2;
+      const jitter = r * (0.85 + Math.random() * 0.3);
+      return [Math.round((cx + Math.cos(angle) * jitter) * 1000) / 1000, Math.round((cy + Math.sin(angle) * jitter * 0.75) * 1000) / 1000];
+    });
+  return { guess, strokes: [wobble(0.5, 0.5, 0.28), [[0.38, 0.45], [0.4, 0.47]], [[0.6, 0.45], [0.62, 0.47]], [[0.4, 0.62], [0.5, 0.67], [0.6, 0.62]]] };
+}
+
+async function thinkAndDraw(room: Room, round: number): Promise<void> {
+  const version = ++room.bot.version;
+  const drawing = (isAiJudgeEnabled() ? await botDraw(room.hintLog, room.guessOptions, room.locale).catch(() => null) : null) || offlineBotDrawing(room);
+  if (room.round !== round || room.state !== "drawing" || version !== room.bot.version) return;
+  room.guess = drawing.guess;
+  push(room.describerId, "partner_guess", { guess: drawing.guess });
+
+  // Redraw from scratch, stroke by stroke, so the player watches it happen.
+  room.bot.strokes = drawing.strokes;
+  push(room.describerId, "live_stroke", { t: "x" });
+  const drawMs = Math.min(3000, DRAW_SECONDS * 500);
+  const step = drawMs / Math.max(1, drawing.strokes.length);
+  drawing.strokes.forEach((points, index) => {
+    later(room, Math.round(index * step), () => {
+      if (room.round !== round || room.state !== "drawing" || version !== room.bot.version) return;
+      push(room.describerId, "live_stroke", { t: "s", s: `bot${version}-${index}`, c: BOT_COLORS[index % BOT_COLORS.length], w: 0.018, a: 0.75, p: points });
+    });
+  });
+  if (room.bot.submit) clearTimeout(room.bot.submit);
+  room.bot.submit = setTimeout(() => botHandIn(room, round), drawMs + BOT_HAND_IN_MS);
+  room.timers.push(room.bot.submit);
+}
+
+function botHandIn(room: Room, round: number): void {
+  if (room.round !== round || room.state !== "drawing") return;
+  const strokes = room.bot.strokes.length ? room.bot.strokes : offlineBotDrawing(room).strokes;
+  const imageData = sketchToPng(strokes.map((points, index) => ({ color: BOT_COLORS[index % BOT_COLORS.length], points })));
+  void finishRound(room, { imageData, score: 25, comment: "" });
+}
+
 /**
  * The AI partner in solo mode: sends a hint every few seconds, from vague to obvious.
  * Uses AI-written hints when an AI key is set; otherwise category, letters, first letter, emoji.
@@ -497,12 +576,15 @@ function startRound(room: Room): void {
   room.word = chooseWord(room);
   room.state = "describing";
   room.hintsThisRound = 0;
+  room.hintLog = [];
+  room.bot = { version: room.bot?.version || 0, strokes: [] };
   room.guess = "";
   room.guessOptions = [];
-  const describerIndex = room.solo ? 1 : (room.round - 1) % 2; // solo: the bot (index 1) always describes
+  // Solo: the bot (index 1) gives hints on odd rounds, the player on even rounds.
+  const describerIndex = room.solo ? (room.round % 2 === 1 ? 1 : 0) : (room.round - 1) % 2;
   room.describerId = room.players[describerIndex];
   room.drawerId = room.players[1 - describerIndex];
-  const describeSeconds = room.solo ? SOLO_DESCRIBE_SECONDS : DESCRIBE_SECONDS;
+  const describeSeconds = room.solo && isBot(room.describerId) ? SOLO_DESCRIBE_SECONDS : DESCRIBE_SECONDS;
   room.phaseEndsAt = Date.now() + describeSeconds * 1000;
   room.hintOptions = buildHintOptions(room);
 
@@ -526,7 +608,7 @@ function startRound(room: Room): void {
     round: room.round,
   });
   const round = room.round;
-  if (room.solo) {
+  if (room.solo && isBot(room.describerId)) {
     runBotDescriber(room, round);
     later(room, describeSeconds * 1000, () => {
       if (room.round === round && room.state === "describing") beginDrawing(room);
@@ -556,6 +638,7 @@ function beginDrawing(room: Room): void {
   }
   room.guessOptions = options;
   push(room.drawerId, "start_drawing", { mode: "classic", timeLimit: DRAW_SECONDS, endsAt: room.phaseEndsAt, options });
+  if (room.solo && isBot(room.drawerId)) startBotDrawer(room);
   push(room.describerId, "watch_drawing", { mode: "classic", timeLimit: DRAW_SECONDS, endsAt: room.phaseEndsAt });
   const round = room.round;
   later(room, DRAW_SECONDS * 1000 + PHASE_GRACE_MS, () => {
@@ -706,6 +789,7 @@ async function finishRound(room: Room, submission: { imageData: string; score: n
       dailyRank: daily?.rank,
       dailyTotal: daily?.total,
       solo: room.solo,
+      botDrew: room.solo && isBot(room.drawerId),
       });
     });
   });
@@ -740,6 +824,8 @@ function openRoom(host: Session, mode: GameMode, category: unknown, random: bool
     guess: "",
     random,
     solo: false,
+    hintLog: [],
+    bot: { version: 0, strokes: [] },
     createdAt: Date.now(),
   };
   rooms.set(room.code, room);
@@ -945,7 +1031,9 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
       return;
     }
     room.hintsThisRound += 1;
+    room.hintLog.push(text);
     pushRoom(room, "hint_received", { text, id }, session.id);
+    if (room.solo && isBot(room.drawerId)) wakeBotDrawer(room);
     return;
   }
 
@@ -970,6 +1058,8 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
     option.used = true;
     const id = `opt-${room.round}-${option.id}`;
     push(room.drawerId, "hint_received", { text: option.text, id, kind: option.kind });
+    room.hintLog.push(option.text);
+    if (room.solo && isBot(room.drawerId)) wakeBotDrawer(room);
     push(room.describerId, "hint_option_used", { optionId: option.id, id, text: option.text, cost: option.cost, options: publicHintOptions(room) });
     return;
   }

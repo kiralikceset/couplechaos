@@ -131,8 +131,14 @@ export default function HowItWorksScreen({ onBack, onNext }: Props) {
             />
           ))}
         </div>
-        <button onClick={handleSkip} className="flex-shrink-0 text-[#8C8798] text-sm font-medium px-1 py-1.5">
+        <button
+          onClick={handleSkip}
+          className="cc-press flex-shrink-0 inline-flex items-center gap-1 h-10 pl-4 pr-3 rounded-full bg-[#17141D] text-[#F7F3FF] text-sm font-semibold"
+        >
           {t("how.skip")}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="text-[#8C8798]">
+            <path d="m6 17 5-5-5-5" /><path d="m13 17 5-5-5-5" />
+          </svg>
         </button>
       </header>
 

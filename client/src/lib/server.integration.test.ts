@@ -409,10 +409,28 @@ describe("solo vs AI", () => {
     const result = (await waitFor(me.log, "show_result")).data;
     expect(result.solo).toBe(true);
     expect(typeof result.guessCorrect).toBe("boolean");
+    // Round 2: roles swap — the player gives hints, the AI draws live and guesses.
     me.socket.emit("play_again", {});
-    expect((await waitFor(me.log, "your_role", 2)).data.role).toBe("drawer"); // always the drawer in solo
+    const role2 = (await waitFor(me.log, "your_role", 2)).data;
+    expect(role2.role).toBe("describer");
+    expect(role2.word).toBeTruthy();
+    me.socket.emit("send_hint", { text: "evde yaşar", id: "s1" });
+    me.socket.emit("description_done", {});
+    await waitFor(me.log, "watch_drawing");
+    const guess = (await waitFor(me.log, "partner_guess")).data.guess;
+    expect(typeof guess).toBe("string");
+    expect((await waitFor(me.log, "live_stroke")).data).toEqual({ t: "x" });
+    expect((await waitFor(me.log, "live_stroke", 2)).data).toMatchObject({ t: "s", a: 0.75 });
+    const result2 = (await waitFor(me.log, "show_result", 2)).data;
+    expect(result2.imageData).toMatch(/^data:image\/png;base64,iVBORw0KGgo/);
+    expect(result2.playerGuess).toBe(guess);
+    expect(result2.guessCorrect).toBe(guess === role2.word);
+
+    // Round 3: back to the AI giving hints
+    me.socket.emit("play_again", {});
+    expect((await waitFor(me.log, "your_role", 3)).data.role).toBe("drawer");
     me.socket.disconnect();
-  }, 15_000);
+  }, 20_000);
 });
 
 describe("daily challenge leaderboard", () => {
