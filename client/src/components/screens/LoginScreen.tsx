@@ -70,64 +70,25 @@ export default function LoginScreen({ onSkip, onSignedIn }: Props) {
   }
 
   return (
-    <div className="relative flex flex-col h-screen w-full overflow-hidden">
-      {/* Aurora background */}
-      <div className="absolute inset-0">
-        <img
-          src="/images/login-bg.webp"
-          decoding="async"
-          alt=""
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-[#050505]/40" />
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 flex flex-col h-full px-6">
-        {/* Top spacer */}
-        <div className="flex-1 flex flex-col items-center justify-center">
-          {/* App icon/logo */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
-            className="mb-6"
-          >
-            <img src="/images/app-icon.webp" alt="Couple Chaos" className="size-20 rounded-[1.5rem] shadow-[0_0_40px_rgba(255,26,108,0.35)]" />
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.18 }}
-            className="font-display text-3xl font-black text-white text-center mb-2"
-          >
-            {t("login.title")}
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.18 }}
-            className="text-white/40 text-center text-sm max-w-[280px] leading-relaxed"
-          >
-            {t("login.subtitle")}
-          </motion.p>
+    <div className="cc-sketchbook relative flex flex-col h-[100dvh] w-full bg-[#07060A] text-[#F7F3FF] overflow-hidden">
+      <main className="relative z-10 flex-1 flex flex-col justify-center px-6 pt-12">
+        {/* What you keep when you sign in */}
+        <div className="flex gap-2.5" aria-hidden>
+          <span className="flex-1 h-24 rounded-[22px] bg-[#FF1A6C] flex flex-col justify-between p-3"><span className="text-2xl">🔥</span><span className="h-2 w-10 rounded-full bg-white/60" /></span>
+          <span className="flex-1 h-24 rounded-[22px] bg-[#FBBF24] flex flex-col justify-between p-3 mt-5"><span className="text-2xl">🪙</span><span className="h-2 w-8 rounded-full bg-black/40" /></span>
+          <span className="flex-1 h-24 rounded-[22px] bg-[#8B5CF6] flex flex-col justify-between p-3 mt-2"><span className="text-2xl">🎨</span><span className="h-2 w-12 rounded-full bg-white/60" /></span>
         </div>
+        <h1 className="mt-8 font-display text-[2.1rem] leading-[1.05] font-bold tracking-[-0.02em]">{t("login.heading")}</h1>
+        <p className="mt-3 text-[#B9B3C7] text-base leading-relaxed max-w-[320px]">{t("login.lead")}</p>
+      </main>
 
-        {/* Login buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.18 }}
-          className="pb-10 space-y-3"
-        >
+        <div className="relative z-10 px-6 pb-10 pt-6 space-y-3">
           {providers.includes("apple") && (
             <motion.button
-              whileTap={{ scale: 0.97 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => void handleProviderLogin("apple")}
               disabled={busy !== null}
-              className="w-full flex items-center justify-center gap-3 bg-white text-black font-semibold text-[0.95rem] py-[0.95rem] rounded-2xl shadow-lg disabled:opacity-60 transition-all"
+              className="w-full h-14 flex items-center justify-center gap-3 bg-[#F7F3FF] text-black font-semibold text-base rounded-2xl disabled:opacity-60"
             >
               <svg width="18" height="20" viewBox="0 0 17 20" fill="currentColor" aria-hidden="true">
                 <path d="M13.545 10.239c-.022-2.234 1.823-3.306 1.906-3.358-.037-.054-1.494-2.159-3.816-2.159-1.624 0-2.94.968-3.726.968-.81 0-2.04-.943-3.36-.918C2.612 4.797.877 6.093.877 8.874c0 1.661.645 3.42 1.44 4.56.79 1.14 1.657 2.293 2.84 2.25 1.14-.044 1.57-.737 2.95-.737 1.36 0 1.75.737 2.95.713 1.23-.02 1.98-1.16 2.76-2.3.87-1.32 1.23-2.6 1.25-2.67-.027-.01-2.4-.92-2.42-3.65l-.1-.8z"/>
@@ -146,7 +107,7 @@ export default function LoginScreen({ onSkip, onSignedIn }: Props) {
               whileTap={{ scale: 0.97 }}
               onClick={() => void handleProviderLogin("google")}
               disabled={busy !== null}
-              className="w-full flex items-center justify-center gap-3 bg-[#131314] text-[#E3E3E3] font-semibold text-[0.95rem] py-[0.95rem] rounded-2xl border border-[#8E918F] disabled:opacity-60 transition-all"
+              className="w-full h-14 flex items-center justify-center gap-3 bg-[#131314] text-[#E3E3E3] font-semibold text-base rounded-2xl border border-[#8E918F] disabled:opacity-60"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -163,21 +124,20 @@ export default function LoginScreen({ onSkip, onSignedIn }: Props) {
             disabled={busy !== null}
             className={`w-full text-center font-semibold transition-colors ${
               providers.length
-                ? "text-white/45 text-sm py-3 active:text-white/70"
-                : "bg-primary text-white text-[0.95rem] py-[0.95rem] rounded-2xl glow-primary"
+                ? "text-[#B9B3C7] text-sm py-3"
+                : "bg-[#F7F3FF] text-[#07060A] text-base h-14 rounded-2xl"
             }`}
           >
-            {t("login.skip")}
+            {providers.length ? t("login.guest") : t("login.skip")}
           </button>
 
-          <p className="text-white/25 text-[0.65rem] text-center leading-relaxed px-4">
+          <p className="text-[#8C8798] text-xs text-center leading-relaxed px-4">
             {t("login.terms")}{" "}
-            <button onClick={() => { playTap(); setPrivacyOpen(true); }} className="underline text-white/45">
+            <button onClick={() => { playTap(); setPrivacyOpen(true); }} className="underline text-[#B9B3C7]">
               {t("login.privacyLink")}
             </button>
           </p>
-        </motion.div>
-      </div>
+        </div>
       <PrivacySheet open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
     </div>
   );

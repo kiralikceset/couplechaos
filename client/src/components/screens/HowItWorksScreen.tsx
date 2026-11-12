@@ -107,122 +107,50 @@ export default function HowItWorksScreen({ onBack, onNext }: Props) {
     onNext();
   }
   return (
-    <div className="relative flex flex-col intro-screen h-screen w-full bg-[#050505] overflow-hidden">
-      {/* Background glow - dynamic based on slide */}
-      <div
-        key={currentSlide}
-        className="intro-glow absolute pointer-events-none"
-        style={{
-          backgroundImage: `radial-gradient(ellipse, ${slide.accentColor}99 0%, ${slide.accentColor}55 30%, ${slide.accentColor}18 55%, transparent 72%)`,
-        }}
-      />
-      {/* Header */}
-      <header className="relative z-10 pt-12 px-6 flex items-center justify-between">
+    <div className="cc-sketchbook relative flex flex-col h-[100dvh] w-full bg-[#07060A] text-[#F7F3FF] overflow-hidden">
+      {/* Header: back · progress · skip */}
+      <header className="relative z-10 pt-11 px-5 flex items-center gap-4">
         <button
           onClick={() => {
             playTap();
             currentSlide > 0 ? setCurrentSlide(prev => prev - 1) : onBack();
           }}
           aria-label={t("common.back")}
-          className="size-10 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center active:scale-90 transition-transform"
+          className="size-10 flex-shrink-0 rounded-full bg-[#17141D] flex items-center justify-center"
         >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            className="text-white/60"
-          >
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-white/70"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
         </button>
-        <button
-          onClick={handleSkip}
-          className="text-white/30 text-sm font-medium px-3 py-1.5 rounded-full active:text-white/50 transition-colors"
-        >
-          {t("how.skip")}
-        </button>
-      </header>
-      {/* Slide content */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-8">
-        <div
-          key={currentSlide}
-          className="intro-slide flex flex-col items-center text-center w-full"
-        >
-          {/* Professional illustration */}
-          <div className="mb-10">{slide.illustration}</div>
-          {/* Step indicator */}
-          <div className="flex items-center gap-1.5 mb-4">
-            <span
-              className="text-[0.55rem] font-bold uppercase tracking-[0.3em]"
-              style={{ color: `${slide.accentColor}80` }}
-            >
-              {t("how.step")} {currentSlide + 1}/{slides.length}
-            </span>
-          </div>
-          {/* Title */}
-          <h2 className="font-display text-[1.75rem] font-black tracking-tight text-white mb-3 leading-tight">
-            {slide.title}
-          </h2>
-          {/* Description */}
-          <p className="text-white/45 text-[0.95rem] font-medium leading-relaxed max-w-[300px] mb-5">
-            {slide.description}
-          </p>
-          {/* Fun note - styled as a chat bubble */}
-          <div className="px-4 py-2.5 rounded-2xl rounded-bl-sm bg-white/[0.04] border border-white/[0.06]">
-            <span className="text-white/40 text-xs font-medium italic">
-              {slide.funNote}
-            </span>
-          </div>
-        </div>
-      </main>
-      {/* Bottom section - dots + CTA */}
-      <footer className="relative z-10 px-6 pb-10">
-        {/* Progress dots */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          {slides.map((_, i) => (
+        <div className="flex-1 grid grid-cols-3 gap-1.5" role="progressbar" aria-valuemin={1} aria-valuemax={slides.length} aria-valuenow={currentSlide + 1}>
+          {slides.map((item, i) => (
             <button
               key={i}
-              onClick={() => {
-                playTap();
-                setCurrentSlide(i);
-              }}
-              aria-label={`${t("how.step")} ${i + 1}`}
-              aria-current={i === currentSlide ? "step" : undefined}
-              className="rounded-full"
-              style={{
-                width: i === currentSlide ? "2rem" : "0.5rem",
-                height: "0.5rem",
-                backgroundColor:
-                  i === currentSlide
-                    ? slide.accentColor
-                    : "rgba(255,255,255,0.15)",
-                boxShadow:
-                  i === currentSlide
-                    ? `0 0 10px ${slide.accentColor}50`
-                    : "none",
-              }}
+              onClick={() => { playTap(); setCurrentSlide(i); }}
+              aria-label={`${i + 1}/${slides.length}`}
+              className="h-1.5 rounded-full transition-colors"
+              style={{ backgroundColor: i <= currentSlide ? item.accentColor : "#2A2533" }}
             />
           ))}
         </div>
-        {/* CTA Button */}
+        <button onClick={handleSkip} className="flex-shrink-0 text-[#8C8798] text-sm font-medium px-1 py-1.5">
+          {t("how.skip")}
+        </button>
+      </header>
+
+      {/* Slide: a coloured frame around a little game screen */}
+      <main key={currentSlide} className="intro-slide relative z-10 flex-1 flex flex-col justify-center px-6">
+        <div className="rounded-[28px] p-4" style={{ backgroundColor: slide.accentColor }}>
+          <div className="rounded-[20px] bg-[#07060A] py-6 flex justify-center">{slide.illustration}</div>
+        </div>
+        <h2 className="mt-7 font-display text-[1.9rem] leading-[1.05] font-bold tracking-[-0.02em]">{slide.title}</h2>
+        <p className="mt-3 text-[#B9B3C7] text-base leading-relaxed max-w-[340px]">{slide.description}</p>
+      </main>
+
+      <footer className="relative z-10 px-6 pb-10 pt-6">
         <button
           onClick={handleNext}
-          className="w-full font-bold text-lg py-[1.1rem] rounded-2xl relative overflow-hidden active:scale-[0.98] transition-transform duration-100"
-          style={{
-            backgroundColor: "#FBBF24",
-            border: "none",
-            color: "#111111",
-            boxShadow: "0 0 30px rgba(251,191,36,0.35)",
-          }}
+          className="cc-press w-full h-14 rounded-2xl bg-[#F7F3FF] text-[#07060A] font-bold text-base"
         >
-          <span className="relative z-10">
-            {isLast ? t("how.letsgo") : t("how.continue")}
-          </span>
-          <div className="intro-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+          {isLast ? t("how.letsgo") : t("how.continue")}
         </button>
       </footer>
     </div>

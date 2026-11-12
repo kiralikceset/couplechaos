@@ -346,3 +346,8 @@
   .cc-draw path { animation: none; stroke-dashoffset: 0; }
   .cc-press:active { transform: none; }
 }
+
+/* Onboarding: the jury's verdict lands right after the doodle is drawn. */
+.cc-verdict { opacity: 0; transform: translateY(8px); animation: cc-verdict 0.35s ease-out 1.45s forwards; }
+@keyframes cc-verdict { to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .cc-verdict { animation: none; opacity: 1; transform: none; } }
