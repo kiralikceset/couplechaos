@@ -1,13 +1,11 @@
 /**
- * DESIGN: Electric Pulse - Waiting Screen
- * Room code display with copy, animated waiting, rotating playful messages
+ * Waiting room: invite by WhatsApp or link (joins by itself), or say the code.
  * i18n + sound effects + push notifications integrated
  */
 
 import { useState, useEffect } from "react";
-import { m as motion, AnimatePresence } from "framer-motion";
+import { m as motion } from "framer-motion";
 import { useLocale } from "@/contexts/LocaleContext";
-import { getLocalizedPlayfulMessage } from "@/lib/i18n";
 import { playTap, playCopy } from "@/lib/sounds";
 import { startPartnerWaitingNotifications, stopPartnerWaitingNotifications } from "@/lib/notifications";
 import { toast } from "sonner";
@@ -23,15 +21,7 @@ interface Props {
 
 export default function WaitingScreen({ code, onBack, onProfile }: Props) {
   const { t } = useLocale();
-  const [message, setMessage] = useState(getLocalizedPlayfulMessage("waiting"));
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMessage(getLocalizedPlayfulMessage("waiting"));
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Start push notifications when waiting (partner hasn't joined yet)
   useEffect(() => {
@@ -80,104 +70,30 @@ export default function WaitingScreen({ code, onBack, onProfile }: Props) {
   }
 
   return (
-    <div className="relative flex flex-col h-screen w-full bg-[#050505] overflow-hidden">
-      {/* Animated background pulse */}
-      <div className="absolute inset-0 pointer-events-none">
-        <motion.div
-          animate={{ scale: [1, 1.2, 1], opacity: [0.05, 0.1, 0.05] }}
-          transition={{ duration: 3, repeat: Infinity }}
-          className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-secondary"
-        />
-      </div>
-
-      {/* Header */}
-      <header className="relative z-10 pt-12 px-6 flex items-center justify-between">
+    <div className="cc-sketchbook relative flex flex-col h-[100dvh] w-full bg-[#07060A] text-[#F7F3FF] overflow-hidden">
+      <header className="relative z-10 pt-11 px-5 flex items-center justify-between">
         <button
           onClick={() => { playTap(); onBack(); }}
-          className="size-10 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center active:scale-90 transition-transform"
+          aria-label={t("common.back")}
+          className="size-10 rounded-full bg-[#17141D] flex items-center justify-center"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-white/60">
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-white/70"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
         </button>
-        <div className="px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.06] flex items-center gap-2">
-          <motion.div
-            animate={{ scale: [1, 1.3, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="size-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(139,92,246,0.8)]"
-          />
-          <span className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-white/50">{t("waiting.badge")}</span>
-        </div>
         <button
           onClick={() => { playTap(); onProfile(); }}
-          className="size-10 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center active:scale-90 transition-transform"
+          aria-label={t("profile.title")}
+          className="size-10 rounded-full bg-[#17141D] flex items-center justify-center"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-white/50">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-          </svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-white/60"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
         </button>
       </header>
 
-      {/* Content */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6">
-        {/* Animated waiting icon */}
-        <motion.div className="mb-6 relative">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-[-20px] border border-dashed border-white/[0.06] rounded-full"
-          />
-          <div className="flex gap-2">
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                animate={{ y: [0, -14, 0] }}
-                transition={{ duration: 1.2, delay: i * 0.15, repeat: Infinity, ease: "easeInOut" }}
-                className="size-4 rounded-full bg-gradient-to-b from-primary to-secondary shadow-[0_0_12px_rgba(255,26,108,0.5)]"
-              />
-            ))}
-          </div>
-        </motion.div>
+      <main className="relative z-10 flex-1 flex flex-col justify-center px-6">
+        <h1 className="font-display text-[2.1rem] leading-[1.05] font-bold tracking-[-0.02em]">{t("waiting.heading")}</h1>
+        <p className="mt-2 text-[#B9B3C7] text-base">{t("waiting.lead")}</p>
 
-        <motion.h2
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="font-display text-2xl font-black tracking-tight text-white mb-1 text-center"
-        >
-          {t("waiting.title")}
-        </motion.h2>
-        <p className="text-white/30 text-sm mb-8">{t("waiting.subtitle")}</p>
-
-        {/* Room Code */}
-        {code && <p className="text-white/35 text-xs mb-2">{t("waiting.orCode")}</p>}
         {code && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2, type: "spring" }}
-          >
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={copyCode}
-              className={`relative px-10 py-5 rounded-2xl border-2 transition-all ${
-                copied
-                  ? 'bg-green-500/10 border-green-500/30'
-                  : 'bg-white/[0.03] border-white/[0.1] hover:border-white/[0.2]'
-              }`}
-            >
-              <span className="font-mono text-4xl font-bold tracking-[0.25em] text-white block">
-                {code}
-              </span>
-              <span className="text-white/30 text-xs mt-2 block">
-                {copied ? t("waiting.copied") : t("waiting.tapCopy")}
-              </span>
-            </motion.button>
-          </motion.div>
-        )}
-
-        {/* Invite: the link joins the room by itself */}
-        {code && (
-          <div className="mt-6 w-full max-w-[320px] flex flex-col gap-2">
+          <div className="mt-7 flex flex-col gap-2">
             <button
               onClick={inviteOnWhatsApp}
               className="cc-press h-14 rounded-2xl bg-[#25D366] text-[#07240F] font-bold text-base flex items-center justify-center gap-2"
@@ -187,26 +103,37 @@ export default function WaitingScreen({ code, onBack, onProfile }: Props) {
             </button>
             <button
               onClick={() => void shareLink()}
-              className="cc-press h-12 rounded-2xl bg-white/[0.06] border border-white/[0.1] text-white/85 text-sm font-semibold"
+              className="cc-press h-12 rounded-2xl bg-[#17141D] text-[#F7F3FF] text-sm font-semibold"
             >
               🔗 {t("waiting.shareLink")}
             </button>
+
+            {/* The code, for telling it out loud */}
+            <button
+              onClick={copyCode}
+              className="cc-press mt-4 rounded-[24px] border-2 border-dashed border-[#2A2533] px-5 py-5 text-center"
+            >
+              <span className="block text-sm text-[#8C8798]">{t("waiting.orCode")}</span>
+              <span className="mt-1 block font-display text-[2.6rem] font-bold tracking-[0.18em] tabular-nums">{code}</span>
+              <span className="block text-xs text-[#8C8798]">{copied ? t("waiting.copied") : t("waiting.tapCopy")}</span>
+            </button>
           </div>
         )}
-
-        {/* Playful rotating message */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={message}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="mt-10 px-5 py-3 rounded-xl bg-white/[0.02] border border-white/[0.05] max-w-[280px]"
-          >
-            <p className="text-white/30 text-sm text-center">{message}</p>
-          </motion.div>
-        </AnimatePresence>
       </main>
+
+      <footer className="relative z-10 px-6 pb-10 pt-4 flex items-center justify-center gap-2 text-[#8C8798] text-sm" role="status" aria-live="polite">
+        <span className="flex gap-1" aria-hidden>
+          {[0, 1, 2].map((i) => (
+            <motion.span
+              key={i}
+              className="size-1.5 rounded-full bg-[#FF1A6C]"
+              animate={{ opacity: [0.25, 1, 0.25] }}
+              transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
+            />
+          ))}
+        </span>
+        {t("waiting.status")}
+      </footer>
     </div>
   );
 }

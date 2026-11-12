@@ -28,7 +28,7 @@ export default function HowItWorksScreen({ onBack, onNext }: Props) {
           <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/[0.05] border border-white/[0.1]">
             <span className="text-3xl leading-none">🧀</span>
             <div className="text-left">
-              <p className="text-[0.5rem] text-white/35 font-bold uppercase tracking-[0.3em]">{t("game.secretWord")}</p>
+              <p className="text-[0.65rem] text-[#8C8798] font-semibold">{t("game.secretWord")}</p>
               <p className="text-white font-black text-lg leading-tight">{t("how.demo.word")}</p>
             </div>
           </div>

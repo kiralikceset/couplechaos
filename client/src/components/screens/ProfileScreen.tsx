@@ -17,7 +17,7 @@ import { deleteAccountAndData, getAccount, getAvailableProviders, signOut, type 
 import PrivacySheet from "@/components/PrivacySheet";
 import { toast } from "sonner";
 
-const APP_VERSION = "1.2.5";
+const APP_VERSION = "1.3.0";
 import { getPlayerStats, getStreakData } from "@/lib/retention";
 import { getTokens } from "@/lib/tokens";
 
@@ -128,7 +128,7 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
   ];
 
   return (
-    <div className="relative flex flex-col min-h-screen w-full bg-[#050505] overflow-y-auto pb-8">
+    <div className="relative flex flex-col min-h-[100dvh] w-full bg-[#07060A] overflow-y-auto pb-8">
       {/* Background */}
 
       {/* Header - clean back arrow only */}
@@ -220,15 +220,15 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-6"
+            className="p-6 rounded-[24px] bg-[#17141D] space-y-6"
           >
-            <h3 className="text-[0.6rem] font-bold text-white/40 uppercase tracking-[0.2em]">
+            <h3 className="text-xs font-semibold text-[#8C8798]">
               {profile.username ? t("profile.editProfile") : t("profile.createProfile")}
             </h3>
 
             {/* Username */}
             <div className="space-y-2">
-              <label className="text-[0.55rem] font-bold text-white/25 uppercase tracking-widest">{t("profile.username")}</label>
+              <label className="text-xs font-semibold text-[#8C8798]">{t("profile.username")}</label>
               <input
                 type="text"
                 value={editData.username}
@@ -249,7 +249,7 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
 
             {/* Avatar selection */}
             <div className="space-y-2">
-              <label className="text-[0.55rem] font-bold text-white/25 uppercase tracking-widest">{t("profile.chooseAvatar")}</label>
+              <label className="text-xs font-semibold text-[#8C8798]">{t("profile.chooseAvatar")}</label>
               <div className="grid grid-cols-5 gap-2">
                 {AVATARS.map(a => (
                   <button
@@ -257,7 +257,7 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
                     onClick={() => { playTap(); setEditData(d => ({ ...d, avatar: a })); }}
                     className={`size-12 rounded-xl flex items-center justify-center text-xl transition-all active:scale-90 ${
                       editData.avatar === a
-                        ? 'bg-primary/20 border-2 border-primary shadow-[0_0_12px_rgba(255,26,108,0.3)] scale-105'
+                        ? 'bg-primary/20 border-2 border-primary scale-105'
                         : 'bg-white/[0.03] border border-white/[0.06]'
                     }`}
                   >

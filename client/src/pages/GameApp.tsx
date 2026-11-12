@@ -21,13 +21,11 @@ import {
   ProfileScreen,
   GameScreen,
   ResultScreen,
-  ShareScreen,
   loadLoginScreen,
   loadHomeScreen,
   loadProfileScreen,
   loadGameScreen,
   loadResultScreen,
-  loadShareScreen,
 } from "@/lib/preparedScreens";
 import { getProfile, incrementGamesPlayed } from "@/lib/gameData";
 import {
@@ -63,17 +61,12 @@ import InviteScreen from "@/components/screens/InviteScreen";
 import type { ReplayStroke } from "@/components/game/DrawingCanvas";
 import { INVITE_EVENT, takePendingInvite } from "@/lib/invite";
 import WaitingScreen from "@/components/screens/WaitingScreen";
-import AchievementPopup from "@/components/game/AchievementPopup";
 import CoDrawScreen from "@/components/screens/CoDrawScreen";
-import type { Achievement } from "@/lib/retention";
 import { createThumbnail } from "@/lib/imageUtils";
 import { toast } from "sonner";
 
 // These screens are packaged in the APK but parsed only when needed.
 import HowItWorksScreen from "@/components/screens/HowItWorksScreen";
-const CategoryScreen = lazy(
-  () => import("@/components/screens/CategoryScreen")
-);
 const PremiumScreen = lazy(() => import("@/components/screens/PremiumScreen"));
 const AchievementsScreen = lazy(
   () => import("@/components/screens/AchievementsScreen")
@@ -214,8 +207,6 @@ export default function GameApp({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     "mixed"
   );
-  const [pendingAchievement, setPendingAchievement] =
-    useState<Achievement | null>(null);
   const roundStartedAtRef = useRef(Date.now());
   const suppressNextPopRef = useRef(false);
 
@@ -239,9 +230,7 @@ export default function GameApp({
               ? loadGameScreen
               : screen === "game"
                 ? loadResultScreen
-                : screen === "result"
-                  ? loadShareScreen
-                  : null;
+                : null;
     if (!load) return;
     const timer = window.setTimeout(() => {
       void load().catch(() => {});
@@ -553,13 +542,7 @@ export default function GameApp({
       if (selectedCategory === "daily_challenge") completeDailyChallenge();
       void saveGameHistory(nextResult);
 
-      const newAchievements = checkNewAchievements();
-      if (newAchievements.length > 0) {
-        window.setTimeout(
-          () => setPendingAchievement(newAchievements[0]),
-          2000
-        );
-      }
+      checkNewAchievements(); // keeps the unlock record; no pop-up over the result
 
       setHistory(["home"]);
       setScreen("result");
@@ -778,12 +761,6 @@ export default function GameApp({
     setScreen(profile.username.trim() ? "home" : "profile");
   }
 
-  // Profile done → Home
-  function handleProfileDone() {
-    setHistory([]);
-    setScreen("home");
-  }
-
   // Start game mode
   function handlePlaySolo() {
     setSoloMode(true);
@@ -827,16 +804,10 @@ export default function GameApp({
     navigate("connect");
   }
 
-  // Category selection
-  function handleCategorySelect(category: string) {
-    setSelectedCategory(category);
-    goBack();
-  }
-
   return (
-    <div className="min-h-screen bg-[#050505] text-white font-body overflow-hidden">
+    <div className="min-h-[100dvh] bg-[#07060A] text-white font-body overflow-hidden">
       <Suspense
-        fallback={<div className="h-screen bg-[#050505]" aria-busy="true" />}
+        fallback={<div className="h-[100dvh] bg-[#07060A]" aria-busy="true" />}
       >
         {/* === ONBOARDING FLOW === */}
         {screen === "onboarding" && (
@@ -873,7 +844,6 @@ export default function GameApp({
           <ConnectScreen
             onBack={goBack}
             onProfile={() => navigate("profile")}
-            onCategory={() => navigate("category")}
             onSelectCategory={setSelectedCategory}
             selectedCategory={selectedCategory}
             mode={gameMode}
@@ -892,14 +862,6 @@ export default function GameApp({
         )}
         {screen === "leaderboard" && (
           <LeaderboardScreen onBack={goBack} onPlayDaily={handleDailyChallenge} />
-        )}
-        {screen === "category" && (
-          <CategoryScreen
-            onSelect={handleCategorySelect}
-            onBack={goBack}
-            onPremium={() => navigate("premium")}
-            locale={getLocale()}
-          />
         )}
         {screen === "waiting" && (
           <WaitingScreen
@@ -951,7 +913,6 @@ export default function GameApp({
           <ResultScreen
             result={result}
             partnerName={partnerName}
-            onShare={() => navigate("share")}
             onPlayAgain={playAgain}
             onReport={isRandom ? reportPartner : undefined}
             onLeaderboard={result.dailyRank ? () => navigate("leaderboard") : undefined}
@@ -961,9 +922,6 @@ export default function GameApp({
               setScreen("home");
             }}
           />
-        )}
-        {screen === "share" && result && (
-          <ShareScreen result={result} onBack={goBack} />
         )}
 
         {/* === UTILITY SCREENS === */}
@@ -1002,11 +960,6 @@ export default function GameApp({
         )}
         {screen === "achievements" && <AchievementsScreen onBack={goBack} />}
 
-        {/* Achievement Popup */}
-        <AchievementPopup
-          achievement={screen === "game" ? null : pendingAchievement}
-          onDismiss={() => setPendingAchievement(null)}
-        />
       </Suspense>
       {/* Connection indicator */}
       {(screen === "connect" || screen === "waiting" || screen === "game") && (

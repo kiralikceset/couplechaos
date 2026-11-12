@@ -52,7 +52,7 @@ export default function LeaderboardScreen({ onBack, onPlayDaily }: Props) {
   const isMine = (entry: Entry) => Boolean(me) && entry.names.split(" & ").includes(me);
 
   return (
-    <div className="flex flex-col h-[100dvh] w-full bg-[#050505] overflow-hidden">
+    <div className="flex flex-col h-[100dvh] w-full bg-[#07060A] overflow-hidden">
       <header className="pt-10 px-5 flex items-center gap-3 flex-shrink-0">
         <button
           onClick={() => { playTap(); onBack(); }}

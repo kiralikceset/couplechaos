@@ -155,7 +155,6 @@ const matchQueue: MatchTicket[] = [];
 /** Session ids a player reported/blocked: they are never matched again. */
 const blockedPairs = new Map<string, Set<string>>();
 const MATCH_WAIT_MS = num("MATCH_WAIT_MS", 120_000);
-const VALID_CATEGORIES = new Set(["mixed", "animals", "food", "objects", "vehicles", "places", "people", "fun", "love", "daily_challenge"]);
 const VALID_LOCALES = new Set<Locale>(["tr", "en", "de", "es"]);
 const ROOM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const CO_REACTIONS = new Set(["😂", "🔥", "😱", "😍", "🤡", "👏"]);

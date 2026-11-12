@@ -4,7 +4,6 @@
  * Tracks progress and rewards engagement
  */
 
-import { t } from "./i18n";
 
 // ═══════════════════════════════════════════
 // STREAK SYSTEM

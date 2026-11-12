@@ -20,7 +20,6 @@ import { toast } from "sonner";
 interface Props {
   onBack: () => void;
   onProfile: () => void;
-  onCategory?: () => void;
   selectedCategory?: string | null;
   mode?: "classic" | "co-draw";
   onSelectCategory?: (category: string) => void;
@@ -30,7 +29,7 @@ interface Props {
 
 const CATEGORY_CHIPS = CATEGORIES.map(({ id, emoji }) => ({ id, emoji }));
 
-export default function ConnectScreen({ onBack, onProfile, onCategory, selectedCategory, mode: gameMode = "classic", onSelectCategory, solo = false }: Props) {
+export default function ConnectScreen({ onBack, onProfile, selectedCategory, mode: gameMode = "classic", onSelectCategory, solo = false }: Props) {
   const isDaily = selectedCategory === "daily_challenge" && gameMode === "classic";
   const { t } = useLocale();
   const [joinCode, setJoinCode] = useState("");
@@ -189,15 +188,13 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
   }
 
   return (
-    <div className="relative flex flex-col h-screen w-full bg-[#050505] overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,26,108,0.05)_0%,transparent_50%),radial-gradient(circle_at_70%_80%,rgba(139,92,246,0.05)_0%,transparent_50%)] pointer-events-none" />
+    <div className="cc-sketchbook relative flex flex-col h-[100dvh] w-full bg-[#07060A] overflow-hidden">
 
       {/* Header */}
       <header className="relative z-10 pt-10 px-6 flex items-center justify-between">
         <button
           onClick={() => { playTap(); onBack(); }}
-          className="size-10 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center active:scale-90 transition-transform"
+          className="size-10 rounded-full bg-[#17141D] flex items-center justify-center active:scale-90 transition-transform"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-white/60">
             <path d="M19 12H5M12 19l-7-7 7-7" />
@@ -208,7 +205,7 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
         </p>
         <button
           onClick={() => { playTap(); onProfile(); }}
-          className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/[0.04] border border-white/[0.08] active:scale-95 transition-transform"
+          className="flex items-center gap-2 px-3 py-2 rounded-full bg-[#17141D] active:scale-95 transition-transform"
         >
           <span className="text-lg">{profile.avatar || "😎"}</span>
           <span className="text-xs font-medium text-white/50 max-w-[80px] truncate">{profile.username || "Player"}</span>
@@ -216,7 +213,7 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
       </header>
 
       {/* Content */}
-      <main className="relative z-10 flex-1 flex flex-col justify-center px-6 overflow-y-auto">
+      <main className={`relative z-10 flex-1 flex flex-col px-6 overflow-y-auto ${mode === "choose" ? "justify-start pt-8" : "justify-center"}`}>
         <AnimatePresence mode="wait">
           {mode === "searching" ? (
             <motion.div key="searching" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center text-center gap-4 py-10">
@@ -241,13 +238,13 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
               className="flex flex-col gap-5"
             >
               {isDaily ? (
-                <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-400/[0.07] border border-amber-400/25">
+                <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#17141D] border border-[#FBBF24]/30">
                   <span className="text-3xl">📅</span>
                   <p className="text-white/75 text-sm leading-snug">{t("connect.dailyInfo")}</p>
                 </div>
               ) : (
                 <div>
-                  <p className="text-xs font-semibold text-white/45 mb-2">{t("connect.category")}</p>
+                  <h1 className="font-display text-[2rem] leading-[1.05] font-bold tracking-[-0.02em] text-white mb-4">{t("connect.pickTheme")}</h1>
                   <div className="grid grid-cols-3 gap-1.5">
                     {CATEGORY_CHIPS.map(chip => {
                       const active = normalizeCategory(selectedCategory) === chip.id;
@@ -257,7 +254,7 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
                           onClick={() => { playTap(); onSelectCategory?.(chip.id); }}
                           aria-pressed={active}
                           className={`flex items-center gap-1.5 px-2.5 py-2.5 rounded-xl text-[0.75rem] font-semibold transition-colors ${
-                            active ? "bg-amber-400 text-black" : "bg-white/[0.04] text-white/70"
+                            active ? "bg-[#FBBF24] text-[#07060A]" : "bg-[#17141D] text-white/70"
                           }`}
                         >
                           <span className="text-base leading-none">{chip.emoji}</span>
@@ -304,7 +301,7 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
                   onKeyDown={(e) => e.key === "Enter" && handleJoin()}
                   maxLength={6}
                   placeholder="• • • • • •"
-                  className="w-full text-center font-mono text-4xl font-bold tracking-[0.4em] bg-white/[0.03] border-2 border-white/[0.1] rounded-2xl px-6 py-6 text-white placeholder-white/15 focus:outline-none focus:border-primary/50 focus:shadow-[0_0_30px_rgba(255,26,108,0.15)] transition-all uppercase"
+                  className="w-full text-center font-display text-4xl font-bold tracking-[0.3em] tabular-nums bg-[#17141D] border-2 border-dashed border-[#2A2533] rounded-[24px] px-6 py-6 text-white placeholder-white/15 focus:outline-none focus:border-[#FF1A6C] transition-colors"
                   autoFocus
                   autoComplete="off"
                   autoCorrect="off"
@@ -318,12 +315,9 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
                 whileTap={{ scale: 0.97 }}
                 onClick={handleJoin}
                 disabled={joinCode.length !== 6 || submitting}
-                className="w-full bg-secondary text-white font-bold text-lg py-5 rounded-2xl active:scale-[0.97] transition-all disabled:opacity-30 disabled:glow-none glow-secondary relative overflow-hidden"
+                className="cc-press w-full bg-[#FF1A6C] text-white font-bold text-lg py-5 rounded-2xl disabled:opacity-30"
               >
-                <span className="relative z-10">{t("connect.joinGame")}</span>
-                {joinCode.length === 6 && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[gradient-shift_2s_ease-in-out_infinite] bg-[length:200%_100%]" />
-                )}
+                {t("connect.joinGame")}
               </motion.button>
 
               {/* Back */}
@@ -344,7 +338,7 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
           <button
             onClick={handleSolo}
             disabled={submitting || !canSolo}
-            className="w-full py-4 rounded-2xl bg-amber-400 text-black font-bold text-base active:scale-[0.98] transition-transform disabled:opacity-40"
+            className="cc-press w-full py-4 rounded-2xl bg-[#FBBF24] text-[#07060A] font-bold text-base active:scale-[0.98] transition-transform disabled:opacity-40"
           >
             {t("connect.soloStart")}
           </button>
@@ -355,14 +349,14 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
           <button
             onClick={handleCreate}
             disabled={submitting}
-            className="w-full py-4 rounded-2xl bg-primary text-white font-bold text-base active:scale-[0.98] transition-transform disabled:opacity-50"
+            className="cc-press w-full py-4 rounded-2xl bg-[#FF1A6C] text-white font-bold text-base active:scale-[0.98] transition-transform disabled:opacity-50"
           >
             ⚡ {t("connect.create")}
           </button>
           <div className={`grid gap-2 ${canRandom || canSolo ? "grid-cols-2" : "grid-cols-1"}`}>
             <button
               onClick={() => { playTap(); setMode("join"); }}
-              className="py-3.5 rounded-2xl bg-white/[0.05] border border-white/[0.1] text-white/85 text-sm font-semibold active:scale-[0.98] transition-transform"
+              className="py-3.5 rounded-2xl bg-[#17141D] text-white/85 text-sm font-semibold active:scale-[0.98] transition-transform"
             >
               🔗 {t("connect.joinShort")}
             </button>
@@ -370,7 +364,7 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
               <button
                 onClick={handleSolo}
                 disabled={submitting}
-                className="py-3.5 rounded-2xl bg-amber-400/10 border border-amber-400/35 text-amber-200 text-sm font-semibold active:scale-[0.98] transition-transform disabled:opacity-50"
+                className="py-3.5 rounded-2xl bg-[#17141D] border border-[#FBBF24]/40 text-[#FBBF24] text-sm font-semibold active:scale-[0.98] transition-transform disabled:opacity-50"
               >
                 {t("connect.withAi")}
               </button>
@@ -378,7 +372,7 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
             {canRandom && (
               <button
                 onClick={() => { playTap(); setRulesOpen(true); }}
-                className="py-3.5 rounded-2xl bg-amber-400/10 border border-amber-400/35 text-amber-200 text-sm font-semibold active:scale-[0.98] transition-transform"
+                className="py-3.5 rounded-2xl bg-[#17141D] border border-[#FBBF24]/40 text-[#FBBF24] text-sm font-semibold active:scale-[0.98] transition-transform"
               >
                 🎲 {t("match.button")}
               </button>
@@ -402,7 +396,7 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
               animate={{ y: 0 }}
               exit={{ y: 40 }}
               onClick={(event) => event.stopPropagation()}
-              className="w-full rounded-t-3xl bg-[#111] border-t border-white/10 p-6 pb-8 space-y-4"
+              className="w-full rounded-t-3xl bg-[#17141D] border-t border-white/10 p-6 pb-8 space-y-4"
             >
               <h3 className="font-display text-xl font-black text-white">🎲 {t("match.rulesTitle")}</h3>
               <p className="text-white/60 text-sm leading-relaxed">{t("match.rules")}</p>
@@ -428,7 +422,7 @@ export default function ConnectScreen({ onBack, onProfile, onCategory, selectedC
               <button
                 onClick={startMatch}
                 disabled={!gender || !adult}
-                className="w-full py-4 rounded-2xl bg-amber-400 text-black font-bold text-base disabled:opacity-30"
+                className="cc-press w-full py-4 rounded-2xl bg-[#FBBF24] text-[#07060A] font-bold text-base disabled:opacity-30"
               >
                 {t("match.start")}
               </button>

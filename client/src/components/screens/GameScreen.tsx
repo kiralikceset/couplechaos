@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { m as motion, AnimatePresence } from "framer-motion";
+import { m as motion } from "framer-motion";
 import { toast } from "sonner";
 import socket from "@/lib/socket";
 import { MAX_HINT_LENGTH } from "@/lib/gameData";
@@ -51,7 +51,7 @@ interface Message {
 export function Coin({ size = 16 }: { size?: number }) {
   return (
     <span
-      className="inline-flex items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-amber-900 font-black shadow-[0_0_8px_rgba(251,191,36,0.5)] border border-amber-200/70 flex-shrink-0"
+      className="inline-flex items-center justify-center rounded-full bg-[#FBBF24] text-[#5B3A00] font-black flex-shrink-0"
       style={{ width: size, height: size, fontSize: size * 0.55 }}
     >
       J
@@ -208,7 +208,7 @@ export default function GameScreen({
     <button
       onClick={() => { playTap(); onReport(); }}
       aria-label={t("report.do")}
-      className="size-9 flex-shrink-0 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-sm"
+      className="size-9 flex-shrink-0 rounded-xl bg-[#17141D] flex items-center justify-center text-sm"
     >
       🚩
     </button>
@@ -228,13 +228,13 @@ export default function GameScreen({
     const sent = messages.filter(m => m.mine).slice().reverse();
     const drawingNow = phase === "watch_drawing";
     return (
-      <div className="relative flex flex-col h-[100dvh] w-full bg-[#050505] overflow-hidden">
+      <div className="relative flex flex-col h-[100dvh] w-full bg-[#07060A] overflow-hidden">
         <header className="pt-7 px-4 flex items-center gap-3 flex-shrink-0">
           <CountdownTimer key={`${phase}-${endsAt}`} endsAt={endsAt} duration={timeLimit} size="sm" onComplete={phase === "describing" ? handleDescriptionDone : undefined} onTick={playTick} />
-          <div className="flex-1 min-w-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+          <div className="flex-1 min-w-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-[#17141D]">
             <span className="text-2xl leading-none">{wordEmoji || "🤫"}</span>
             <div className="min-w-0">
-              <p className="text-[0.5rem] font-bold text-primary/80 uppercase tracking-[0.2em] leading-none">{t("game.dontSay")}</p>
+              <p className="text-[0.7rem] font-semibold text-[#FF1A6C] leading-none">{t("game.dontSay")}</p>
               <h1 className="font-display text-lg font-black text-white leading-tight truncate">{word || "???"}</h1>
             </div>
           </div>
@@ -254,7 +254,7 @@ export default function GameScreen({
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-white/[0.1] px-6 text-center">
+            <div className="flex-1 flex flex-col items-center justify-center gap-4 rounded-[24px] border-2 border-dashed border-[#2A2533] px-6 text-center">
               <span className="text-4xl">💬</span>
               <p className="text-white/80 text-sm font-semibold leading-snug">{t("game.hintFirst").replace("{name}", partner)}</p>
               <button
@@ -297,7 +297,7 @@ export default function GameScreen({
         {/* Input */}
         <motion.div key={shake} animate={shake ? { x: [0, -10, 10, -6, 6, 0] } : {}} transition={{ duration: 0.35 }} className="px-4 pb-5 pt-2 flex-shrink-0">
           {blockedNote && <p className="text-red-300 text-[0.7rem] font-semibold mb-1.5 px-1">⛔ {blockedNote}</p>}
-          <div className={`flex items-center gap-2 bg-white/[0.05] border rounded-2xl pl-4 pr-1.5 py-1.5 focus-within:border-primary/40 ${blockedNote ? "border-red-400/50" : "border-white/[0.1]"}`}>
+          <div className={`flex items-center gap-2 bg-[#17141D] border rounded-2xl pl-4 pr-1.5 py-1.5 focus-within:border-primary/40 ${blockedNote ? "border-red-400/50" : "border-transparent"}`}>
             <input
               ref={inputRef}
               type="text"
@@ -328,7 +328,7 @@ export default function GameScreen({
   if (phase === "drawing") {
     const latest = messages.filter(m => !m.mine).slice().reverse();
     return (
-      <div className="relative flex flex-col h-[100dvh] w-full bg-[#050505] overflow-hidden">
+      <div className="relative flex flex-col h-[100dvh] w-full bg-[#07060A] overflow-hidden">
         <header className="pt-7 px-4 flex items-center gap-3 flex-shrink-0">
           <CountdownTimer key={`${phase}-${endsAt}`} endsAt={endsAt} duration={timeLimit} size="sm" onComplete={submitDrawing} onTick={playTick} />
           <h2 className="flex-1 text-center font-display text-lg font-black tracking-tight text-white truncate">{t("game.drawAndGuess")}</h2>
@@ -352,7 +352,7 @@ export default function GameScreen({
               key={m.id}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border ${index === 0 ? "bg-primary/25 border-primary/50 text-white" : "bg-white/[0.04] border-white/[0.08] text-white/60"}`}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border ${index === 0 ? "bg-[#FF1A6C] border-[#FF1A6C] text-white" : "bg-[#17141D] border-transparent text-white/60"}`}
             >
               {m.text}
             </motion.span>
@@ -365,7 +365,7 @@ export default function GameScreen({
 
         {guessOptions.length > 0 && (
           <div className="px-4 pb-5 flex-shrink-0">
-            <p className="text-[0.55rem] font-bold text-white/35 uppercase tracking-[0.2em] mb-1.5 text-center">{t("game.guessTitle")}</p>
+            <p className="text-xs text-[#8C8798] mb-1.5 text-center">{t("game.guessTitle")}</p>
             <div className="grid grid-cols-2 gap-2">
               {guessOptions.map(option => {
                 const selected = myGuess === option;
@@ -375,7 +375,7 @@ export default function GameScreen({
                     onClick={() => chooseGuess(option)}
                     disabled={submitting}
                     className={`py-3 px-2 rounded-xl text-sm font-bold border transition-colors truncate active:scale-[0.97] ${
-                      selected ? "bg-amber-400 text-black border-amber-300" : "bg-white/[0.05] text-white/85 border-white/[0.1]"
+                      selected ? "bg-[#FBBF24] text-[#07060A] border-[#FBBF24]" : "bg-[#17141D] text-white/85 border-transparent"
                     }`}
                   >
                     {selected ? "✓ " : ""}{option}
@@ -392,7 +392,7 @@ export default function GameScreen({
   // Drawer before the canvas opens: read the first hints
   if (phase === "watch_drawing" || phase === "describing") {
     return (
-      <div className="relative flex flex-col h-[100dvh] w-full bg-[#050505] overflow-hidden">
+      <div className="relative flex flex-col h-[100dvh] w-full bg-[#07060A] overflow-hidden">
         <header className="pt-7 px-4 flex items-center gap-3 flex-shrink-0">
           <CountdownTimer key={endsAt} endsAt={endsAt} duration={timeLimit} size="sm" />
           <div className="flex-1 min-w-0">
@@ -412,7 +412,7 @@ export default function GameScreen({
               key={m.id}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`self-start max-w-[90%] px-4 py-3 rounded-2xl rounded-tl-md text-base font-semibold border ${index === messages.length - 1 ? "bg-primary/20 border-primary/40 text-white" : "bg-white/[0.05] border-white/[0.08] text-white/80"}`}
+              className={`self-start max-w-[90%] px-4 py-3 rounded-2xl rounded-tl-md text-base font-semibold border ${index === messages.length - 1 ? "bg-[#FF1A6C]/20 border-[#FF1A6C]/50 text-white" : "bg-[#17141D] border-transparent text-white/80"}`}
             >
               {m.text}
             </motion.div>
@@ -427,25 +427,18 @@ export default function GameScreen({
   // ═══════════════════════════════════════════
   if (phase === "generating") {
     return (
-      <div className="relative flex flex-col items-center justify-center h-screen w-full bg-[#050505]">
-        <div className="absolute inset-0 pointer-events-none">
-          <motion.div
-            animate={{ scale: [1, 1.3, 1], opacity: [0.05, 0.12, 0.05] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-primary"
-          />
-        </div>
+      <div className="relative flex flex-col items-center justify-center h-[100dvh] w-full bg-[#07060A]">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className="relative z-10 text-center px-10"
         >
           <motion.div
-            animate={{ rotate: [0, 360] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            animate={{ rotate: [-8, 8, -8] }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
             className="text-6xl mb-6 inline-block"
           >
-            🔮
+            🧑‍⚖️
           </motion.div>
           <h2 className="font-display text-2xl font-black tracking-tight text-white mb-3">
             {t("game.processing")}
@@ -462,7 +455,7 @@ export default function GameScreen({
             initial={{ width: 0 }}
             animate={{ width: "100%" }}
             transition={{ duration: 5, ease: "easeInOut" }}
-            className="h-0.5 bg-gradient-to-r from-primary via-secondary to-primary rounded-full mt-6 mx-auto max-w-[200px]"
+            className="h-1 bg-[#FF1A6C] rounded-full mt-6 mx-auto max-w-[200px]"
           />
         </motion.div>
       </div>
@@ -473,8 +466,7 @@ export default function GameScreen({
   // DEFAULT - Waiting for game start
   // ═══════════════════════════════════════════
   return (
-    <div className="relative flex flex-col items-center justify-center h-screen w-full bg-[#050505]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.05)_0%,transparent_50%)] pointer-events-none" />
+    <div className="relative flex flex-col items-center justify-center h-[100dvh] w-full bg-[#07060A]">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -482,7 +474,7 @@ export default function GameScreen({
       >
         <div className="flex gap-2 justify-center mb-5">
           {[0, 1, 2].map(i => (
-            <motion.div key={i} animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 1.2, delay: i * 0.2, repeat: Infinity }} className="size-3 rounded-full bg-gradient-to-b from-primary to-secondary" />
+            <motion.div key={i} animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 1.2, delay: i * 0.2, repeat: Infinity }} className="size-3 rounded-full bg-[#FF1A6C]" />
           ))}
         </div>
         <h2 className="font-display text-2xl font-bold text-white mb-2">{t("game.starting")}</h2>

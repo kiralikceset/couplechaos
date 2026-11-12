@@ -338,7 +338,7 @@ export default function CoDrawScreen({
   const partnerLabel = partnerName || "Partner";
 
   return (
-    <div className="relative flex flex-col h-screen w-full bg-[#050505] overflow-hidden select-none">
+    <div className="relative flex flex-col h-[100dvh] w-full bg-[#07060A] overflow-hidden select-none">
       <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-secondary/[0.08] to-transparent pointer-events-none" />
 
       {/* Header: timer · word · players */}

@@ -29,7 +29,7 @@ export default function AchievementsScreen({ onBack }: Props) {
   const unlockedCount = ACHIEVEMENTS.filter(a => unlockedIds.includes(a.id)).length;
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[#050505] overflow-hidden">
+    <div className="flex flex-col h-[100dvh] w-full bg-[#07060A] overflow-hidden">
       {/* Header */}
       <header className="relative z-10 pt-12 px-5 pb-4 flex items-center gap-4">
         <button
@@ -53,7 +53,7 @@ export default function AchievementsScreen({ onBack }: Props) {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white/30 text-xs font-medium uppercase tracking-wider mb-1">{t("ach.currentStreak")}</p>
+              <p className="text-[#8C8798] text-xs font-medium mb-1">{t("ach.currentStreak")}</p>
               <div className="flex items-baseline gap-2">
                 <span className="font-display text-4xl font-black text-white">{streak.currentStreak}</span>
                 <span className="text-white/30 text-sm">{t("ach.days")}</span>

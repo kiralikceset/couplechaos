@@ -36,7 +36,7 @@ export default function PremiumScreen({ onBack, onPurchased }: Props) {
   }
 
   return (
-    <div className="relative flex flex-col h-screen w-full bg-[#050505] overflow-hidden">
+    <div className="relative flex flex-col h-[100dvh] w-full bg-[#07060A] overflow-hidden">
       {/* Premium gradient background */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-b from-[#FBBF24]/10 via-[#FF1A6C]/5 to-transparent rounded-full blur-[80px]" />

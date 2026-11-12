@@ -13,6 +13,3 @@ export const { Screen: GameScreen, preload: loadGameScreen } = preloadable(
 export const { Screen: ResultScreen, preload: loadResultScreen } = preloadable(
   () => import("@/components/screens/ResultScreen")
 );
-export const { Screen: ShareScreen, preload: loadShareScreen } = preloadable(
-  () => import("@/components/screens/ShareScreen")
-);
