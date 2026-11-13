@@ -112,6 +112,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     "connect.offlineMode": "Sunucu çevrim dışı — interneti kontrol edin",
     "connect.localMode": "Tek cihaz test modu",
     "connect.error": "Bağlantı kurulamadı",
+    "net.offline": "Oyun sunucusuna bağlanılamadı. İnternet bağlantınızı kontrol edin.",
+    "net.sessionExpired": "Oturum sona erdi. Lütfen yeni bir oda açın.",
+    "net.queueFull": "Bağlantı kuyruğu dolu; lütfen tekrar deneyin.",
+    "net.joinFailed": "Odaya bağlanılamadı.",
 
     "waiting.title": "Partner Bekleniyor",
     "waiting.badge": "Bekleniyor",
@@ -580,6 +584,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     "connect.offlineMode": "Server offline — check your connection",
     "connect.localMode": "Single-device test mode",
     "connect.error": "Connection failed",
+    "net.offline": "Can't reach the game server. Check your internet connection.",
+    "net.sessionExpired": "Your session expired. Please start a new room.",
+    "net.queueFull": "Too many pending actions. Please try again.",
+    "net.joinFailed": "Couldn't join the room.",
 
     "waiting.title": "Waiting for Partner",
     "waiting.badge": "Waiting",
@@ -1048,6 +1056,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     "connect.offlineMode": "Server offline — Verbindung prüfen",
     "connect.localMode": "Ein-Gerät-Testmodus",
     "connect.error": "Verbindung fehlgeschlagen",
+    "net.offline": "Der Spielserver ist nicht erreichbar. Prüfe deine Internetverbindung.",
+    "net.sessionExpired": "Deine Sitzung ist abgelaufen. Bitte erstelle einen neuen Raum.",
+    "net.queueFull": "Zu viele ausstehende Aktionen. Bitte versuche es erneut.",
+    "net.joinFailed": "Beitritt zum Raum fehlgeschlagen.",
 
     "waiting.title": "Warte auf Partner",
     "waiting.badge": "Wartet",
@@ -1516,6 +1528,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     "connect.offlineMode": "Servidor sin conexión — revisa tu internet",
     "connect.localMode": "Modo de prueba en un dispositivo",
     "connect.error": "Error de conexión",
+    "net.offline": "No se puede conectar con el servidor del juego. Revisa tu conexión a internet.",
+    "net.sessionExpired": "Tu sesión ha caducado. Crea una sala nueva.",
+    "net.queueFull": "Demasiadas acciones pendientes. Inténtalo de nuevo.",
+    "net.joinFailed": "No se pudo entrar en la sala.",
 
     "waiting.title": "Esperando a tu Pareja",
     "waiting.badge": "Esperando",

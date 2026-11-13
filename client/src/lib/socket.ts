@@ -1,4 +1,4 @@
-import { getLocale, type Locale } from "./i18n";
+import { getLocale, t, type Locale } from "./i18n";
 import { findWordEmoji, getDailyWord, getRandomWord, normalizeCategory } from "./wordPool";
 
 type Listener = (data?: any) => void;
@@ -141,7 +141,7 @@ export class GameSocket {
       const removable = this.actionQueue.findIndex((queued) => queued.event.endsWith("_stroke"));
       if (removable >= 0) this.actionQueue.splice(removable, 1);
       else {
-        this.dispatch("protocol_error", { message: "Bağlantı kuyruğu dolu; lütfen tekrar deneyin." });
+        this.dispatch("protocol_error", { message: t("net.queueFull") });
         return this;
       }
     }
@@ -260,7 +260,7 @@ export class GameSocket {
     } catch (error) {
       if (this.stopped || generation !== this.generation) return;
       if (String(error).includes("SESSION_EXPIRED")) {
-        this.dispatch("join_error", { message: "Oturum sona erdi. Lütfen yeni bir oda açın." });
+        this.dispatch("join_error", { message: t("net.sessionExpired") });
         this.sessionId = "";
         this.token = "";
         this.eventCursor = 0;
@@ -269,7 +269,7 @@ export class GameSocket {
       this.connected = false;
       this.setTransport("offline");
       if (wasConnected) this.dispatch("disconnect");
-      this.dispatch("connect_error", { message: "Oyun sunucusuna bağlanılamadı. İnternet bağlantınızı kontrol edin." });
+      this.dispatch("connect_error", { message: t("net.offline") });
       this.actionQueue = this.actionQueue.filter((action) => action.event !== "create_room" && action.event !== "join_room");
       this.scheduleReconnect();
     }
@@ -313,7 +313,7 @@ export class GameSocket {
         this.sessionId = "";
         this.token = "";
         this.eventCursor = 0;
-        this.dispatch("join_error", { message: "Oturum sona erdi. Lütfen yeni bir oda açın." });
+        this.dispatch("join_error", { message: t("net.sessionExpired") });
         throw new Error("SESSION_EXPIRED");
       }
       if (!response.ok) throw new Error(`HTTP_${response.status}`);
@@ -383,13 +383,8 @@ export class GameSocket {
         throw new Error("SESSION_EXPIRED");
       }
       if (!response.ok) {
-        let message = "İşlem sunucuya gönderilemedi.";
-        try {
-          const payload = await response.json() as { error?: string };
-          if (payload.error) message = payload.error;
-        } catch {
-          // Keep the recoverable fallback message.
-        }
+        // The server answers with codes (RATE_LIMITED…), not sentences: show a translated message.
+        const message = response.status === 429 ? t("net.queueFull") : t("connect.error");
         this.dispatch("protocol_error", { message });
         if (response.status >= 400 && response.status < 500) this.actionQueue.splice(0, batch.length);
         throw new Error(`HTTP_${response.status}`);
@@ -409,7 +404,7 @@ export class GameSocket {
       this.setTransport("offline");
       if (wasConnected) this.dispatch("disconnect");
       if (String(error).includes("SESSION_EXPIRED")) {
-        this.dispatch("join_error", { message: "Oturum sona erdi. Lütfen yeni bir oda açın." });
+        this.dispatch("join_error", { message: t("net.sessionExpired") });
       }
       this.scheduleReconnect();
     }

@@ -224,12 +224,13 @@ export default function HomeScreen({
                 {dailyCompleted ? `✓ ${t("home.dailyPlayed")}` : timeLeft(msLeft, t("home.dailyLeft"))}
               </span>
             </div>
-            <div className="mt-3 flex flex-wrap gap-1.5" aria-label={t("home.dailyLetters").replace("{n}", String(dailyWord.replace(/\s/g, "").length))}>
+            {/* One row, always: boxes shrink to fit long words ("Christmas tree") on small phones. */}
+            <div className="mt-3 flex flex-nowrap gap-1" aria-label={t("home.dailyLetters").replace("{n}", String(dailyWord.replace(/\s/g, "").length))}>
               {dailyShape.map((char, index) =>
                 char === " " ? (
-                  <span key={index} className="w-3" />
+                  <span key={index} className="flex-[0_0_10px]" />
                 ) : (
-                  <span key={index} className="w-7 h-8 rounded-[6px] bg-[#17141D] border-b-[3px] border-[#FBBF24]" />
+                  <span key={index} className="flex-[0_1_28px] min-w-0 h-8 rounded-[6px] bg-[#17141D] border-b-[3px] border-[#FBBF24]" />
                 ),
               )}
             </div>

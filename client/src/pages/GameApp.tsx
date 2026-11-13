@@ -580,7 +580,7 @@ export default function GameApp({
         setScreen("home");
         return;
       }
-      if (screen !== "connect") toast.error(message || "Odaya bağlanılamadı.");
+      if (screen !== "connect") toast.error(message || t("net.joinFailed"));
     };
     const onProtocolError = ({ message }: { message?: string } = {}) => {
       playError();
