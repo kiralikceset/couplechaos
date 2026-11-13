@@ -91,11 +91,15 @@ function languagesOf(locale: Locale, locales?: Locale[]): Locale[] {
   return Array.from(new Set(list));
 }
 
+// Round lengths, kept in step with the game server (same env overrides).
+const DRAW_SECONDS = Number(process.env.DRAW_SECONDS) || 20;
+const CO_DRAW_SECONDS = Number(process.env.CO_DRAW_SECONDS) || 15;
+
 function buildPrompt(word: string, locale: Locale, mode: "classic" | "co-draw" = "classic", locales?: Locale[]): string {
   const languages = languagesOf(locale, locales);
   const setup = mode === "co-draw"
-    ? "Both partners knew the word and drew it TOGETHER on one shared canvas at the same time, each from their own phone, for about 20 seconds, without being able to talk. Their strokes overlap and fight each other."
-    : "The drawer never saw the word. Their partner described it with short text hints, then the drawer had about 30 seconds to draw it on a phone with a finger.";
+    ? `Both partners knew the word and drew it TOGETHER on one shared canvas at the same time, each from their own phone, for about ${CO_DRAW_SECONDS} seconds, without being able to talk. Their strokes overlap and fight each other.`
+    : `The drawer never saw the word. Their partner described it with short text hints, then the drawer had about ${DRAW_SECONDS} seconds to draw it on a phone with a finger.`;
   const output = languages.length === 1
     ? [
         `Write "guess" and "comment" in ${LANGUAGE_NAMES[languages[0]]}.`,
@@ -241,7 +245,7 @@ interface BlindLook {
 function blindPrompt(mode: "classic" | "co-draw"): string {
   return [
     "This is a quick finger doodle from a phone drawing game (light strokes on a dark background).",
-    mode === "co-draw" ? "Two people drew it at the same time on one canvas." : "One person drew it in about 30 seconds.",
+    mode === "co-draw" ? "Two people drew it at the same time on one canvas." : `One person drew it in about ${DRAW_SECONDS} seconds.`,
     "You do NOT know what it was supposed to be. Look only at the drawing.",
     "List the 5 things it most likely shows, most likely first, as short English nouns (1-3 words),",
     "each with a confidence 0-100 that it is really that. Be honest: a vague scribble gets low confidence.",

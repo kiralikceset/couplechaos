@@ -31,9 +31,9 @@ const num = (name: string, fallback: number) => {
   return Number.isFinite(value) && value >= 0 ? value : fallback;
 };
 // Hints come first (the describer can skip ahead with "start drawing"); 0 = canvas opens at once.
-const DESCRIBE_SECONDS = num("DESCRIBE_SECONDS", 15);
-const DRAW_SECONDS = num("DRAW_SECONDS", 30);
-const CO_DRAW_SECONDS = num("CO_DRAW_SECONDS", 20);
+const DESCRIBE_SECONDS = num("DESCRIBE_SECONDS", 7); // hints keep coming while the partner draws
+const DRAW_SECONDS = num("DRAW_SECONDS", 20); // draw + pick the guess on a phone
+const CO_DRAW_SECONDS = num("CO_DRAW_SECONDS", 15);
 const CO_COUNTDOWN_SECONDS = num("CO_COUNTDOWN_SECONDS", 3);
 const CO_STROKE_LATE_MS = 500; // strokes still in flight when the timer ends
 const LONG_POLL_MS = num("LONG_POLL_MS", 8000);
