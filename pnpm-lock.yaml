@@ -43,6 +43,9 @@ importers:
       '@capgo/capacitor-social-login':
         specifier: ^8.7.7
         version: 8.7.7(@capacitor/core@8.3.1)
+      '@capgo/native-purchases':
+        specifier: ^8.9.13
+        version: 8.9.13(@capacitor/core@8.3.1)
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.64.0(react@19.2.1))
@@ -405,6 +408,11 @@ packages:
 
   '@capgo/capacitor-social-login@8.7.7':
     resolution: {integrity: sha512-8El/LzJkwvHDalbtaqKz3Qrd61OiPWHOB5qrt/ExYFrI9Jzjjk4c6GT+Gg9IJ14AMaboJAhI+0sLZghDBG17NQ==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@capgo/native-purchases@8.9.13':
+    resolution: {integrity: sha512-spix23M7OSh8qP4Jmqai3xjULGmZmWy2eTnrB1i2Y9E7T3hUfvbyT0qQmHbLY71i7nS7BXzOvKypY/bDKYtMYA==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
@@ -4081,6 +4089,10 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.3.1
       tslib: 2.8.1
+
+  '@capgo/native-purchases@8.9.13(@capacitor/core@8.3.1)':
+    dependencies:
+      '@capacitor/core': 8.3.1
 
   '@chevrotain/cst-dts-gen@11.0.3':
     dependencies:

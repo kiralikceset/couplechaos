@@ -14,6 +14,9 @@ export default function GameRuntime(props: GameAppStart) {
       <MotionConfig reducedMotion="user" transition={{ duration: 0.16 }}>
         <Toaster
           position="top-center"
+          // Keep toasts below the notch / Dynamic Island.
+          offset={{ top: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
+          mobileOffset={{ top: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
           toastOptions={{
             style: {
               background: "rgba(10,10,10,0.95)",

@@ -13,6 +13,8 @@ import { arePremiumFeaturesUnlocked, isBillingEnabled } from "@/lib/premium";
 import { getProfile } from "@/lib/gameData";
 import { getDailyWord, msUntilNextDailyWord } from "@/lib/wordPool";
 import { getLocale } from "@/lib/i18n";
+import { getTokens, TOKEN_EVENT } from "@/lib/tokens";
+import { openTokenShop } from "@/lib/tokenStore";
 
 interface Props {
   onPlayClassic: () => void;
@@ -75,6 +77,12 @@ export default function HomeScreen({
 }: Props) {
   const { t } = useLocale();
   const [streak, setStreak] = useState(0);
+  const [tokens, setTokens] = useState(getTokens());
+  useEffect(() => {
+    const update = () => setTokens(getTokens());
+    window.addEventListener(TOKEN_EVENT, update);
+    return () => window.removeEventListener(TOKEN_EVENT, update);
+  }, []);
   const [dailyCompleted, setDailyCompleted] = useState(false);
   const [msLeft, setMsLeft] = useState(() => msUntilNextDailyWord());
   const premium = arePremiumFeaturesUnlocked();
@@ -106,6 +114,15 @@ export default function HomeScreen({
           <span className="text-[#8C8798] font-normal">{t("home.streak")}</span>
         </button>
         <div className="flex items-center gap-2">
+          <button
+            onClick={tap(openTokenShop)}
+            aria-label={t("shop.title")}
+            className="flex items-center gap-1.5 h-10 pl-1.5 pr-1.5 rounded-full bg-[#17141D] text-sm font-semibold"
+          >
+            <span className="size-7 rounded-full bg-[#FBBF24] text-[#5B3A00] font-black text-[0.8rem] flex items-center justify-center" aria-hidden>J</span>
+            <span className="tabular-nums">{tokens}</span>
+            <span className="size-7 rounded-full bg-[#FF1A6C] text-white text-lg leading-none flex items-center justify-center" aria-hidden>+</span>
+          </button>
           {billingEnabled && !premium && (
             <button onClick={tap(onPremium)} className="h-10 px-3 rounded-full bg-[#17141D] text-amber-300 text-xs font-bold">
               👑 Pro

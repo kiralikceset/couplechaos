@@ -21,6 +21,7 @@ import LiveCanvas from "@/components/game/LiveCanvas";
 import { assessDrawing } from "@/lib/drawingScore";
 import { hintRevealsWord } from "@/lib/hintFilter";
 import { getTokens, spendTokens, TOKEN_EVENT } from "@/lib/tokens";
+import { canBuyTokens, openTokenShop } from "@/lib/tokenStore";
 
 interface Props {
   phase: GamePhase;
@@ -156,7 +157,7 @@ export default function GameScreen({
     if (!canHint || option.used) return;
     if (!spendTokens(option.cost)) {
       playError();
-      toast.error(t("game.notEnoughTokens"));
+      toast.error(t("game.notEnoughTokens"), canBuyTokens() ? { action: { label: t("shop.buy"), onClick: openTokenShop } } : undefined);
       return;
     }
     playSuccess();

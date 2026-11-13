@@ -64,6 +64,8 @@ import WaitingScreen from "@/components/screens/WaitingScreen";
 import CoDrawScreen from "@/components/screens/CoDrawScreen";
 import { createThumbnail } from "@/lib/imageUtils";
 import { toast } from "sonner";
+import TokenShop from "@/components/TokenShop";
+import { initTokenStore } from "@/lib/tokenStore";
 
 // These screens are packaged in the APK but parsed only when needed.
 import HowItWorksScreen from "@/components/screens/HowItWorksScreen";
@@ -191,6 +193,10 @@ export default function GameApp({
   const [transport, setTransport] = useState(socket.transport);
   /** Room code from an invite link (shows the invite screen). */
   const [inviteCode, setInviteCode] = useState<string | null>(() => (initialScreen === "invite" ? takePendingInvite() : null));
+  // Paid-but-unfinished token purchases (crash, lost connection, Ask to Buy) are granted here.
+  useEffect(() => {
+    void initTokenStore((tokens) => toast.success(t("shop.added").replace("{n}", String(tokens))));
+  }, []);
   useEffect(() => {
     const onInvite = () => {
       const code = takePendingInvite();
@@ -806,6 +812,7 @@ export default function GameApp({
 
   return (
     <div className="min-h-[100dvh] bg-[#07060A] text-white font-body overflow-hidden">
+      <TokenShop />
       <Suspense
         fallback={<div className="h-[100dvh] bg-[#07060A]" aria-busy="true" />}
       >
