@@ -561,7 +561,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "game.starting": "Starting game...",
     "game.getReady": "Get ready for chaos ⚡",
 
-    "result.wordWas": "The Word Was",
+    "result.wordWas": "The word was",
     "result.aiSays": "Game Says",
     "result.drawingScore": "Drawing Score",
     "result.gameComment": "Game Comment",
@@ -974,7 +974,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "game.starting": "Spiel startet...",
     "game.getReady": "Mach dich bereit für Chaos ⚡",
 
-    "result.wordWas": "Das Wort War",
+    "result.wordWas": "Das Wort war",
     "result.aiSays": "Das Spiel Sagt",
     "result.drawingScore": "Zeichenpunktzahl",
     "result.gameComment": "Spielkommentar",
@@ -1387,7 +1387,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "game.starting": "Iniciando juego...",
     "game.getReady": "Prepárate para el caos ⚡",
 
-    "result.wordWas": "La Palabra Era",
+    "result.wordWas": "La palabra era",
     "result.aiSays": "El Juego Dice",
     "result.drawingScore": "Puntuación del Dibujo",
     "result.gameComment": "Comentario del Juego",

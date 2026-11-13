@@ -14,21 +14,21 @@ const config: CapacitorConfig = {
     },
     SplashScreen: {
       launchAutoHide: true,
-      backgroundColor: '#050505',
+      backgroundColor: '#07060A',
       androidSplashResourceName: 'splash',
       showSpinner: false,
     },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#050505',
+      backgroundColor: '#07060A',
     },
   },
   android: {
     allowMixedContent: false,
-    backgroundColor: '#050505',
+    backgroundColor: '#07060A',
   },
   ios: {
-    backgroundColor: '#050505',
+    backgroundColor: '#07060A',
     contentInset: 'never',
     scrollEnabled: false,
   },

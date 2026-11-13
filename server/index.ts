@@ -1311,6 +1311,22 @@ function createGameServer() {
     }]);
   });
 
+  // iOS Universal Links: invite links open the installed iPhone app.
+  // Needs APPLE_TEAM_ID (10 characters, developer.apple.com → Membership).
+  app.get(["/.well-known/apple-app-site-association", "/apple-app-site-association"], (_request, response) => {
+    const team = (process.env.APPLE_TEAM_ID || "").trim().toUpperCase();
+    if (!/^[A-Z0-9]{10}$/.test(team)) {
+      response.status(404).end();
+      return;
+    }
+    response.setHeader("Content-Type", "application/json");
+    response.json({
+      applinks: {
+        details: [{ appIDs: [`${team}.com.couplechaos.app`], components: [{ "/": "/join/*" }] }],
+      },
+    });
+  });
+
   // Today's daily-challenge leaderboard (top 50). The word itself is not revealed.
   app.get("/api/leaderboard", (_request, response) => {
     const today = currentBoard();
@@ -1465,6 +1481,27 @@ function createGameServer() {
   const staticPath = process.env.NODE_ENV === "production"
     ? path.resolve(path.dirname(fileURLToPath(import.meta.url)), "public")
     : path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "dist", "public");
+  // Privacy policy and support pages (App Store links). CONTACT_EMAIL is set on the server,
+  // so the address can change without a new app release.
+  const legalPages: Record<string, string> = {
+    "/privacy": "privacy.html", "/privacy.html": "privacy.html",
+    "/support": "support.html", "/support.html": "support.html",
+  };
+  app.get(Object.keys(legalPages), (request, response) => {
+    let page: string;
+    try {
+      page = readFileSync(path.join(staticPath, legalPages[request.path]), "utf8");
+    } catch {
+      response.status(404).end();
+      return;
+    }
+    const email = (process.env.CONTACT_EMAIL || "").trim();
+    const contact = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(email)
+      ? `<a href="mailto:${email}" style="color:#FF1A6C">${email}</a>`
+      : "—";
+    response.setHeader("Cache-Control", "public, max-age=300");
+    response.type("html").send(page.replaceAll("{{CONTACT_EMAIL}}", contact));
+  });
   app.use(express.static(staticPath));
   app.get("*", (_request, response) => response.sendFile(path.join(staticPath, "index.html"), (error) => {
     if (error && !response.headersSent) response.status(404).end();

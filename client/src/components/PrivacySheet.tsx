@@ -1,6 +1,9 @@
 import { m as motion, AnimatePresence } from "framer-motion";
 import { useLocale } from "@/contexts/LocaleContext";
 
+// The hosted copy carries the live contact address; the bundled copy is only a web fallback.
+const PRIVACY_BASE = String(import.meta.env.VITE_GAME_SERVER_URL || "").replace(/\/$/, "");
+
 /** In-app privacy policy viewer (works on iOS too, where there is no system back button). */
 export default function PrivacySheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t, locale } = useLocale();
@@ -26,7 +29,7 @@ export default function PrivacySheet({ open, onClose }: { open: boolean; onClose
               <h2 className="text-white font-bold">{t("profile.privacy")}</h2>
               <button onClick={onClose} aria-label="close" className="size-9 rounded-full bg-white/[0.06] text-white/60 text-lg">×</button>
             </div>
-            <iframe title="privacy" src={`/privacy.html#${locale === "tr" ? "tr" : "en"}`} className="flex-1 w-full bg-[#0b0b0d]" />
+            <iframe title="privacy" src={`${PRIVACY_BASE}/privacy.html#${locale === "tr" ? "tr" : "en"}`} className="flex-1 w-full bg-[#0b0b0d]" />
           </motion.div>
         </motion.div>
       )}
