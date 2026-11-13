@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { translations, type Locale } from "./i18n";
-import { CATEGORIES, findWordEmoji, getAllWords, getCategoryWordCount, getDailyWord, getDistractors, getRandomWord, getTotalWordCount, normalizeCategory, pickWord, resetUsedWords } from "./wordPool";
+import { CATEGORIES, dailyKey, findWordEmoji, msUntilNextDailyWord, getAllWords, getCategoryWordCount, getDailyWord, getDistractors, getRandomWord, getTotalWordCount, normalizeCategory, pickWord, resetUsedWords } from "./wordPool";
 
 afterEach(() => {
   resetUsedWords();
@@ -17,13 +17,15 @@ describe("word pool", () => {
     }
   });
 
-  it("uses one stable daily word per local date", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 8, 9, 10));
-    const first = getDailyWord("tr");
-    expect(getDailyWord("tr")).toEqual(first);
-    vi.setSystemTime(new Date(2026, 8, 10, 10));
-    expect(getDailyWord("tr")).not.toEqual(first);
+  it("changes the daily word at 08:00 UTC, never during a US or EU evening", () => {
+    const at = (h: number, m = 0) => new Date(Date.UTC(2026, 8, 10, h, m));
+    // 7:59 UTC = 00:59 PDT / 3:59 EDT: still the 9th's word, same as the US evening before.
+    expect(getDailyWord("en", at(7, 59))).toEqual(getDailyWord("en", new Date(Date.UTC(2026, 8, 9, 23, 30))));
+    expect(getDailyWord("en", at(8, 0))).not.toEqual(getDailyWord("en", at(7, 59)));
+    expect(dailyKey(at(7, 59))).toBe("2026-09-09");
+    expect(dailyKey(at(8, 0))).toBe("2026-09-10");
+    expect(msUntilNextDailyWord(at(7, 0))).toBe(3_600_000);
+    expect(msUntilNextDailyWord(at(8, 0))).toBe(24 * 3_600_000);
   });
 
   it("keeps every locale translation key in sync", () => {

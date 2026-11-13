@@ -3,6 +3,7 @@
  * Keeps users coming back every day
  * Tracks progress and rewards engagement
  */
+import { dailyKey } from "./wordPool";
 
 
 // ═══════════════════════════════════════════
@@ -272,7 +273,7 @@ const DAILY_CHALLENGE_KEY = "couple_chaos_daily";
 export function getDailyChallenge(now = new Date()): DailyChallenge | null {
   const challenge = readJson(DAILY_CHALLENGE_KEY) as Partial<DailyChallenge> | null;
   if (!challenge || typeof challenge !== "object") return null;
-  const today = localDateKey(now);
+  const today = dailyKey(now); // same day boundary as the daily word itself
   if (challenge.date !== today) return null; // Expired
   if (typeof challenge.word !== "string" || typeof challenge.category !== "string") return null;
   return {
@@ -285,7 +286,7 @@ export function getDailyChallenge(now = new Date()): DailyChallenge | null {
 }
 
 export function setDailyChallenge(word: string, category: string, now = new Date()): void {
-  const today = localDateKey(now);
+  const today = dailyKey(now);
   const challenge: DailyChallenge = {
     word,
     category,

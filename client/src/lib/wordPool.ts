@@ -393,17 +393,29 @@ export function getRandomWordFromFreeCategories(locale: Locale): string {
   return getRandomWord("mixed", locale);
 }
 
-export function getDailyWord(locale: Locale): { word: string; category: WordCategory; emoji: string } {
-  // UTC date as seed → everyone (phone and server, any time zone) gets the same word today.
-  const today = new Date();
-  const seed = today.getUTCFullYear() * 10000 + (today.getUTCMonth() + 1) * 100 + today.getUTCDate();
+/**
+ * The daily word changes at 08:00 UTC: midnight on the US west coast, 3 am on the east
+ * coast and the morning in Europe, so it never flips during a US or EU evening.
+ * Same moment everywhere, so phone, server and leaderboard always agree.
+ */
+export const DAILY_RESET_UTC_HOUR = 8;
+const RESET_MS = DAILY_RESET_UTC_HOUR * 3_600_000;
+
+/** The game day ("YYYY-MM-DD") a moment belongs to. */
+export function dailyKey(now = new Date()): string {
+  return new Date(now.getTime() - RESET_MS).toISOString().slice(0, 10);
+}
+
+export function getDailyWord(locale: Locale, now = new Date()): { word: string; category: WordCategory; emoji: string } {
+  const seed = Number(dailyKey(now).replaceAll("-", ""));
   const word = EVERY_WORD[seed % EVERY_WORD.length];
   return { word: localized(word, locale), category: "mixed", emoji: word.emoji };
 }
 
-/** Milliseconds until the daily word changes (next UTC midnight). */
+/** Milliseconds until the daily word changes. */
 export function msUntilNextDailyWord(now = new Date()): number {
-  const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  const shifted = new Date(now.getTime() - RESET_MS);
+  const next = Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate() + 1) + RESET_MS;
   return Math.max(0, next - now.getTime());
 }
 

@@ -19,7 +19,7 @@ import { createServer } from "node:http";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getDailyWord, getDistractors, normalizeCategory, pickWord } from "../client/src/lib/wordPool";
+import { dailyKey, getDailyWord, getDistractors, normalizeCategory, pickWord } from "../client/src/lib/wordPool";
 import { foldText, hintRevealsWord } from "../client/src/lib/hintFilter";
 import { botDraw, generateHints, isAiJudgeEnabled, judgeDrawing, type BotDrawing, type Locale } from "./aiJudge";
 import { sketchToPng } from "./sketch";
@@ -536,7 +536,7 @@ let board: { day: string; entries: BoardEntry[] } = { day: "", entries: [] };
 
 /** Same calendar as getDailyWord (UTC date). */
 function dayKey(date = new Date()): string {
-  return date.toISOString().slice(0, 10);
+  return dailyKey(date);
 }
 
 function currentBoard(): typeof board {

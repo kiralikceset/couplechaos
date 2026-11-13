@@ -66,11 +66,14 @@ describe("retention calculations", () => {
     expect(getCompatibilityScore()).toEqual(second);
   });
 
-  it("stores a daily challenge only for its local calendar day", () => {
-    const today = new Date(2026, 8, 9, 23, 59);
+  it("stores a daily challenge only until the daily word changes (08:00 UTC)", () => {
+    const today = new Date(Date.UTC(2026, 8, 10, 7, 59));
     setDailyChallenge("Kalp", "romantic", today);
     expect(getDailyChallenge(today)).toMatchObject({ word: "Kalp", category: "romantic", completed: false, bonus: "daily" });
-    expect(getDailyChallenge(new Date(2026, 8, 10, 0, 1))).toBeNull();
+    // US evening of the 9th is still the same game day...
+    expect(getDailyChallenge(new Date(Date.UTC(2026, 8, 10, 2, 0)))).not.toBeNull();
+    // ...and it expires the moment the new word arrives.
+    expect(getDailyChallenge(new Date(Date.UTC(2026, 8, 10, 8, 1)))).toBeNull();
   });
 
   it("unlocks achievements from real stored statistics without duplicates", () => {
