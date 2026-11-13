@@ -12,7 +12,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { AVAILABLE_LOCALES, type Locale } from "@/lib/i18n";
 import { playTap, playSuccess } from "@/lib/sounds";
 import { isSoundEnabled, toggleSound } from "@/lib/sounds";
-import { isPremiumUser } from "@/lib/premium";
+import { isPremiumUser, premiumOffered } from "@/lib/premium";
 import { deleteAccountAndData, getAccount, getAvailableProviders, signOut, type Account } from "@/lib/auth";
 import PrivacySheet from "@/components/PrivacySheet";
 import { toast } from "sonner";
@@ -142,7 +142,7 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
         </button>
         <h2 className="flex-1 text-center font-display text-lg font-bold text-white">{t("profile.title")}</h2>
         {/* Premium badge in header */}
-        {onPremium ? (
+        {onPremium && premiumOffered() ? (
           <button
             onClick={() => { playTap(); onPremium(); }}
             className={`h-10 px-3.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${premium ? "bg-[#FBBF24] text-[#07060A]" : "bg-[#17141D] text-[#FBBF24]"}`}

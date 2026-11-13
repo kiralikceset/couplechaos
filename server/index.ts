@@ -50,6 +50,8 @@ const MAX_SESSIONS = num("MAX_SESSIONS", 20_000);
 const MAX_ROOMS = num("MAX_ROOMS", 10_000);
 /** Random match with strangers: off until there are enough players (RANDOM_MATCH=1 turns it on). */
 const RANDOM_MATCH = process.env.RANDOM_MATCH === "1";
+/** PURCHASES=off: the app hides the token shop and Premium and lifts the free daily limit. */
+const PURCHASES = process.env.PURCHASES !== "off";
 /** Solo vs AI: the AI hint-giver gets a short head start before the canvas opens. */
 const SOLO_DESCRIBE_SECONDS = num("SOLO_DESCRIBE_SECONDS", 6);
 const BOT_PREFIX = "bot:";
@@ -1292,7 +1294,7 @@ function createGameServer() {
       rooms: rooms.size,
       sessions: sessions.size,
       ai: isAiJudgeEnabled(),
-      features: { randomMatch: RANDOM_MATCH, solo: true, leaderboard: true },
+      features: { randomMatch: RANDOM_MATCH, solo: true, leaderboard: true, purchases: PURCHASES },
       auth: { apple: isProviderConfigured("apple"), google: isProviderConfigured("google") },
     });
   });

@@ -9,6 +9,7 @@
  * so the app works offline and is refreshed at every launch and after every purchase.
  */
 import { earnTokens } from "./tokens";
+import { purchasesEnabled } from "./features";
 import { PREMIUM_PRODUCT_IDS, canBuyTokens, setSubscriptionHandler, storePlugin } from "./tokenStore";
 
 export const FREE_DAILY_LIMIT = 5;
@@ -277,11 +278,17 @@ export function recordFreeGame(premiumRoom: boolean, now = new Date()): number {
 
 /** May this player start a new game (create a room, play the AI, play again)? */
 export function canPlayFree(now = new Date()): boolean {
-  return isPremiumUser() || getGamesToday(now) < FREE_DAILY_LIMIT;
+  // With purchases switched off there is no way to unlock more, so there is no limit either.
+  return !purchasesEnabled() || isPremiumUser() || getGamesToday(now) < FREE_DAILY_LIMIT;
+}
+
+/** Show the crown, the Premium screen and the free-games hint at all? */
+export function premiumOffered(): boolean {
+  return purchasesEnabled();
 }
 
 export function getRemainingFreeGames(now = new Date()): number {
-  if (isPremiumUser()) return Infinity;
+  if (!purchasesEnabled() || isPremiumUser()) return Infinity;
   return Math.max(0, FREE_DAILY_LIMIT - getGamesToday(now));
 }
 

@@ -26,6 +26,7 @@ import {
   weekKey,
 } from "./premium";
 import { getTokens } from "./tokens";
+import { applyFeatures, purchasesEnabled } from "./features";
 
 const DAY = 86_400_000;
 const premiumFor = (ms: number) =>
@@ -121,5 +122,26 @@ describe("premium perks", () => {
     expect(tokenMultiplier()).toBe(1);
     premiumFor(DAY);
     expect(tokenMultiplier()).toBe(2);
+  });
+});
+
+describe("purchases switch (server PURCHASES=off)", () => {
+  it("lifts the daily limit and hides selling while purchases are off", () => {
+    const now = new Date(2026, 10, 13, 20, 0);
+    for (let i = 0; i < FREE_DAILY_LIMIT; i++) recordFreeGame(false, now);
+    expect(canPlayFree(now)).toBe(false);
+    applyFeatures({ purchases: false });
+    expect(purchasesEnabled()).toBe(false);
+    expect(canPlayFree(now)).toBe(true);
+    expect(getRemainingFreeGames(now)).toBe(Infinity);
+    applyFeatures({ purchases: true });
+    expect(canPlayFree(now)).toBe(false);
+  });
+
+  it("defaults to on and ignores servers that don't send the switch", () => {
+    expect(purchasesEnabled()).toBe(true);
+    applyFeatures({});
+    applyFeatures(undefined);
+    expect(purchasesEnabled()).toBe(true);
   });
 });

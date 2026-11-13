@@ -8,6 +8,7 @@
  * - Unverified transactions are never granted.
  */
 import { earnTokens } from "./tokens";
+import { purchasesEnabled } from "./features";
 
 export interface TokenPack {
   id: string;
@@ -39,12 +40,13 @@ interface MinimalTransaction {
 type Plugin = typeof import("@capgo/native-purchases")["NativePurchases"];
 
 export function openTokenShop(): void {
+  if (!purchasesEnabled()) return;
   window.dispatchEvent(new CustomEvent(TOKEN_SHOP_EVENT));
 }
 
 export function canBuyTokens(): boolean {
   const capacitor = (globalThis as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
-  return Boolean(capacitor?.isNativePlatform?.());
+  return Boolean(capacitor?.isNativePlatform?.()) && purchasesEnabled();
 }
 
 function readGranted(): string[] {

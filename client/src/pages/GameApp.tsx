@@ -66,6 +66,7 @@ import { createThumbnail } from "@/lib/imageUtils";
 import { toast } from "sonner";
 import TokenShop from "@/components/TokenShop";
 import { initTokenStore } from "@/lib/tokenStore";
+import { refreshFeatures } from "@/lib/features";
 
 // These screens are packaged in the APK but parsed only when needed.
 import HowItWorksScreen from "@/components/screens/HowItWorksScreen";
@@ -199,7 +200,9 @@ export default function GameApp({
   // then the Premium subscription is refreshed and its weekly tokens handed out.
   useEffect(() => {
     const bonusToast = (tokens: number) => toast.success(t("premium.bonusToast").replace("{n}", String(tokens)));
-    void initTokenStore((tokens) => toast.success(t("shop.added").replace("{n}", String(tokens))))
+    // Server switches first (purchases may be turned off), then the stores.
+    void refreshFeatures(socket.baseUrl)
+      .then(() => initTokenStore((tokens) => toast.success(t("shop.added").replace("{n}", String(tokens)))))
       .then(() => initPremium(bonusToast));
   }, []);
   useEffect(() => {
