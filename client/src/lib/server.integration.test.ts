@@ -83,10 +83,10 @@ async function waitFor(log: Logged[], event: string, count = 1, timeout = 6000):
 
 const TINY_JPEG = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==";
 
-async function startedRoom() {
+async function startedRoom(hostPremium = false) {
   const host = client();
   const guest = client();
-  host.socket.emit("create_room", { username: "Yusuf", avatar: "😎", mode: "classic", category: "funny", locale: "tr" });
+  host.socket.emit("create_room", { username: "Yusuf", avatar: "😎", mode: "classic", category: "funny", locale: "tr", premium: hostPremium });
   const created = await waitFor(host.log, "room_created");
   const code = created.data.code as string;
   guest.socket.emit("join_room", { code: code.toLowerCase(), username: "Elif", avatar: "🦄", locale: "tr" });
@@ -97,6 +97,15 @@ async function startedRoom() {
 }
 
 describe("protocol 2 server with the real app transport", () => {
+  it("marks rounds in a Premium player's room as free for both players", async () => {
+    const { host, guest, code } = await startedRoom(true);
+    host.socket.emit("description_done", { code });
+    await waitFor(guest.log, "start_drawing");
+    guest.socket.emit("submit_drawing", { code, imageData: TINY_JPEG, score: 50, comment: "ok" });
+    expect((await waitFor(guest.log, "show_result")).data.premiumRoom).toBe(true);
+    expect((await waitFor(host.log, "show_result")).data.premiumRoom).toBe(true);
+  });
+
   it("plays a full classic round: hints, drawing, shared result, then swaps roles", async () => {
     const { host, guest, code } = await startedRoom();
     expect(code).toMatch(/^[A-Z2-9]{6}$/);
@@ -136,6 +145,7 @@ describe("protocol 2 server with the real app transport", () => {
     expect(hostResult.aiScore).toBe(64);
     expect(hostResult.judgedBy).toBe("offline");
     expect(host.log.filter((entry) => entry.event === "generating_result")).toHaveLength(1);
+    expect(guestResult.premiumRoom).toBe(false); // nobody has Premium: the round counts as a free game
 
     guest.socket.emit("play_again", { code });
     host.socket.emit("play_again", { code }); // both tapping must not skip a round

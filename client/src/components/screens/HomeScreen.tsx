@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { playTap } from "@/lib/sounds";
 import { getDailyChallenge, getStreakData } from "@/lib/retention";
-import { arePremiumFeaturesUnlocked, isBillingEnabled } from "@/lib/premium";
+import { getRemainingFreeGames, isPremiumUser, PREMIUM_EVENT } from "@/lib/premium";
 import { getProfile } from "@/lib/gameData";
 import { getDailyWord, msUntilNextDailyWord } from "@/lib/wordPool";
 import { getLocale } from "@/lib/i18n";
@@ -85,8 +85,13 @@ export default function HomeScreen({
   }, []);
   const [dailyCompleted, setDailyCompleted] = useState(false);
   const [msLeft, setMsLeft] = useState(() => msUntilNextDailyWord());
-  const premium = arePremiumFeaturesUnlocked();
-  const billingEnabled = isBillingEnabled();
+  const [premium, setPremium] = useState(isPremiumUser());
+  const [freeLeft, setFreeLeft] = useState(getRemainingFreeGames());
+  useEffect(() => {
+    const update = () => { setPremium(isPremiumUser()); setFreeLeft(getRemainingFreeGames()); };
+    window.addEventListener(PREMIUM_EVENT, update);
+    return () => window.removeEventListener(PREMIUM_EVENT, update);
+  }, []);
   const profile = getProfile();
   const name = profile.username.trim();
   const dailyWord = getDailyWord(getLocale()).word;
@@ -123,11 +128,21 @@ export default function HomeScreen({
             <span className="tabular-nums">{tokens}</span>
             <span className="size-7 rounded-full bg-[#FF1A6C] text-white text-lg leading-none flex items-center justify-center" aria-hidden>+</span>
           </button>
-          {billingEnabled && !premium && (
-            <button onClick={tap(onPremium)} className="h-10 px-3 rounded-full bg-[#17141D] text-amber-300 text-xs font-bold">
-              👑 Pro
-            </button>
-          )}
+          <button
+            onClick={tap(onPremium)}
+            aria-label={t("premium.title")}
+            className={`size-10 rounded-full flex items-center justify-center ${premium ? "bg-[#FBBF24]" : "bg-[#17141D]"}`}
+          >
+            <svg width="22" height="18" viewBox="0 0 120 92" aria-hidden>
+              <path
+                d="M10 78 L6 26 L33 48 L60 10 L87 48 L114 26 L110 78 Z"
+                fill={premium ? "#07060A" : "#FBBF24"}
+                stroke={premium ? "#07060A" : "#FBBF24"}
+                strokeWidth="8"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
           <button
             onClick={tap(onProfile)}
             aria-label={t("profile.title")}
@@ -143,6 +158,14 @@ export default function HomeScreen({
           {name ? t("home.hello").replace("{name}", name) : t("home.helloAnon")}
         </h1>
         <p className="mt-1.5 text-[#8C8798] text-base">{t("home.whatToDraw")}</p>
+        {!premium && freeLeft <= 2 && (
+          <button onClick={tap(onPremium)} className="mt-3 inline-flex items-center gap-2 h-9 pl-3 pr-3.5 rounded-full bg-[#17141D] text-sm">
+            <span className="text-[#FBBF24] font-semibold">
+              {freeLeft > 0 ? t("home.freeLeft").replace("{n}", String(freeLeft)) : t("home.freeUsed")}
+            </span>
+            <span className="text-[#F7F3FF] font-semibold">{t("home.goUnlimited")}</span>
+          </button>
+        )}
 
         {/* Main game */}
         <button

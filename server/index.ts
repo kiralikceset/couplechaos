@@ -86,6 +86,8 @@ interface Session {
   locale: Locale;
   /** Set when the player uses random match. */
   gender?: Gender;
+  /** Player says they have Premium (rooms with a Premium player don't count toward free limits). */
+  premium?: boolean;
   seenActions: Set<string>;
   seenActionOrder: string[];
 }
@@ -830,6 +832,7 @@ async function finishRound(room: Room, submission: { imageData: string; score: n
       const playerLocale = sessions.get(id)?.locale || room.locale;
       const sameLanguage = playerLocale === room.locale;
       push(id, "show_result", {
+      premiumRoom: room.players.some((playerId) => sessions.get(playerId)?.premium === true),
       word: room.word,
       wordEmoji: room.wordEmoji,
       imageData: submission.imageData,
@@ -857,6 +860,7 @@ function rememberPlayer(session: Session, data: Record<string, unknown>): void {
   session.username = cleanText(data.username, "Player", 24);
   session.avatar = cleanText(data.avatar, "😎", 8);
   session.locale = getLocale(data.locale);
+  session.premium = data.premium === true;
 }
 
 function openRoom(host: Session, mode: GameMode, category: unknown, random: boolean): Room {
@@ -1199,6 +1203,7 @@ function handleAction(session: Session, event: string, data: Record<string, unkn
   }
 
   if (event === "play_again") {
+    if (typeof data.premium === "boolean") session.premium = data.premium;
     if (room.players.length === 2 && room.state === "result" && room.round > 0) startRound(room);
   }
 }

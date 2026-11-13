@@ -12,7 +12,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { AVAILABLE_LOCALES, type Locale } from "@/lib/i18n";
 import { playTap, playSuccess } from "@/lib/sounds";
 import { isSoundEnabled, toggleSound } from "@/lib/sounds";
-import { isBillingEnabled, isPremiumUser } from "@/lib/premium";
+import { isPremiumUser } from "@/lib/premium";
 import { deleteAccountAndData, getAccount, getAvailableProviders, signOut, type Account } from "@/lib/auth";
 import PrivacySheet from "@/components/PrivacySheet";
 import { toast } from "sonner";
@@ -67,7 +67,6 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
   const [editData, setEditData] = useState<{ username: string; avatar: string; gender?: "f" | "m" }>({ username: profile.username, avatar: profile.avatar, gender: profile.gender });
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const premium = isPremiumUser();
-  const billingEnabled = isBillingEnabled();
   const streak = getStreakData().currentStreak;
   const tokens = getTokens();
   const [account, setAccount] = useState<Account | null>(getAccount());
@@ -143,16 +142,17 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
         </button>
         <h2 className="flex-1 text-center font-display text-lg font-bold text-white">{t("profile.title")}</h2>
         {/* Premium badge in header */}
-        {billingEnabled && !premium && onPremium && (
+        {onPremium ? (
           <button
             onClick={() => { playTap(); onPremium(); }}
-            className="px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/30 flex items-center gap-1.5 active:scale-90 transition-transform"
+            className={`h-10 px-3.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${premium ? "bg-[#FBBF24] text-[#07060A]" : "bg-[#17141D] text-[#FBBF24]"}`}
           >
-            <span className="text-xs">👑</span>
-            <span className="text-amber-400 text-[0.6rem] font-bold">PRO</span>
+            <span aria-hidden>👑</span>
+            {t("premium.short")}
           </button>
+        ) : (
+          <div className="size-10" />
         )}
-        {premium && <div className="size-10" />}
       </header>
 
       {/* Content */}

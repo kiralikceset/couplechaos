@@ -6,6 +6,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { canPlayFree, isPremiumUser } from "@/lib/premium";
 import { m as motion, AnimatePresence } from "framer-motion";
 import socket from "@/lib/socket";
 import { getProfile } from "@/lib/gameData";
@@ -25,11 +26,19 @@ interface Props {
   onSelectCategory?: (category: string) => void;
   /** Opened from "play with AI": one start button, no rooms. */
   solo?: boolean;
+  /** Free games for today are used up: show Premium. Joining a partner's room is always allowed. */
+  onNeedPremium?: () => void;
 }
 
 const CATEGORY_CHIPS = CATEGORIES.map(({ id, emoji }) => ({ id, emoji }));
 
-export default function ConnectScreen({ onBack, onProfile, selectedCategory, mode: gameMode = "classic", onSelectCategory, solo = false }: Props) {
+export default function ConnectScreen({ onBack, onProfile, selectedCategory, mode: gameMode = "classic", onSelectCategory, solo = false, onNeedPremium }: Props) {
+  const outOfFreeGames = () => {
+    if (canPlayFree()) return false;
+    playTap();
+    onNeedPremium?.();
+    return true;
+  };
   const isDaily = selectedCategory === "daily_challenge" && gameMode === "classic";
   const { t } = useLocale();
   const [joinCode, setJoinCode] = useState("");
@@ -115,7 +124,7 @@ export default function ConnectScreen({ onBack, onProfile, selectedCategory, mod
   }, [t]);
 
   function handleCreate() {
-    if (submitting) return;
+    if (submitting || outOfFreeGames()) return;
     playTap();
     setSubmitting(true);
     socket.emit("create_room", {
@@ -124,6 +133,7 @@ export default function ConnectScreen({ onBack, onProfile, selectedCategory, mod
       mode: gameMode,
       category: selectedCategory || "mixed",
       locale: getLocale(),
+      premium: isPremiumUser(),
     });
     void requestNotificationPermission();
   }
@@ -140,11 +150,12 @@ export default function ConnectScreen({ onBack, onProfile, selectedCategory, mod
       locale: getLocale(),
       gender,
       adult,
+      premium: isPremiumUser(),
     });
   }
 
   function startMatch() {
-    if (!gender || !adult) return;
+    if (!gender || !adult || outOfFreeGames()) return;
     playTap();
     try { localStorage.setItem("cc_adult_ok", "1"); } catch {}
     if (profile.gender !== gender) saveProfile({ ...getProfile(), gender });
@@ -161,7 +172,7 @@ export default function ConnectScreen({ onBack, onProfile, selectedCategory, mod
   }
 
   function handleSolo() {
-    if (submitting) return;
+    if (submitting || outOfFreeGames()) return;
     playTap();
     setSubmitting(true);
     socket.emit("start_solo", {
@@ -169,6 +180,7 @@ export default function ConnectScreen({ onBack, onProfile, selectedCategory, mod
       avatar: profile.avatar,
       category: selectedCategory || "mixed",
       locale: getLocale(),
+      premium: isPremiumUser(),
     });
   }
 
@@ -183,6 +195,7 @@ export default function ConnectScreen({ onBack, onProfile, selectedCategory, mod
       locale: getLocale(),
       mode: "classic",
       category: selectedCategory || "mixed",
+      premium: isPremiumUser(),
     });
     void requestNotificationPermission();
   }

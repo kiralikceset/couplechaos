@@ -49,7 +49,7 @@ import {
   setDailyChallenge,
   updateCompatibility,
 } from "@/lib/retention";
-import { canPlayFree, incrementGamesToday, isBillingEnabled } from "@/lib/premium";
+import { canPlayFree, claimWeeklyBonus, initPremium, isPremiumUser, recordFreeGame, tokenMultiplier } from "@/lib/premium";
 import { getLocale, t } from "@/lib/i18n";
 import { findWordEmoji, getDailyWord } from "@/lib/wordPool";
 import { getRoast } from "@/lib/aiRoast";
@@ -123,6 +123,8 @@ export interface GameResult {
   /** Played against the AI. */
   solo?: boolean;
   strokeAspect?: number;
+  /** A Premium player is in this room: the round doesn't count toward free games. */
+  premiumRoom?: boolean;
 }
 
 export interface HintOptionView {
@@ -193,9 +195,12 @@ export default function GameApp({
   const [transport, setTransport] = useState(socket.transport);
   /** Room code from an invite link (shows the invite screen). */
   const [inviteCode, setInviteCode] = useState<string | null>(() => (initialScreen === "invite" ? takePendingInvite() : null));
-  // Paid-but-unfinished token purchases (crash, lost connection, Ask to Buy) are granted here.
+  // Paid-but-unfinished token purchases (crash, lost connection, Ask to Buy) are granted here,
+  // then the Premium subscription is refreshed and its weekly tokens handed out.
   useEffect(() => {
-    void initTokenStore((tokens) => toast.success(t("shop.added").replace("{n}", String(tokens))));
+    const bonusToast = (tokens: number) => toast.success(t("premium.bonusToast").replace("{n}", String(tokens)));
+    void initTokenStore((tokens) => toast.success(t("shop.added").replace("{n}", String(tokens))))
+      .then(() => initPremium(bonusToast));
   }, []);
   useEffect(() => {
     const onInvite = () => {
@@ -216,12 +221,12 @@ export default function GameApp({
   const roundStartedAtRef = useRef(Date.now());
   const suppressNextPopRef = useRef(false);
 
-  useEffect(() => {
-    if (screen === "premium" && !isBillingEnabled()) {
-      setHistory([]);
-      setScreen("home");
-    }
-  }, [screen]);
+  /** Why the Premium screen is open: the free limit was hit, or the player opened it. */
+  const [paywallReason, setPaywallReason] = useState<"limit" | "upgrade">("upgrade");
+  function openPaywall(reason: "limit" | "upgrade") {
+    setPaywallReason(reason);
+    navigate("premium");
+  }
 
   // Prepare only the next likely screen, after the current screen is visible.
   useEffect(() => {
@@ -491,6 +496,7 @@ export default function GameApp({
       strokes,
       strokeAspect,
       solo,
+      premiumRoom,
     }: GameResult) => {
       const numericScore = Number.isFinite(aiScore)
         ? Math.max(1, Math.min(100, Math.round(aiScore!)))
@@ -511,13 +517,14 @@ export default function GameApp({
         aiGuess,
         playerGuess,
         guessCorrect,
-        tokensEarned: TOKEN_REWARD_ROUND + (guessCorrect ? TOKEN_REWARD_CORRECT : 0),
+        tokensEarned: (TOKEN_REWARD_ROUND + (guessCorrect ? TOKEN_REWARD_CORRECT : 0)) * tokenMultiplier(),
         dailyRank,
         dailyTotal,
         botDrew,
         strokes: Array.isArray(strokes) ? strokes : undefined,
         strokeAspect,
         solo,
+        premiumRoom,
       };
       earnTokens(nextResult.tokensEarned);
       if (guessCorrect && !botDrew) {
@@ -527,7 +534,7 @@ export default function GameApp({
       }
       setResult(nextResult);
       incrementGamesPlayed();
-      incrementGamesToday();
+      recordFreeGame(Boolean(premiumRoom));
       incrementStat("totalGames");
       if (outcome === "win") incrementStat("gamesWon");
       if (numericScore === 100) incrementStat("perfectGuesses");
@@ -714,16 +721,17 @@ export default function GameApp({
   }
 
   function playAgain() {
-    if (!canPlayFree()) {
-      navigate("premium");
+    // A Premium player's room is free for both; otherwise each new round needs a free game.
+    if (!result?.premiumRoom && !canPlayFree()) {
+      openPaywall("limit");
       return;
     }
 
     // Solo: if the room was dropped meanwhile, the server simply starts a new game.
     const profile = getProfile();
     socket.emit("play_again", isSolo
-      ? { code: roomCode, solo: true, category: selectedCategory || "mixed", username: profile.username || "Player", avatar: profile.avatar, locale: getLocale() }
-      : { code: roomCode });
+      ? { code: roomCode, solo: true, category: selectedCategory || "mixed", username: profile.username || "Player", avatar: profile.avatar, locale: getLocale(), premium: isPremiumUser() }
+      : { code: roomCode, premium: isPremiumUser() });
   }
 
   // Request notification permission
@@ -779,10 +787,6 @@ export default function GameApp({
     setSoloMode(false);
     setGameMode("co-draw");
     if (selectedCategory === "daily_challenge") setSelectedCategory("mixed");
-    if (!canPlayFree()) {
-      navigate("premium");
-      return;
-    }
     navigate("connect");
   }
 
@@ -790,10 +794,6 @@ export default function GameApp({
     setSoloMode(false);
     setGameMode("classic");
     if (selectedCategory === "daily_challenge") setSelectedCategory("mixed");
-    if (!canPlayFree()) {
-      navigate("premium");
-      return;
-    }
     navigate("connect");
   }
 
@@ -803,10 +803,6 @@ export default function GameApp({
     setSelectedCategory("daily_challenge");
     const daily = getDailyWord(getLocale());
     setDailyChallenge(daily.word, daily.category);
-    if (!canPlayFree()) {
-      navigate("premium");
-      return;
-    }
     navigate("connect");
   }
 
@@ -840,7 +836,7 @@ export default function GameApp({
             onPlaySolo={handlePlaySolo}
             onLeaderboard={() => navigate("leaderboard")}
             onProfile={() => navigate("profile")}
-            onPremium={() => navigate("premium")}
+            onPremium={() => openPaywall("upgrade")}
             onAchievements={() => navigate("achievements")}
             partnerName={partnerName}
           />
@@ -855,6 +851,7 @@ export default function GameApp({
             selectedCategory={selectedCategory}
             mode={gameMode}
             solo={soloMode}
+            onNeedPremium={() => openPaywall("limit")}
           />
         )}
         {screen === "invite" && inviteCode && (
@@ -945,7 +942,7 @@ export default function GameApp({
               }
             }}
             partnerName={partnerName}
-            onPremium={() => navigate("premium")}
+            onPremium={() => openPaywall("upgrade")}
             onSignIn={() => navigate("login")}
             onAccountDeleted={() => {
               if (roomCode) leaveGame();
@@ -956,11 +953,14 @@ export default function GameApp({
           />
         )}
         {/* Payments are off in v1: the paywall can never be reached or shown. */}
-        {screen === "premium" && isBillingEnabled() && (
+        {screen === "premium" && (
           <PremiumScreen
+            reason={paywallReason}
             onBack={goBack}
             onPurchased={() => {
               playSuccess();
+              const bonus = claimWeeklyBonus();
+              toast.success(t("premium.welcome") + (bonus ? " " + t("premium.bonusToast").replace("{n}", String(bonus)) : ""));
               goBack();
             }}
           />

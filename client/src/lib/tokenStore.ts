@@ -79,7 +79,18 @@ export function grantTransaction(transaction: MinimalTransaction): number {
   return pack.tokens;
 }
 
+/** Subscription product ids (Premium). Their transactions are finished here and handed to premium.ts. */
+export const PREMIUM_PRODUCT_IDS = ["com.couplechaos.app.premium.monthly", "com.couplechaos.app.premium.yearly"];
+let onSubscription: (() => void) | null = null;
+export function setSubscriptionHandler(handler: () => void): void {
+  onSubscription = handler;
+}
+
 let pluginPromise: Promise<Plugin | null> | null = null;
+/** The StoreKit plugin (null on the web or when unavailable). Shared by tokens and Premium. */
+export function storePlugin(): Promise<Plugin | null> {
+  return plugin();
+}
 function plugin(): Promise<Plugin | null> {
   if (!canBuyTokens()) return Promise.resolve(null);
   pluginPromise ??= import("@capgo/native-purchases")
@@ -91,7 +102,14 @@ function plugin(): Promise<Plugin | null> {
   return pluginPromise;
 }
 
-async function settle(store: Plugin, transaction: MinimalTransaction): Promise<number> {
+export async function settle(store: Plugin, transaction: MinimalTransaction): Promise<number> {
+  if (transaction.transactionId && PREMIUM_PRODUCT_IDS.includes(transaction.productIdentifier || "")) {
+    if (!transaction.verificationError) {
+      await store.finishTransaction({ transactionId: transaction.transactionId }).catch(() => undefined);
+    }
+    onSubscription?.();
+    return 0;
+  }
   const added = grantTransaction(transaction);
   if (transaction.transactionId && TOKEN_PACKS.some((pack) => pack.id === transaction.productIdentifier)) {
     // Finish granted (or already granted) purchases so StoreKit stops redelivering them.
@@ -102,7 +120,7 @@ async function settle(store: Plugin, transaction: MinimalTransaction): Promise<n
   return added;
 }
 
-/** On launch: grant purchases that were paid but not finished (crash, lost connection, Ask to Buy). */
+/** On launch: grant purchases that were paid but not finished (crash, lost connection, Ask to Buy), finish subscription renewals. */
 export async function initTokenStore(onGranted?: (tokens: number) => void): Promise<void> {
   const store = await plugin();
   if (!store) return;

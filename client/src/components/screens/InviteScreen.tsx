@@ -3,6 +3,7 @@
  * Works for brand-new players too (no onboarding in the way).
  */
 import { useEffect, useState } from "react";
+import { isPremiumUser } from "@/lib/premium";
 import socket from "@/lib/socket";
 import { useLocale } from "@/contexts/LocaleContext";
 import { getProfile, saveProfile } from "@/lib/gameData";
@@ -71,7 +72,7 @@ export default function InviteScreen({ code, onCancel }: Props) {
     } catch {
       /* continue in memory */
     }
-    socket.emit("join_room", { code, username, avatar, locale: getLocale() });
+    socket.emit("join_room", { code, username, avatar, locale: getLocale(), premium: isPremiumUser() });
   }
 
   const mode = info?.mode === "co-draw" ? t("home.coDraw") : t("home.classic");
