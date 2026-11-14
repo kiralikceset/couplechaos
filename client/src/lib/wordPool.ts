@@ -1,6 +1,6 @@
 /**
  * Word pool — only concrete things you can actually DRAW, grouped by clear themes
- * (animals, food, objects, vehicles, nature, characters, sports & music, love). "Karışık" mixes them all.
+ * (animals, food, objects, vehicles, nature & places, characters, sports & music, love). "Karışık" mixes them all.
  *
  * Every word has an emoji that is shown on the result screen next to the
  * players' drawing ("what it should have looked like").
@@ -176,6 +176,8 @@ const OBJECT_WORDS: WordEntry[] = [
   { id: 2047, tr: "Ok ve yay", en: "Bow and arrow", de: "Pfeil und Bogen", es: "Arco y flecha", emoji: "🏹" },
   { id: 2048, tr: "Matruşka", en: "Nesting doll", de: "Matroschka", es: "Matrioska", emoji: "🪆" },
   { id: 2049, tr: "Zar", en: "Dice", de: "Würfel", es: "Dado", emoji: "🎲" },
+  { id: 3029, tr: "Trafik lambası", en: "Traffic light", de: "Ampel", es: "Semáforo", emoji: "🚦" },
+  { id: 3035, tr: "Noel ağacı", en: "Christmas tree", de: "Weihnachtsbaum", es: "Árbol de Navidad", emoji: "🎄" },
 ];
 
 const VEHICLE_WORDS: WordEntry[] = [
@@ -233,13 +235,11 @@ const PLACE_WORDS: WordEntry[] = [
   { id: 3026, tr: "Sirk çadırı", en: "Circus tent", de: "Zirkuszelt", es: "Carpa de circo", emoji: "🎪" },
   { id: 3027, tr: "Çadır", en: "Tent", de: "Zelt", es: "Tienda de campaña", emoji: "⛺" },
   { id: 3028, tr: "Ev", en: "House", de: "Haus", es: "Casa", emoji: "🏠" },
-  { id: 3029, tr: "Trafik lambası", en: "Traffic light", de: "Ampel", es: "Semáforo", emoji: "🚦" },
   { id: 3030, tr: "Kar tanesi", en: "Snowflake", de: "Schneeflocke", es: "Copo de nieve", emoji: "❄️" },
   { id: 3031, tr: "Hortum", en: "Tornado", de: "Tornado", es: "Tornado", emoji: "🌪️" },
   { id: 3032, tr: "Dev dalga", en: "Giant wave", de: "Riesenwelle", es: "Ola gigante", emoji: "🌊" },
   { id: 3033, tr: "Göktaşı", en: "Meteor", de: "Meteor", es: "Meteorito", emoji: "☄️" },
   { id: 3034, tr: "Satürn", en: "Saturn", de: "Saturn", es: "Saturno", emoji: "🪐" },
-  { id: 3035, tr: "Noel ağacı", en: "Christmas tree", de: "Weihnachtsbaum", es: "Árbol de Navidad", emoji: "🎄" },
   { id: 3036, tr: "Hız treni", en: "Roller coaster", de: "Achterbahn", es: "Montaña rusa", emoji: "🎢" },
 ];
 
@@ -445,9 +445,80 @@ export function resetUsedWords(): void {
   usedWordIds.clear();
 }
 
+/**
+ * Words that look alike when drawn. They never appear together as guess options, so a good
+ * drawing of "Kiss" is not lost to "Lips", or "Moon" to "Full moon".
+ */
+const LOOK_ALIKE: number[][] = [
+  // animals
+  [3, 8, 26, 27, 32], // bird, chicken, owl, swan, peacock
+  [4, 20, 21], // fish, shark, whale
+  [16, 34], // snake, worm
+  [24, 33], // bee, fly
+  [10, 30], // horse, llama
+  [13, 29], // monkey, sloth
+  // food
+  [1001, 1006, 1033], // coffee, milk, milkshake
+  [1008, 1033], // ice cream, milkshake
+  [1024, 1037], // cookie, fortune cookie
+  [1022, 1029], // corn, popcorn
+  [1011, 1012, 1021], // tomato, apple, cherry
+  [1031, 1032], // pear, avocado
+  // objects
+  [2009, 2034, 2042], // sneaker, flip-flop, high heel
+  [2008, 2026], // hat, crown
+  [2006, 2030], // alarm clock, compass
+  [2012, 2013, 2039], // television, laptop, keyboard
+  [2004, 2046], // balloon, crystal ball
+  [2044, 5017], // gift box, valentine card
+  // vehicles
+  [6001, 6011, 6017], // car, police car, taxi
+  [6010, 6018, 6019], // fire truck, ambulance, truck
+  [6004, 6008, 6020, 6023], // train, bus, cable car, tram
+  [6005, 6016, 6022], // ship, sailboat, canoe
+  [6002, 6014, 6021], // bicycle, motorcycle, scooter
+  // nature & places
+  [3001, 3017], // sun, sunset
+  [3007, 3015], // moon, full moon
+  [3006, 3016, 3033], // star, shooting star, meteor
+  [3003, 3012, 3014], // flower, sunflower, daisy
+  [3002, 3011, 3035], // tree, palm tree, christmas tree
+  [3011, 3013, 3019, 3020], // palm tree, beach, desert island, desert
+  [3026, 3027], // circus tent, tent
+  // characters
+  [4013, 4020], // fairy, angel
+  [4001, 4002, 4016, 4021], // zombie, alien, monster, devil
+  [4010, 4024], // wizard, genie
+  // sports & music
+  [7001, 7002, 7004, 7005], // soccer ball, basketball, volleyball, baseball
+  [7021, 7023], // guitar, violin
+  [7025, 7026], // trumpet, saxophone
+  [7011, 7012], // medal, trophy
+  // love
+  [5002, 5022, 5026], // kiss, lips, kissing couple
+  [5001, 5010, 5017, 5018], // heart, cupid's arrow, valentine card, broken heart
+  [5011, 5012, 5020, 5026], // dancing couple, holding hands, hug, kissing couple
+  [5003, 5023], // engagement ring, diamond
+  [5004, 5005], // red rose, bouquet
+];
+
+function entryOf(word: string): WordEntry | undefined {
+  const needle = word.trim().toLocaleLowerCase("tr");
+  return EVERY_WORD.find((entry) => [entry.tr, entry.en, entry.de, entry.es].some((value) => value.toLocaleLowerCase("tr") === needle));
+}
+
+/** Ids that must not be offered next to this word (itself and its look-alikes). */
+export function lookAlikeIds(id: number): Set<number> {
+  const ids = new Set<number>([id]);
+  for (const group of LOOK_ALIKE) if (group.includes(id)) group.forEach((other) => ids.add(other));
+  return ids;
+}
+
 /** Wrong-but-plausible answers from the word's own theme, for the drawer's guess buttons. */
 export function getDistractors(word: string, category: WordCategory | string, locale: Locale, count = 3): string[] {
-  const pool = (themeOf(word) || wordsOf(category)).map((entry) => localized(entry, locale));
+  const entry = entryOf(word);
+  const banned = entry ? lookAlikeIds(entry.id) : new Set<number>();
+  const pool = (themeOf(word) || wordsOf(category)).filter((candidate) => !banned.has(candidate.id)).map((candidate) => localized(candidate, locale));
   const others = pool.filter((value) => value.toLocaleLowerCase("tr") !== word.toLocaleLowerCase("tr"));
   for (let i = others.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));

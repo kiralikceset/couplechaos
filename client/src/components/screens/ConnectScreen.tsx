@@ -258,7 +258,8 @@ export default function ConnectScreen({ onBack, onProfile, selectedCategory, mod
               ) : (
                 <div>
                   <h1 className="font-display text-[2rem] leading-[1.05] font-bold tracking-[-0.02em] text-white mb-4">{t("connect.pickTheme")}</h1>
-                  <div className="grid grid-cols-3 gap-1.5">
+                  {/* Two columns so full names fit ("Nature & Places", "Naturaleza y lugares"); Mixed spans the row. */}
+                  <div className="grid grid-cols-2 gap-2">
                     {CATEGORY_CHIPS.map(chip => {
                       const active = normalizeCategory(selectedCategory) === chip.id;
                       return (
@@ -266,12 +267,12 @@ export default function ConnectScreen({ onBack, onProfile, selectedCategory, mod
                           key={chip.id}
                           onClick={() => { playTap(); onSelectCategory?.(chip.id); }}
                           aria-pressed={active}
-                          className={`flex items-center gap-1.5 px-2.5 py-2.5 rounded-xl text-[0.75rem] font-semibold transition-colors ${
-                            active ? "bg-[#FBBF24] text-[#07060A]" : "bg-[#17141D] text-white/70"
-                          }`}
+                          className={`flex items-center gap-2.5 px-3.5 min-h-[52px] py-2 rounded-2xl text-left text-[0.88rem] leading-tight font-semibold transition-colors ${
+                            chip.id === "mixed" ? "col-span-2" : ""
+                          } ${active ? "bg-[#FBBF24] text-[#07060A]" : "bg-[#17141D] text-white/75"}`}
                         >
-                          <span className="text-base leading-none">{chip.emoji}</span>
-                          <span className="truncate">{t(`cat.${chip.id}`)}</span>
+                          <span className="text-xl leading-none shrink-0">{chip.emoji}</span>
+                          <span className="min-w-0">{t(`cat.${chip.id}`)}</span>
                         </button>
                       );
                     })}

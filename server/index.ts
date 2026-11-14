@@ -528,9 +528,9 @@ const CATEGORY_NAMES: Record<string, Record<Locale, string>> = {
   food: { tr: "Yiyecek", en: "Food", de: "Essen", es: "Comida" },
   objects: { tr: "Eşyalar", en: "Objects", de: "Dinge", es: "Objetos" },
   vehicles: { tr: "Taşıtlar", en: "Vehicles", de: "Fahrzeuge", es: "Vehículos" },
-  places: { tr: "Doğa", en: "Nature", de: "Natur", es: "Naturaleza" },
+  places: { tr: "Doğa ve Yerler", en: "Nature & Places", de: "Natur & Orte", es: "Naturaleza y lugares" },
   people: { tr: "Karakterler", en: "Characters", de: "Figuren", es: "Personajes" },
-  fun: { tr: "Hobiler", en: "Hobbies", de: "Hobbys", es: "Aficiones" },
+  fun: { tr: "Spor ve Müzik", en: "Sports & Music", de: "Sport & Musik", es: "Deporte y música" },
   love: { tr: "Aşk", en: "Love", de: "Liebe", es: "Amor" },
 };
 

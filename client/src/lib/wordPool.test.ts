@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { translations, type Locale } from "./i18n";
-import { CATEGORIES, dailyKey, findWordEmoji, msUntilNextDailyWord, getAllWords, getCategoryWordCount, getDailyWord, getDistractors, getRandomWord, getTotalWordCount, normalizeCategory, pickWord, resetUsedWords } from "./wordPool";
+import { CATEGORIES, dailyKey, lookAlikeIds, findWordEmoji, msUntilNextDailyWord, getAllWords, getCategoryWordCount, getDailyWord, getDistractors, getRandomWord, getTotalWordCount, normalizeCategory, pickWord, resetUsedWords } from "./wordPool";
 
 afterEach(() => {
   resetUsedWords();
@@ -68,5 +68,39 @@ describe("word pool", () => {
     expect(options.length).toBe(34);
     expect(options).toContain("Köpek");
     expect(options).not.toContain("Pizza");
+  });
+
+  it("never offers look-alike words as guess options", () => {
+    for (let run = 0; run < 30; run++) {
+      expect(getDistractors("Öpücük", "love", "tr", 3)).not.toEqual(expect.arrayContaining(["Dudaklar"]));
+      const moon = getDistractors("Moon", "places", "en", 100);
+      expect(moon).not.toContain("Full moon");
+      expect(moon).toContain("Sun");
+      const car = getDistractors("Coche", "vehicles", "es", 100);
+      expect(car).not.toContain("Taxi");
+      expect(car).not.toContain("Coche de policía");
+    }
+    expect(getDistractors("Yıldız kayması", "places", "tr", 100)).not.toContain("Göktaşı");
+    // even the smallest theme still has plenty of fair options
+    for (const word of getAllWords()) expect(getDistractors(word.en, "mixed", "en", 3)).toHaveLength(3);
+  });
+
+  it("look-alike groups only point at real words", () => {
+    const ids = new Set(getAllWords().map((word) => word.id));
+    for (const word of getAllWords()) for (const id of lookAlikeIds(word.id)) expect(ids.has(id)).toBe(true);
+  });
+
+  it("every language has every word, once", () => {
+    for (const locale of ["tr", "en", "de", "es"] as const) {
+      const values = getAllWords().map((word) => word[locale].trim().toLocaleLowerCase("tr"));
+      expect(values.every(Boolean)).toBe(true);
+      expect(new Set(values).size).toBe(values.length);
+    }
+    expect(new Set(getAllWords().map((word) => word.id)).size).toBe(getAllWords().length);
+  });
+
+  it("nature & places holds no street furniture or holiday decorations", () => {
+    expect(getDistractors("Güneş", "places", "tr", 100)).not.toEqual(expect.arrayContaining(["Trafik lambası", "Noel ağacı"]));
+    expect(getDistractors("Anahtar", "objects", "tr", 100)).toEqual(expect.arrayContaining(["Trafik lambası", "Noel ağacı"]));
   });
 });
