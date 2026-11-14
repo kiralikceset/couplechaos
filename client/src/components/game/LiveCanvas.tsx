@@ -13,7 +13,7 @@ interface Stroke {
  * Read-only canvas that replays the partner's drawing as it happens.
  * Draws only the new segment of each chunk; full redraw only on undo/clear/resize.
  */
-export default function LiveCanvas({ roundNumber, placeholder }: { roundNumber: number; placeholder: string }) {
+export default function LiveCanvas({ roundNumber, placeholder, onSnapshot }: { roundNumber: number; placeholder: string; onSnapshot?: (image: string | null) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const sizeRef = useRef({ w: 0, h: 0 });
@@ -113,6 +113,21 @@ export default function LiveCanvas({ roundNumber, placeholder }: { roundNumber: 
     socket.on("live_stroke", onLive);
     return () => { socket.off("live_stroke", onLive); };
   }, [aspect, paint, redraw]);
+
+  // When the drawing phase ends this canvas unmounts: hand over a picture of the finished drawing.
+  const snapshotRef = useRef(onSnapshot);
+  snapshotRef.current = onSnapshot;
+  useEffect(() => {
+    const canvas = canvasRef.current; // the ref is already cleared when the cleanup runs
+    return () => {
+      if (!snapshotRef.current || !canvas || !strokesRef.current.length) return;
+      try {
+        snapshotRef.current(canvas.toDataURL("image/png"));
+      } catch {
+        /* best effort */
+      }
+    };
+  }, []);
 
   return (
     <div ref={wrapRef} className="relative flex-1 min-h-0 flex items-center justify-center">

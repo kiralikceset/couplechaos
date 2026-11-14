@@ -455,7 +455,9 @@ function botHandIn(room: Room, round: number): void {
 }
 
 /** Gap between the AI hint-giver's hints. */
-const BOT_HINT_EVERY_MS = num("BOT_HINT_EVERY_MS", 3800);
+const BOT_HINT_EVERY_MS = num("BOT_HINT_EVERY_MS", 3000);
+/** How long the AI hint-giver holds back the ready-made hints for its own (slower) ones. */
+const BOT_AI_WAIT_MS = num("BOT_AI_WAIT_MS", 4500);
 
 function stopBotHints(room: Room): void {
   if (room.bot?.hints) clearInterval(room.bot.hints);
@@ -473,9 +475,22 @@ function runBotDescriber(room: Room, round: number): void {
   const smart: string[] = [];
   const giveaways = [option("letters"), option("first"), option("emoji")].filter((text): text is string => Boolean(text));
   let sent = 0;
+  let given = 0;
   let aiPending = isAiJudgeEnabled();
+  const startedAt = Date.now();
 
-  const next = (): string | undefined => opener.shift() || smart.shift() || (aiPending && sent < 2 ? undefined : giveaways.shift());
+  // Never leave the screen empty: the first hint comes at once, and the AI-written hints are
+  // only waited for a few seconds (they can take up to AI_HINT_TIMEOUT_MS) before the
+  // ready-made ones (letter count, first letter, emoji) carry on.
+  const waitForAi = () => aiPending && given >= 1 && Date.now() - startedAt < BOT_AI_WAIT_MS;
+  const next = (): string | undefined => {
+    const text = opener.shift() || smart.shift();
+    if (text) return text;
+    if (waitForAi()) return undefined;
+    const giveaway = giveaways.shift();
+    if (giveaway) given += 1;
+    return giveaway;
+  };
   const tick = () => {
     if (room.round !== round || room.state === "closed" || room.state === "judging" || room.state === "result") {
       stopBotHints(room);
@@ -492,7 +507,7 @@ function runBotDescriber(room: Room, round: number): void {
   };
 
   stopBotHints(room);
-  const first = setTimeout(tick, 900);
+  const first = setTimeout(tick, 500);
   room.timers.push(first); // only the first one may be cleared with the describe phase…
   room.bot.hints = setInterval(tick, BOT_HINT_EVERY_MS); // …the rest keeps going while you draw
 

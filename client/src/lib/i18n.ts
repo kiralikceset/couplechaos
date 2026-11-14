@@ -149,6 +149,11 @@ export const translations: Record<Locale, Record<string, string>> = {
     "game.sendHint": "İpucu gönder...",
 
     "game.processing": "İşleniyor...",
+    "game.judgingTitle": "Yapay zekâ çizimi puanlıyor",
+    "game.judgeStep1": "Çizgilere bakılıyor",
+    "game.judgeStep2": "Kelimeyle karşılaştırılıyor",
+    "game.judgeStep3": "Karar yazılıyor",
+    "game.typing": "{name} yazıyor…",
     "game.starting": "Oyun başlıyor...",
     "game.getReady": "Kaosa hazır ol ⚡",
 
@@ -621,6 +626,11 @@ export const translations: Record<Locale, Record<string, string>> = {
     "game.sendHint": "Send a hint...",
 
     "game.processing": "Processing...",
+    "game.judgingTitle": "The AI is scoring the drawing",
+    "game.judgeStep1": "Looking at the lines",
+    "game.judgeStep2": "Comparing it with the word",
+    "game.judgeStep3": "Writing the verdict",
+    "game.typing": "{name} is typing…",
     "game.starting": "Starting game...",
     "game.getReady": "Get ready for chaos ⚡",
 
@@ -1093,6 +1103,11 @@ export const translations: Record<Locale, Record<string, string>> = {
     "game.sendHint": "Hinweis senden...",
 
     "game.processing": "Wird verarbeitet...",
+    "game.judgingTitle": "Die KI bewertet die Zeichnung",
+    "game.judgeStep1": "Linien werden geprüft",
+    "game.judgeStep2": "Vergleich mit dem Wort",
+    "game.judgeStep3": "Urteil wird geschrieben",
+    "game.typing": "{name} schreibt…",
     "game.starting": "Spiel startet...",
     "game.getReady": "Mach dich bereit für Chaos ⚡",
 
@@ -1565,6 +1580,11 @@ export const translations: Record<Locale, Record<string, string>> = {
     "game.sendHint": "Enviar pista...",
 
     "game.processing": "Procesando...",
+    "game.judgingTitle": "La IA está puntuando el dibujo",
+    "game.judgeStep1": "Mirando los trazos",
+    "game.judgeStep2": "Comparando con la palabra",
+    "game.judgeStep3": "Escribiendo el veredicto",
+    "game.typing": "{name} está escribiendo…",
     "game.starting": "Iniciando juego...",
     "game.getReady": "Prepárate para el caos ⚡",
 

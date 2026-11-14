@@ -12,12 +12,12 @@ import { toast } from "sonner";
 import socket from "@/lib/socket";
 import { MAX_HINT_LENGTH } from "@/lib/gameData";
 import { useLocale } from "@/contexts/LocaleContext";
-import { getLocalizedPlayfulMessage } from "@/lib/i18n";
 import { playTap, playSend, playWordReveal, playTick, playError, playSuccess } from "@/lib/sounds";
 import type { GamePhase, HintOptionView } from "@/pages/GameApp";
 import CountdownTimer from "@/components/game/CountdownTimer";
 import DrawingCanvas, { type DrawingCanvasRef, type LiveOp } from "@/components/game/DrawingCanvas";
 import LiveCanvas from "@/components/game/LiveCanvas";
+import JudgingView from "@/components/game/JudgingView";
 import { assessDrawing } from "@/lib/drawingScore";
 import { hintRevealsWord } from "@/lib/hintFilter";
 import { getTokens, spendTokens, TOKEN_EVENT } from "@/lib/tokens";
@@ -82,6 +82,9 @@ export default function GameScreen({
   const [myGuess, setMyGuess] = useState<string | null>(null);
   const [shake, setShake] = useState(0);
   const [blockedNote, setBlockedNote] = useState<string | null>(null);
+  /** The finished drawing, shown while the AI scores it. */
+  const [judgedImage, setJudgedImage] = useState<string | null>(null);
+  useEffect(() => { setJudgedImage(null); }, [roundNumber]);
   const canvasRef = useRef<DrawingCanvasRef>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const submittedRef = useRef(false);
@@ -181,6 +184,7 @@ export default function GameScreen({
     setSubmitting(true);
     playTap();
     const imageData = canvasRef.current.getImageData();
+    setJudgedImage(imageData);
     const replay = canvasRef.current.getStrokes();
     const assessment = await assessDrawing(imageData, word || "");
     socket.emit("submit_drawing", {
@@ -247,7 +251,7 @@ export default function GameScreen({
         <div className="relative flex-1 min-h-0 flex flex-col px-4 pt-3">
           {drawingNow ? (
             <>
-              <LiveCanvas roundNumber={roundNumber} placeholder={t("game.partnerDrawingNow").replace("{name}", partner)} />
+              <LiveCanvas roundNumber={roundNumber} placeholder={t("game.partnerDrawingNow").replace("{name}", partner)} onSnapshot={setJudgedImage} />
               <div className="absolute left-6 top-5 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-white/10 text-[0.65rem]">
                 <span className="size-1.5 rounded-full bg-red-500 animate-pulse" />
                 <span className="text-white/50">{t("game.partnerGuess").replace("{name}", partner)}</span>
@@ -403,12 +407,7 @@ export default function GameScreen({
           {reportButton}
         </header>
         <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-2">
-          {messages.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
-              <span className="text-4xl">💬</span>
-              <p className="text-white/50 text-sm">{t("game.readHintsSub").replace("{name}", partner)}</p>
-            </div>
-          ) : messages.map((m, index) => (
+          {messages.map((m, index) => (
             <motion.div
               key={m.id}
               initial={{ opacity: 0, y: 8 }}
@@ -418,6 +417,23 @@ export default function GameScreen({
               {m.text}
             </motion.div>
           ))}
+          {/* The partner (or the AI) is still writing: keep the screen alive between hints. */}
+          <div className="self-start flex items-center gap-2.5" aria-live="polite">
+            <span className="flex items-center gap-1 px-4 py-3.5 rounded-2xl rounded-tl-md bg-[#17141D]" aria-hidden>
+              {[0, 1, 2].map((i) => (
+                <motion.span
+                  key={i}
+                  className="size-1.5 rounded-full bg-white/60"
+                  animate={{ opacity: [0.25, 1, 0.25] }}
+                  transition={{ duration: 1.1, delay: i * 0.18, repeat: Infinity }}
+                />
+              ))}
+            </span>
+            <span className="text-white/40 text-xs font-semibold">{t("game.typing").replace("{name}", partner)}</span>
+          </div>
+          {messages.length === 0 && (
+            <p className="mt-2 text-white/40 text-sm leading-snug">{t("game.readHintsSub").replace("{name}", partner)}</p>
+          )}
         </div>
       </div>
     );
@@ -427,40 +443,7 @@ export default function GameScreen({
   // GENERATING PHASE
   // ═══════════════════════════════════════════
   if (phase === "generating") {
-    return (
-      <div className="relative flex flex-col items-center justify-center h-[100dvh] w-full bg-[#07060A]">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="relative z-10 text-center px-10"
-        >
-          <motion.div
-            animate={{ rotate: [-8, 8, -8] }}
-            transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-            className="text-6xl mb-6 inline-block"
-          >
-            🧑‍⚖️
-          </motion.div>
-          <h2 className="font-display text-2xl font-black tracking-tight text-white mb-3">
-            {t("game.processing")}
-          </h2>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="text-white/40 text-sm"
-          >
-            {getLocalizedPlayfulMessage("result")}
-          </motion.p>
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: "100%" }}
-            transition={{ duration: 5, ease: "easeInOut" }}
-            className="h-1 bg-[#FF1A6C] rounded-full mt-6 mx-auto max-w-[200px]"
-          />
-        </motion.div>
-      </div>
-    );
+    return <JudgingView image={judgedImage} />;
   }
 
   // ═══════════════════════════════════════════
