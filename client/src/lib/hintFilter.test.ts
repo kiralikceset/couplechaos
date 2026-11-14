@@ -8,8 +8,12 @@ describe("hint filter", () => {
     ["p e y n i r", "Peynir"],
     ["p.e.y.n.i.r", "Peynir"],
     ["peynır gibi", "Peynir"],
-    ["in english: cheese", "Peynir"],
-    ["Käse!", "Peynir"],
+    ["battaniye için kavga", "Battaniye kavgası"],
+    ["in english: blanket", "Battaniye kavgası"],
+    ["Decke!", "Battaniye kavgası"],
+    ["kedi bilgisayarda", "Klavyedeki kedi"],
+    ["a cat sits there", "Klavyedeki kedi"],
+    ["keyboard", "Klavyedeki kedi"],
     ["kediler miyavlar", "Kedi"],
     ["k e d i", "Kedi"],
     ["bir maymunun yemeği", "Maymun"],
@@ -30,6 +34,12 @@ describe("hint filter", () => {
     ["ilk harf: P", "Peynir"],
     ["6 harfli", "Peynir"],
     ["muz sever", "Maymun"],
+    // little words shared by many scenes never count as giving one away
+    ["the computer is busy", "Cat on the keyboard"],
+    ["sits on the desk and purrs", "Klavyedeki kedi"],
+    ["und dann", "Kampf um die Decke"],
+    ["con amigos", "Pelea por la manta"],
+    ["bir yatak iki kişi", "Battaniye kavgası"],
   ])("allows %j for %s", (hint, word) => {
     expect(hintRevealsWord(hint, word)).toBe(false);
   });

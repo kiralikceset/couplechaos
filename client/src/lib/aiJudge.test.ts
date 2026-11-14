@@ -22,13 +22,13 @@ describe("server AI judge", () => {
     // 1st call (blind look, with the image), 2nd call (the joke, text only)
     const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => new Response(JSON.stringify({
       content: [{ type: "text", text: String(init?.body).includes("do NOT know")
-        ? '{"guesses": [{"label": "potato", "confidence": 70}, {"label": "cat", "confidence": 30}], "looks_like": "a sad potato"}'
+        ? '{"guesses": [{"label": "potato on a box", "confidence": 70}, {"label": "cat on a laptop", "confidence": 30}], "looks_like": "a sad potato"}'
         : '{"recognisable": false, "guess": "üzgün patates", "comment": "Bu kedi değil, vergi borcu olan bir patates 🥔"}' }],
     })));
     vi.stubGlobal("fetch", fetchMock);
     const { judgeDrawing } = await import("../../../server/aiJudge");
-    const verdict = await judgeDrawing({ imageData: IMAGE, word: "Kedi", locale: "tr" });
-    expect(verdict?.score).toBe(42); // "cat" was only the 2nd blind guess → 30% × 0.8, floor 42
+    const verdict = await judgeDrawing({ imageData: IMAGE, word: "Klavyedeki kedi", locale: "tr" });
+    expect(verdict?.score).toBe(42); // the cat was only in the 2nd blind guess → 30% × 0.8, floor 42
     expect(verdict?.guess).toBe("üzgün patates");
     const calls = fetchMock.mock.calls as unknown as Array<[string, RequestInit]>;
     const [url, init] = calls.find(([, request]) => String(request.body).includes("do NOT know"))!;
@@ -36,7 +36,7 @@ describe("server AI judge", () => {
     expect((init.headers as Record<string, string>)["x-api-key"]).toBe("test-key");
     const body = JSON.parse(String(init.body));
     expect(body.messages[0].content[0].source).toEqual({ type: "base64", media_type: "image/jpeg", data: "AAAA" });
-    expect(JSON.stringify(body)).not.toContain("Kedi"); // the blind look never sees the word
+    expect(JSON.stringify(body)).not.toContain("Klavye"); // the blind look never sees the word
   });
 
   it.each([
@@ -46,12 +46,12 @@ describe("server AI judge", () => {
     process.env[envName] = "free-key";
     const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => new Response(JSON.stringify({
       choices: [{ message: { content: String(init?.body).includes("do NOT know")
-        ? "```json\n{\"guesses\": [{\"label\": \"cloud\", \"confidence\": 60}, {\"label\": \"cat\", \"confidence\": 50}], \"looks_like\": \"x\"}\n```"
+        ? "```json\n{\"guesses\": [{\"label\": \"cloud\", \"confidence\": 60}, {\"label\": \"cat in a box\", \"confidence\": 50}], \"looks_like\": \"x\"}\n```"
         : "{\"recognisable\": false, \"comment\": \"Bu bir bulut mu kedi mi 🤔\"}" } }],
     })));
     vi.stubGlobal("fetch", fetchMock);
     const { judgeDrawing } = await import("../../../server/aiJudge");
-    const verdict = await judgeDrawing({ imageData: IMAGE, word: "Kedi", locale: "tr" });
+    const verdict = await judgeDrawing({ imageData: IMAGE, word: "Kutudaki kedi", locale: "tr" });
     expect(verdict?.score).toBe(42);
     expect(verdict?.comment).toContain("bulut"); // no "recognisable" field → the joke is kept
     const [url, init] = (fetchMock.mock.calls as unknown as Array<[string, RequestInit]>).find(([, request]) => String(request.body).includes("do NOT know"))!;

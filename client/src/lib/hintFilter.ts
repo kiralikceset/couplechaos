@@ -25,11 +25,27 @@ export function foldText(value: string): string {
     .replace(/[^a-z0-9]/g, "");
 }
 
+/**
+ * Little words that appear in many scenes ("Cat on THE keyboard", "Kampf UM DIE Decke").
+ * They never count as giving a scene away, or no hint with "the" or "und" could be sent.
+ */
+const STOPWORDS = new Set([
+  // en
+  "the", "and", "for", "with", "its", "your", "from", "over", "into", "out", "off", "that", "wont", "one", "two",
+  // tr
+  "bir", "ile", "ama", "icin", "gibi", "iki",
+  // de
+  "der", "die", "das", "den", "dem", "des", "und", "mit", "auf", "ein", "eine", "einen", "vom", "vor", "nach", "fur",
+  "unterm", "beim", "ins", "aus", "sich", "ist", "weg", "zum", "zur", "seinen", "zwei",
+  // es
+  "del", "las", "los", "con", "una", "uno", "por", "para", "que", "sin", "como", "dos", "hasta",
+]);
+
 function tokensOf(value: string): string[] {
   return value
-    .split(/[\s\-'’]+/)
+    .split(/[\s\-'’,.%]+/)
     .map(foldText)
-    .filter((token) => token.length >= 3);
+    .filter((token) => token.length >= 3 && !STOPWORDS.has(token));
 }
 
 /** Root used for matching: long words also match without their last letter (Turkish suffixes, typos). */

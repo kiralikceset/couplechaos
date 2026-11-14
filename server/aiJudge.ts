@@ -247,7 +247,8 @@ function blindPrompt(mode: "classic" | "co-draw"): string {
     "This is a quick finger doodle from a phone drawing game (light strokes on a dark background).",
     mode === "co-draw" ? "Two people drew it at the same time on one canvas." : `One person drew it in about ${DRAW_SECONDS} seconds.`,
     "You do NOT know what it was supposed to be. Look only at the drawing.",
-    "List the 5 things it most likely shows, most likely first, as short English nouns (1-3 words),",
+    "List the 5 things or little scenes it most likely shows, most likely first, as short English phrases (1-6 words)",
+    'that name the main things and what is happening, e.g. "cat on a laptop" or "person snoring in bed",',
     "each with a confidence 0-100 that it is really that. Be honest: a vague scribble gets low confidence.",
     "If the canvas is empty or just random lines, say so as the first guess.",
     "Also describe what it literally looks like in max 8 words, oddly specific and funny.",
@@ -275,10 +276,18 @@ export function parseBlind(text: string): BlindLook | null {
   }
 }
 
-/** Where the real word lands among the blind guesses decides the score. */
-export function scoreFromBlind(look: BlindLook, word: string): number {
+/** Score when the blind look missed but the judge who knows the scene says a stranger would get it. */
+const RECOGNISED_FLOOR = 45;
+
+/**
+ * Where the real word lands among the blind guesses decides the score. Scenes ("Snoring partner")
+ * are harder to name blind than objects, so a miss is lifted to a pass when the second look,
+ * which knows the scene, honestly says it is recognisable.
+ */
+export function scoreFromBlind(look: BlindLook, word: string, recognisable?: boolean): number {
   const rank = look.guesses.findIndex((guess) => hintRevealsWord(guess.label, word));
   if (rank < 0) {
+    if (recognisable === true) return RECOGNISED_FLOOR;
     // Not recognised at all. A confident "it's clearly something else" scores lowest.
     const top = look.guesses[0]?.confidence || 0;
     return Math.max(3, Math.round(20 - top * 0.15));
@@ -359,7 +368,7 @@ export async function judgeDrawing(input: JudgeInput): Promise<JudgeResult | nul
   try {
     const [look, joke] = await Promise.all([lookBlind(selected, input.imageData, image, mode), commentCall]);
     if (!look) return null;
-    const score = scoreFromBlind(look, input.word);
+    const score = scoreFromBlind(look, input.word, joke?.recognisable === true);
     // Keep the joke only if its tone matches the fair score (no "great honey!" for a cage).
     const agrees = joke && (typeof joke.recognisable !== "boolean" || joke.recognisable === score >= 45);
     const comments = agrees ? pickText(joke.comment, languages, 300) : {};
@@ -377,9 +386,9 @@ export const __test = { parseJudgeJson, buildPrompt, parseBlind, scoreFromBlind,
 // ── Smart hints ("Akıllı ipucu") for the describer ─────────────────────────
 function hintPrompt(word: string, locale: Locale): string {
   return [
-    `Secret word for a drawing game: "${word}".`,
+    `Secret word or little scene for a couples drawing game: "${word}".`,
     `Write 3 short, fun hints in ${LANGUAGE_NAMES[locale]} that help someone guess and draw it.`,
-    "Each hint max 5 words. Describe shape, color, where you find it or what it does.",
+    "Each hint max 5 words. Say who is in it, what happens, where, or what it looks like.",
     "NEVER write the word itself, a part of it, its root, a translation or the first letter.",
     'Reply with ONLY a JSON array of 3 strings, e.g. ["...","...","..."].',
   ].join("\n");
@@ -453,7 +462,7 @@ function botDrawPrompt(hints: string[], options: string[], locale: Locale): stri
     `Your partner's hints so far (${LANGUAGE_NAMES[locale]}): ${hints.length ? hints.map((hint) => `"${hint}"`).join(", ") : "(none yet)"}.`,
     `The answer is one of: ${options.map((option) => `"${option}"`).join(", ")}.`,
     "1. Pick the option the hints point to (if there are no hints, guess).",
-    "2. Draw that thing as a simple, slightly clumsy phone doodle: 2 to 6 strokes, each 4 to 20 points.",
+    "2. Draw that scene as a simple, slightly clumsy phone doodle: 3 to 8 strokes, each 4 to 20 points. Show its key thing clearly.",
     "Canvas is 100 wide and 130 tall, (0,0) top-left. Keep it centered and big.",
     'Reply with ONLY this JSON: {"guess": "<one option exactly>", "strokes": [[[x,y],[x,y],...], ...]}',
   ].join("\n");

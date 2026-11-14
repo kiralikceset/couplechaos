@@ -133,7 +133,7 @@ export default function ResultScreen({ result, onPlayAgain, onHome, onReport, on
           {/* Word */}
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
             <p className="text-sm text-[#8C8798]">{result.mode === "co-draw" ? t("co.resultTitle") : t("result.wordWas")}</p>
-            <h1 className="font-display text-[2.4rem] font-bold tracking-[-0.02em] leading-[1.05] break-words">{result.word}</h1>
+            <h1 className={`font-display font-bold tracking-[-0.02em] leading-[1.05] break-words ${result.word.length > 16 ? "text-[1.9rem]" : "text-[2.4rem]"}`}>{result.word}</h1>
           </motion.div>
 
           {/* Verdict */}

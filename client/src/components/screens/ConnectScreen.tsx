@@ -32,17 +32,9 @@ interface Props {
 
 const CATEGORY_CHIPS = CATEGORIES.map(({ id, emoji }) => ({ id, emoji }));
 
-/** One or two short example words that fit a half-width card without being cut ("Köpek, Kedi"). */
-function shortSamples(words: string[], budget = 15): string {
-  const picked: string[] = [];
-  for (const word of words) {
-    if (word.length > 10) continue;
-    const next = [...picked, word].join(", ");
-    if (next.length > budget) break;
-    picked.push(word);
-    if (picked.length === 2) break;
-  }
-  return (picked.length ? picked : words.slice(0, 1)).join(", ");
+/** One short example scene that fits a half-width card without being cut ("Pillow fight"). */
+function shortSamples(scenes: string[], budget = 12): string {
+  return scenes.find((scene) => scene.length <= budget) || scenes.reduce((short, scene) => (scene.length < short.length ? scene : short), scenes[0] || "");
 }
 
 export default function ConnectScreen({ onBack, onProfile, selectedCategory, mode: gameMode = "classic", onSelectCategory, solo = false, onNeedPremium }: Props) {
@@ -279,7 +271,7 @@ export default function ConnectScreen({ onBack, onProfile, selectedCategory, mod
                       const mixed = chip.id === "mixed";
                       const detail = mixed
                         ? `${t("cat.mixedDesc")} · ${getCategoryWordCount(chip.id)} ${t("cat.words")}`
-                        : shortSamples(getCategorySamples(chip.id, locale, 8));
+                        : shortSamples(getCategorySamples(chip.id, locale, 100));
                       return (
                         <button
                           key={chip.id}

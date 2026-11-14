@@ -455,6 +455,8 @@ function botHandIn(room: Room, round: number): void {
 }
 
 /** Gap between the AI hint-giver's hints. */
+/** Wrong answers shown next to the right one (6 buttons in all), all from the same theme. */
+const GUESS_DISTRACTORS = 5;
 const BOT_HINT_EVERY_MS = num("BOT_HINT_EVERY_MS", 3000);
 /** How long the AI hint-giver holds back the ready-made hints for its own (slower) ones. */
 const BOT_AI_WAIT_MS = num("BOT_AI_WAIT_MS", 4500);
@@ -524,14 +526,14 @@ function runBotDescriber(room: Room, round: number): void {
 
 const CATEGORY_NAMES: Record<string, Record<Locale, string>> = {
   mixed: { tr: "Karışık", en: "Mixed", de: "Gemischt", es: "Mezcla" },
-  animals: { tr: "Hayvanlar", en: "Animals", de: "Tiere", es: "Animales" },
-  food: { tr: "Yiyecek", en: "Food", de: "Essen", es: "Comida" },
-  objects: { tr: "Eşyalar", en: "Objects", de: "Dinge", es: "Objetos" },
-  vehicles: { tr: "Taşıtlar", en: "Vehicles", de: "Fahrzeuge", es: "Vehículos" },
-  places: { tr: "Doğa ve Yerler", en: "Nature & Places", de: "Natur & Orte", es: "Naturaleza y lugares" },
-  people: { tr: "Karakterler", en: "Characters", de: "Figuren", es: "Personajes" },
-  fun: { tr: "Spor ve Müzik", en: "Sports & Music", de: "Sport & Musik", es: "Deporte y música" },
+  home: { tr: "Evde", en: "At Home", de: "Zuhause", es: "En casa" },
+  date: { tr: "Randevu", en: "Date Night", de: "Date-Abend", es: "Citas" },
+  travel: { tr: "Tatil", en: "Travel", de: "Reisen", es: "Viajes" },
+  food: { tr: "Mutfak", en: "Kitchen", de: "Küche", es: "Cocina" },
+  pets: { tr: "Evcil Hayvanlar", en: "Pets", de: "Haustiere", es: "Mascotas" },
+  everyday: { tr: "Gündelik Hayat", en: "Everyday", de: "Alltag", es: "Día a día" },
   love: { tr: "Aşk", en: "Love", de: "Liebe", es: "Amor" },
+  special: { tr: "Özel Günler", en: "Special Days", de: "Besondere Tage", es: "Días especiales" },
 };
 
 function categoryName(category: string, locale: Locale): string {
@@ -683,7 +685,7 @@ function beginDrawing(room: Room): void {
   clearRoomTimers(room);
   room.state = "drawing";
   room.phaseEndsAt = Date.now() + DRAW_SECONDS * 1000;
-  const options = [room.word, ...getDistractors(room.word, room.category === "daily_challenge" ? "mixed" : room.category, room.locale, 3)];
+  const options = [room.word, ...getDistractors(room.word, room.category === "daily_challenge" ? "mixed" : room.category, room.locale, GUESS_DISTRACTORS)];
   for (let i = options.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
     [options[i], options[j]] = [options[j], options[i]];

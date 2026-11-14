@@ -240,7 +240,8 @@ export default function GameScreen({
             <span className="text-2xl leading-none">{wordEmoji || "🤫"}</span>
             <div className="min-w-0">
               <p className="text-[0.7rem] font-semibold text-[#FF1A6C] leading-none">{t("game.dontSay")}</p>
-              <h1 className="font-display text-lg font-black text-white leading-tight truncate">{word || "???"}</h1>
+              {/* Scenes can be a few words: wrap instead of cutting, the describer must see all of it. */}
+              <h1 className={`font-display font-black text-white leading-tight line-clamp-2 ${(word || "").length > 18 ? "text-[0.95rem]" : "text-lg"}`}>{word || "???"}</h1>
             </div>
           </div>
           {tokenBadge}
@@ -369,9 +370,9 @@ export default function GameScreen({
         </main>
 
         {guessOptions.length > 0 && (
-          <div className="px-4 pb-5 flex-shrink-0">
+          <div className="px-4 pb-4 flex-shrink-0">
             <p className="text-xs text-[#8C8798] mb-1.5 text-center">{t("game.guessTitle")}</p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1.5">
               {guessOptions.map(option => {
                 const selected = myGuess === option;
                 return (
@@ -379,11 +380,11 @@ export default function GameScreen({
                     key={option}
                     onClick={() => chooseGuess(option)}
                     disabled={submitting}
-                    className={`py-3 px-2 rounded-xl text-sm font-bold border transition-colors truncate active:scale-[0.97] ${
+                    className={`flex items-center justify-center text-center min-h-[46px] py-1.5 px-2 rounded-xl text-[0.8rem] leading-tight font-bold border transition-colors active:scale-[0.97] ${
                       selected ? "bg-[#FBBF24] text-[#07060A] border-[#FBBF24]" : "bg-[#17141D] text-white/85 border-transparent"
                     }`}
                   >
-                    {selected ? "✓ " : ""}{option}
+                    <span className="line-clamp-2">{selected ? "✓ " : ""}{option}</span>
                   </button>
                 );
               })}

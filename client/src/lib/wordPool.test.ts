@@ -9,8 +9,9 @@ afterEach(() => {
 
 describe("word pool", () => {
   it("contains the complete categorized and localized pool", () => {
-    expect(getTotalWordCount()).toBe(259);
-    expect(getCategoryWordCount("mixed")).toBe(259);
+    expect(getTotalWordCount()).toBe(165);
+    expect(getCategoryWordCount("mixed")).toBe(165);
+    for (const category of CATEGORIES.filter((item) => item.id !== "mixed")) expect(getCategoryWordCount(category.id)).toBeGreaterThanOrEqual(19);
     for (const category of CATEGORIES) expect(getCategoryWordCount(category.id)).toBeGreaterThan(0);
     for (const locale of ["tr", "en", "de", "es"] as Locale[]) {
       for (const category of CATEGORIES) expect(getRandomWord(category.id, locale).trim()).not.toBe("");
@@ -44,45 +45,49 @@ describe("word pool", () => {
       expect(seen.has(entry.tr.toLowerCase())).toBe(false);
       seen.add(entry.tr.toLowerCase());
     }
-    // Abstract words from the old list must be gone.
-    for (const banned of ["Demokrasi", "Nostalji", "Empati", "Güven", "Sadakat", "Özlem", "Dedikodu", "Müzik", "Kaka", "Sarhoş surat", "Horlayan adam"]) {
-      expect(findWordEmoji(banned)).toBe("");
+    // The old single-object list is gone; scenes are short enough for the guess buttons.
+    for (const banned of ["Kedi", "Köpek", "Elma", "Araba", "Peynir", "Demokrasi", "Kaka"]) expect(findWordEmoji(banned)).toBe("");
+    for (const entry of getAllWords()) {
+      for (const value of [entry.tr, entry.en, entry.de, entry.es]) {
+        expect(value.length).toBeLessThanOrEqual(36);
+        expect(value.split(/\s+/).length).toBeLessThanOrEqual(6);
+      }
     }
   });
 
   it("returns the reference emoji in any language", () => {
-    expect(findWordEmoji("Peynir")).toBe("🧀");
-    expect(findWordEmoji("cheese")).toBe("🧀");
-    expect(findWordEmoji("Käse")).toBe("🧀");
-    const picked = pickWord("animals", "es");
+    expect(findWordEmoji("Klavyedeki kedi")).toBe("⌨️");
+    expect(findWordEmoji("cat on the keyboard")).toBe("⌨️");
+    expect(findWordEmoji("Katze auf der Tastatur")).toBe("⌨️");
+    const picked = pickWord("pets", "es");
     expect(findWordEmoji(picked.word)).toBe(picked.emoji);
   });
 
   it("themes hold what they say, and old ids still work", () => {
     expect(normalizeCategory("funny")).toBe("mixed");
     expect(normalizeCategory("romantic")).toBe("love");
-    expect(normalizeCategory("animals")).toBe("animals");
+    expect(normalizeCategory("animals")).toBe("pets"); // theme from an older app version
+    expect(normalizeCategory("vehicles")).toBe("travel");
+    expect(normalizeCategory("pets")).toBe("pets");
     expect(pickWord("daily", "tr").category).toBe("mixed");
-    // distractors come from the word's own theme: "Kedi" (cat) only gets other animals
-    const options = getDistractors("Kedi", "mixed", "tr", 100);
-    expect(options.length).toBe(34);
-    expect(options).toContain("Köpek");
-    expect(options).not.toContain("Pizza");
+    // distractors come from the scene's own theme: a pets scene only gets other pets scenes
+    const options = getDistractors("Klavyedeki kedi", "mixed", "tr", 100);
+    expect(options.length).toBe(19);
+    expect(options).toContain("Çorap çalan köpek");
+    expect(options).not.toContain("Kaybolan valiz");
+    expect(getDistractors("Lost luggage", "travel", "en", 5)).toHaveLength(5);
   });
 
-  it("never offers look-alike words as guess options", () => {
+  it("never offers look-alike scenes as guess options", () => {
     for (let run = 0; run < 30; run++) {
-      expect(getDistractors("Öpücük", "love", "tr", 3)).not.toEqual(expect.arrayContaining(["Dudaklar"]));
-      const moon = getDistractors("Moon", "places", "en", 100);
-      expect(moon).not.toContain("Full moon");
-      expect(moon).toContain("Sun");
-      const car = getDistractors("Coche", "vehicles", "es", 100);
-      expect(car).not.toContain("Taxi");
-      expect(car).not.toContain("Coche de policía");
+      expect(getDistractors("Kaybolan valiz", "travel", "tr", 5)).not.toContain("Kapanmayan valiz");
+      const hearts = getDistractors("Broken heart", "love", "en", 100);
+      expect(hearts).not.toEqual(expect.arrayContaining(["Heart carved in a tree"]));
+      expect(hearts).not.toContain("Latte art heart");
+      expect(getDistractors("Fuegos artificiales", "special", "es", 100)).not.toContain("Cuenta atrás de Año Nuevo");
     }
-    expect(getDistractors("Yıldız kayması", "places", "tr", 100)).not.toContain("Göktaşı");
-    // even the smallest theme still has plenty of fair options
-    for (const word of getAllWords()) expect(getDistractors(word.en, "mixed", "en", 3)).toHaveLength(3);
+    // every scene still gets five fair wrong answers
+    for (const word of getAllWords()) expect(getDistractors(word.en, "mixed", "en", 5)).toHaveLength(5);
   });
 
   it("look-alike groups only point at real words", () => {
@@ -99,8 +104,9 @@ describe("word pool", () => {
     expect(new Set(getAllWords().map((word) => word.id)).size).toBe(getAllWords().length);
   });
 
-  it("nature & places holds no street furniture or holiday decorations", () => {
-    expect(getDistractors("Güneş", "places", "tr", 100)).not.toEqual(expect.arrayContaining(["Trafik lambası", "Noel ağacı"]));
-    expect(getDistractors("Anahtar", "objects", "tr", 100)).toEqual(expect.arrayContaining(["Trafik lambası", "Noel ağacı"]));
+  it("scenes stay clean: no alcohol, nothing sexual", () => {
+    const words = new Set(getAllWords().flatMap((word) => [word.tr, word.en, word.de, word.es].join(" ").toLocaleLowerCase("tr").split(/[^\p{L}]+/u)));
+    for (const banned of ["beer", "wine", "drunk", "sexy", "nude", "bira", "şarap", "sarhoş", "bier", "wein", "cerveza", "vino"]) expect(words.has(banned)).toBe(false);
   });
+;
 });

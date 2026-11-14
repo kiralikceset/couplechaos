@@ -354,7 +354,7 @@ export default function CoDrawScreen({
           <span className="text-[0.5rem] font-bold text-secondary/70 uppercase tracking-[0.25em] block">
             {t("game.round")} {roundNumber} · {t("co.title")}
           </span>
-          <h2 className="font-display text-2xl font-black tracking-tight text-white truncate">{word || "???"}</h2>
+          <h2 className={`font-display font-black tracking-tight text-white leading-tight line-clamp-2 ${(word || "").length > 16 ? "text-lg" : "text-2xl"}`}>{word || "???"}</h2>
         </div>
         <motion.button
           whileTap={{ scale: 0.9 }}

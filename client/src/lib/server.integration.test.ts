@@ -245,10 +245,10 @@ describe("hints, tokens and guesses (classic)", () => {
     await new Promise((resolve) => setTimeout(resolve, 200));
     expect(guest.log.filter((entry) => entry.event === "hint_received")).toHaveLength(2);
 
-    // 3) drawing starts with 4 options containing the word; the guess is live for the describer
+    // 3) drawing starts with 6 options containing the word; the guess is live for the describer
     host.socket.emit("description_done", { code });
     const drawing = (await waitFor(guest.log, "start_drawing")).data;
-    expect(drawing.options).toHaveLength(4);
+    expect(drawing.options).toHaveLength(6);
     expect(drawing.options).toContain(word);
     guest.socket.emit("submit_guess", { code, guess: "not-an-option" });
     guest.socket.emit("submit_guess", { code, guess: word });
@@ -442,7 +442,7 @@ describe("solo vs AI", () => {
     const firstHint = (await waitFor(me.log, "hint_received")).data;
     expect(firstHint.text).toContain("Hayvanlar"); // offline bot starts with the category
     const options = (await waitFor(me.log, "start_drawing")).data.options as string[];
-    expect(options).toHaveLength(4);
+    expect(options).toHaveLength(6);
     // Hints keep coming AFTER the canvas opens (they used to stop when drawing began)
     const drawingAt = me.log.findIndex((entry) => entry.event === "start_drawing");
     await new Promise((resolve) => setTimeout(resolve, 900));
@@ -553,14 +553,17 @@ describe("fair AI scoring (blind look)", () => {
   it("scores by where the real word lands among blind guesses", async () => {
     const { __test } = await import("../../../server/aiJudge");
     const look = (labels: Array<[string, number]>) => ({ guesses: labels.map(([label, confidence]) => ({ label, confidence })), looksLike: "" });
-    // the reported case: a yellow grid for "Bal" (honey) that the AI calls a cage
-    expect(__test.scoreFromBlind(look([["cage", 80], ["grid", 60], ["net", 40]]), "Bal")).toBeLessThan(20);
-    expect(__test.scoreFromBlind(look([["honey jar", 85], ["pot", 40]]), "Bal")).toBe(85);
-    expect(__test.scoreFromBlind(look([["beehive", 60], ["cage", 50], ["honeycomb", 50]]), "Bal")).toBe(33);
-    expect(__test.scoreFromBlind(look([["horse", 30]]), "At")).toBe(55); // recognised but unsure → still a fair floor
+    // a scene the blind look names in its own words: the key thing ("luggage", "Koffer") counts
+    expect(__test.scoreFromBlind(look([["suitcase", 80], ["box", 60], ["bag", 40]]), "Lost luggage")).toBeLessThan(20);
+    expect(__test.scoreFromBlind(look([["lost luggage at airport", 85], ["bag", 40]]), "Kaybolan valiz")).toBe(85);
+    expect(__test.scoreFromBlind(look([["dog", 60], ["sofa", 50], ["cat with keyboard", 50]]), "Klavyedeki kedi")).toBe(33);
+    expect(__test.scoreFromBlind(look([["person snoring in bed", 30]]), "Snoring partner")).toBe(55); // recognised but unsure → fair floor
+    // blind miss, but the judge who knows the scene says a stranger would get it → a pass, not a fail
+    expect(__test.scoreFromBlind(look([["suitcase", 80]]), "Lost luggage", true)).toBe(45);
+    expect(__test.scoreFromBlind(look([["suitcase", 80]]), "Lost luggage", false)).toBeLessThan(20);
     expect(__test.blindPrompt("classic")).not.toMatch(/secret word/i);
     expect(__test.parseBlind('{"guesses":[{"label":"cat","confidence":"70"}],"looks_like":"x"}')?.guesses[0]).toEqual({ label: "cat", confidence: 70 });
-    expect(__test.commentPrompt("Bal", "classic", ["tr"])).toContain("STRICT");
+    expect(__test.commentPrompt("Kaybolan valiz", "classic", ["tr"])).toContain("STRICT");
   });
 });
 
