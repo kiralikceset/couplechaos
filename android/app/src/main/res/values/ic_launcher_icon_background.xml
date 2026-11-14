@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App icon background (violet). The splash/window colour stays ic_launcher_background. -->
+    <color name="ic_launcher_icon_background">#8B5CF6</color>
+</resources>
