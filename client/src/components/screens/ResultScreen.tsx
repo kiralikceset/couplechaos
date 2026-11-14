@@ -14,6 +14,8 @@ import { canMakeVideo, makeReplayVideo } from "@/lib/replayVideo";
 import { maybeAskForReview } from "@/lib/review";
 import { getProfile } from "@/lib/gameData";
 import { foldText } from "@/lib/hintFilter";
+import { recordScore } from "@/lib/scoreStats";
+import { getStreakData } from "@/lib/retention";
 import { toast } from "sonner";
 
 interface Props {
@@ -35,6 +37,9 @@ export default function ResultScreen({ result, onPlayAgain, onHome, onReport, on
   const classic = result.mode !== "co-draw" && result.guessCorrect !== undefined;
   const correct = classic && !!result.guessCorrect;
   const color = getScoreColor(score);
+  // Your progress: average of recent rounds, best ever, daily streak. Rounds the AI drew don't count.
+  const stats = useRef(result.botDrew ? null : recordScore(score, `${result.word}|${result.imageData?.length || 0}|${(result.imageData || "").slice(-24)}`)).current;
+  const streak = useRef(getStreakData().currentStreak).current;
 
   useEffect(() => {
     if (correct) { playSuccess(); window.setTimeout(playConfetti, 250); }
@@ -186,7 +191,12 @@ export default function ResultScreen({ result, onPlayAgain, onHome, onReport, on
           {/* Score */}
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="px-4 py-3.5 rounded-[22px] bg-[#17141D]">
             <div className="flex items-baseline justify-between">
-              <p className="text-sm text-[#8C8798]">{t("result.drawingScore")}</p>
+              <p className="text-sm text-[#8C8798] flex items-center gap-2">
+                {t("result.drawingScore")}
+                {stats?.newBest && (
+                  <span className="rounded-full bg-[#FBBF24] text-[#07060A] text-[0.7rem] font-bold px-2 py-0.5">{t("result.newBest")}</span>
+                )}
+              </p>
               <p className="text-sm font-bold" style={{ color }}>{getScoreLabel(score)}</p>
             </div>
             <div className="flex items-center gap-3 mt-1">
@@ -199,11 +209,24 @@ export default function ResultScreen({ result, onPlayAgain, onHome, onReport, on
             </div>
           </motion.div>
 
+          {/* Your progress */}
+          {stats && (
+            <motion.dl initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="grid grid-cols-3 gap-2.5">
+              {[
+                { label: t("result.average"), value: String(stats.average) },
+                { label: t("result.best"), value: String(stats.best) },
+                { label: t("result.streak"), value: t("result.days").replace("{n}", String(streak)) },
+              ].map((item) => (
+                <div key={item.label} className="rounded-[18px] bg-[#17141D] px-3 py-2.5">
+                  <dt className="text-xs text-[#8C8798]">{item.label}</dt>
+                  <dd className="mt-0.5 font-display text-xl font-bold text-[#F7F3FF] tabular-nums">{item.value}</dd>
+                </div>
+              ))}
+            </motion.dl>
+          )}
+
           {/* The jury */}
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-            {result.aiGuess && (
-              <p className="text-sm text-[#8C8798] mb-2 px-1">🤖 {t("result.aiThinks")} <span className="text-[#F7F3FF] font-semibold">“{result.aiGuess}”</span></p>
-            )}
             <p className="rounded-[20px] rounded-tl-[6px] bg-[#FBBF24] text-[#07060A] px-4 py-3 text-[0.95rem] font-semibold leading-snug">{comment}</p>
           </motion.div>
         </div>
