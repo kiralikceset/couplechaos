@@ -11,7 +11,7 @@ import { m as motion, AnimatePresence } from "framer-motion";
 import socket from "@/lib/socket";
 import { getProfile } from "@/lib/gameData";
 import { useLocale } from "@/contexts/LocaleContext";
-import { CATEGORIES, normalizeCategory } from "@/lib/wordPool";
+import { CATEGORIES, getCategorySamples, getCategoryWordCount, normalizeCategory } from "@/lib/wordPool";
 import { getLocale } from "@/lib/i18n";
 import { saveProfile } from "@/lib/gameData";
 import { playTap, playSend } from "@/lib/sounds";
@@ -32,6 +32,19 @@ interface Props {
 
 const CATEGORY_CHIPS = CATEGORIES.map(({ id, emoji }) => ({ id, emoji }));
 
+/** One or two short example words that fit a half-width card without being cut ("Köpek, Kedi"). */
+function shortSamples(words: string[], budget = 15): string {
+  const picked: string[] = [];
+  for (const word of words) {
+    if (word.length > 10) continue;
+    const next = [...picked, word].join(", ");
+    if (next.length > budget) break;
+    picked.push(word);
+    if (picked.length === 2) break;
+  }
+  return (picked.length ? picked : words.slice(0, 1)).join(", ");
+}
+
 export default function ConnectScreen({ onBack, onProfile, selectedCategory, mode: gameMode = "classic", onSelectCategory, solo = false, onNeedPremium }: Props) {
   const outOfFreeGames = () => {
     if (canPlayFree()) return false;
@@ -40,7 +53,7 @@ export default function ConnectScreen({ onBack, onProfile, selectedCategory, mod
     return true;
   };
   const isDaily = selectedCategory === "daily_challenge" && gameMode === "classic";
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [joinCode, setJoinCode] = useState("");
   const [mode, setMode] = useState<"choose" | "join" | "searching">("choose");
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -226,7 +239,7 @@ export default function ConnectScreen({ onBack, onProfile, selectedCategory, mod
       </header>
 
       {/* Content */}
-      <main className={`relative z-10 flex-1 flex flex-col px-6 overflow-y-auto ${mode === "choose" ? "justify-start pt-8" : "justify-center"}`}>
+      <main className={`relative z-10 flex-1 flex flex-col px-6 overflow-y-auto ${mode === "choose" ? "justify-start pt-6" : "justify-center"}`}>
         <AnimatePresence mode="wait">
           {mode === "searching" ? (
             <motion.div key="searching" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center text-center gap-4 py-10">
@@ -257,22 +270,31 @@ export default function ConnectScreen({ onBack, onProfile, selectedCategory, mod
                 </div>
               ) : (
                 <div>
-                  <h1 className="font-display text-[2rem] leading-[1.05] font-bold tracking-[-0.02em] text-white mb-4">{t("connect.pickTheme")}</h1>
-                  {/* Two columns so full names fit ("Nature & Places", "Naturaleza y lugares"); Mixed spans the row. */}
-                  <div className="grid grid-cols-2 gap-2">
+                  <h1 className="font-display text-[2rem] leading-[1.05] font-bold tracking-[-0.02em] text-white">{t("connect.pickTheme")}</h1>
+                  <p className="mt-1.5 mb-5 text-sm text-[#8C8798]">{t("connect.pickThemeSub")}</p>
+                  {/* Each theme says what it holds: name and a couple of example words. Compact, so all nine fit without scrolling. */}
+                  <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t("connect.pickTheme")}>
                     {CATEGORY_CHIPS.map(chip => {
                       const active = normalizeCategory(selectedCategory) === chip.id;
+                      const mixed = chip.id === "mixed";
+                      const detail = mixed
+                        ? `${t("cat.mixedDesc")} · ${getCategoryWordCount(chip.id)} ${t("cat.words")}`
+                        : shortSamples(getCategorySamples(chip.id, locale, 8));
                       return (
                         <button
                           key={chip.id}
+                          role="radio"
+                          aria-checked={active}
                           onClick={() => { playTap(); onSelectCategory?.(chip.id); }}
-                          aria-pressed={active}
-                          className={`flex items-center gap-2.5 px-3.5 min-h-[52px] py-2 rounded-2xl text-left text-[0.88rem] leading-tight font-semibold transition-colors ${
-                            chip.id === "mixed" ? "col-span-2" : ""
-                          } ${active ? "bg-[#FBBF24] text-[#07060A]" : "bg-[#17141D] text-white/75"}`}
+                          className={`cc-press flex items-center gap-3 text-left rounded-[18px] border-2 px-3 min-h-[64px] py-2 transition-colors ${
+                            mixed ? "col-span-2" : ""
+                          } ${active ? "bg-[#FBBF24] border-[#FBBF24] text-[#07060A]" : "bg-[#17141D] border-[#17141D] text-[#F7F3FF]"}`}
                         >
-                          <span className="text-xl leading-none shrink-0">{chip.emoji}</span>
-                          <span className="min-w-0">{t(`cat.${chip.id}`)}</span>
+                          <span className="text-[1.6rem] leading-none shrink-0" aria-hidden>{chip.emoji}</span>
+                          <span className="min-w-0">
+                            <span className="block font-display text-[0.95rem] font-bold leading-tight">{t(`cat.${chip.id}`)}</span>
+                            <span className={`block mt-0.5 text-[0.72rem] leading-snug truncate ${active ? "text-[#07060A]/65" : "text-[#8C8798]"}`}>{detail}</span>
+                          </span>
                         </button>
                       );
                     })}

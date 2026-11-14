@@ -441,6 +441,11 @@ export function getCategoryWordCount(category: WordCategory | string): number {
   return wordsOf(category).length;
 }
 
+/** A few well-known words of a theme, to show what it holds ("Dog, Cat, Bird"). */
+export function getCategorySamples(category: WordCategory | string, locale: Locale, count = 3): string[] {
+  return wordsOf(category).slice(0, count).map((entry) => localized(entry, locale));
+}
+
 export function resetUsedWords(): void {
   usedWordIds.clear();
 }
