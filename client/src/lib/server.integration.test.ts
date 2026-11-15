@@ -564,6 +564,9 @@ describe("fair AI scoring (blind look)", () => {
     expect(__test.blindPrompt("classic")).not.toMatch(/secret word/i);
     expect(__test.parseBlind('{"guesses":[{"label":"cat","confidence":"70"}],"looks_like":"x"}')?.guesses[0]).toEqual({ label: "cat", confidence: 70 });
     expect(__test.commentPrompt("Kaybolan valiz", "classic", ["tr"])).toContain("STRICT");
+    // the comment is the shareable part: absurd and specific, never a polite "nice try"
+    expect(__test.commentPrompt("Kaybolan valiz", "classic", ["tr"])).toMatch(/ABSURD/);
+    expect(__test.commentPrompt("Kaybolan valiz", "classic", ["tr"])).toContain('Never say "nice try"');
   });
 });
 

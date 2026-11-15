@@ -311,8 +311,11 @@ function commentPrompt(word: string, mode: "classic" | "co-draw", languages: Loc
     `The secret word was "${word}". ${mode === "co-draw" ? "Both partners drew it together on one canvas." : "The drawer only had text hints from their partner."}`,
     "Be STRICT: would a stranger who did NOT know the word recognise it? Do not see the word in random lines.",
     "\"recognisable\": your honest answer to that.",
-    "\"guess\": what it actually looks like, absurd and oddly specific (max 8 words).",
-    "\"comment\": max 2 short sentences, max 180 characters, 1-2 emoji. Recognisable: a backhanded compliment. Not recognisable: roast it, absurd and judgmental. Mock the drawing and teamwork, never people's looks, bodies, identity or intelligence. No sexual content, profanity or slurs.",
+    "\"guess\": what it actually looks like, absurd and oddly specific (max 8 words), e.g. \"a potato filing its taxes\".",
+    "\"comment\": max 2 short sentences, max 180 characters, 1-2 emoji. Make it ABSURD, not generic: people screenshot it and send it to friends.",
+    "Pick one trick: an oddly specific comparison (\"looks like a sock that saw a ghost\"), a fake official verdict (\"The Ministry of Art has been informed\"), a tiny dramatic backstory for the doodle (\"this cat has clearly been through a divorce\"), a mock museum label, or the scene's own characters reacting.",
+    "Never say \"nice try\", \"good effort\", \"not bad\" or \"keep practising\"; never explain the joke. Recognisable: a backhanded compliment. Not recognisable: a roast.",
+    "Mock the drawing and the teamwork, never people's looks, bodies, identity or intelligence. No sexual content, profanity or slurs.",
     ...output,
   ].join("\n");
 }
