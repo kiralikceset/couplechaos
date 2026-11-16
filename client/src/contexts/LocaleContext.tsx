@@ -4,7 +4,7 @@
  * Triggers re-render when locale changes
  */
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { type Locale, getLocale, setLocale as setI18nLocale, t as translate } from "@/lib/i18n";
 
 interface LocaleContextType {
@@ -17,6 +17,11 @@ const LocaleContext = createContext<LocaleContextType | null>(null);
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(getLocale());
+
+  // Screen readers and the browser's translate prompt follow the page language.
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   const setLocale = useCallback((newLocale: Locale) => {
     setI18nLocale(newLocale);

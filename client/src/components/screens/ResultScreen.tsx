@@ -10,7 +10,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { playConfetti, playSuccess, playTap, playWordReveal, playError } from "@/lib/sounds";
 import { getRoast, getScoreLabel, getScoreColor } from "@/lib/aiRoast";
 import { shareOrDownloadFile, shareOrDownloadImage } from "@/lib/imageUtils";
-import { canMakeVideo, makeReplayVideo } from "@/lib/replayVideo";
+import { canMakeVideo, makeReplayVideo, makeResultCard } from "@/lib/replayVideo";
 import { maybeAskForReview } from "@/lib/review";
 import { getProfile } from "@/lib/gameData";
 import { foldText } from "@/lib/hintFilter";
@@ -74,6 +74,20 @@ export default function ResultScreen({ result, onPlayAgain, onHome, onReport, on
     return me || partner || undefined;
   };
 
+  // Same scene for the replay video and the still story card.
+  const sceneInput = () => ({
+    strokes: result.strokes || [],
+    imageData: result.imageData,
+    aspect: result.strokeAspect || 0.75,
+    word: result.word,
+    emoji: result.wordEmoji || "",
+    comment,
+    score,
+    verdict: verdict && classic ? { text: verdict.title, good: correct } : undefined,
+    labels: { should: t("video.should"), cta: t("video.cta") },
+    players: playerNames(),
+  });
+
   const handleVideo = async () => {
     if (videoProgress !== null) return;
     playTap();
@@ -83,19 +97,7 @@ export default function ResultScreen({ result, onPlayAgain, onHome, onReport, on
     }
     setVideoProgress(0);
     try {
-      const { blob, extension } = await makeReplayVideo({
-        strokes: result.strokes || [],
-        imageData: result.imageData,
-        aspect: result.strokeAspect || 0.75,
-        word: result.word,
-        emoji: result.wordEmoji || "",
-        comment,
-        score,
-        verdict: verdict && classic ? { text: verdict.title, good: correct } : undefined,
-        labels: { should: t("video.should"), cta: t("video.cta") },
-        players: playerNames(),
-        onProgress: setVideoProgress,
-      });
+      const { blob, extension } = await makeReplayVideo({ ...sceneInput(), onProgress: setVideoProgress });
       setVideoProgress(null);
       await shareOrDownloadFile(blob, `couple-chaos-${foldText(result.word) || "cizim"}.${extension}`, "Couple Chaos", `“${result.word}” ${result.wordEmoji || ""} #couplechaos`.trim());
     } catch (error) {
@@ -105,15 +107,29 @@ export default function ResultScreen({ result, onPlayAgain, onHome, onReport, on
     }
   };
 
+  // A story-sized card (drawing, real thing, score, the AI's verdict, logo) instead of the bare drawing.
+  const [cardBusy, setCardBusy] = useState(false);
   const handleSave = async () => {
-    if (!result.imageData) return;
+    if (!result.imageData || cardBusy) return;
     playTap();
+    setCardBusy(true);
+    const name = `couple-chaos-${foldText(result.word) || "cizim"}`;
+    const caption = `“${result.word}” ${result.wordEmoji || ""} ${score}/100 #couplechaos`.replace(/\s+/g, " ").trim();
     try {
-      await shareOrDownloadImage(result.imageData, `couple-chaos-${foldText(result.word) || "cizim"}.jpg`, "Couple Chaos", `“${result.word}” ${result.wordEmoji || ""}`.trim());
+      let card: Blob | null = null;
+      try {
+        card = await makeResultCard(sceneInput());
+      } catch {
+        card = null; // very old WebView: fall back to the drawing itself
+      }
+      if (card) await shareOrDownloadFile(card, `${name}.png`, "Couple Chaos", caption);
+      else await shareOrDownloadImage(result.imageData, `${name}.jpg`, "Couple Chaos", caption);
       toast.success(t("share.saved"));
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       toast.error(t("share.saveFailed"));
+    } finally {
+      setCardBusy(false);
     }
   };
 
@@ -251,7 +267,7 @@ export default function ResultScreen({ result, onPlayAgain, onHome, onReport, on
             </button>
             <button
               onClick={() => void handleSave()}
-              disabled={!result.imageData}
+              disabled={!result.imageData || cardBusy}
               className="cc-press h-12 flex items-center justify-center gap-2 rounded-2xl bg-[#17141D] text-[#F7F3FF] text-sm font-semibold disabled:opacity-40"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" /><path d="m16 6-4-4-4 4" /><path d="M12 2v13" /></svg>

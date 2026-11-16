@@ -26,7 +26,7 @@ export default function HowItWorksScreen({ onBack, onNext }: Props) {
       illustration: (
         <div className="w-60 flex flex-col gap-2.5">
           <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/[0.05] border border-white/[0.1]">
-            <span className="text-3xl leading-none">🧀</span>
+            <span className="text-3xl leading-none">😴</span>
             <div className="text-left">
               <p className="text-[0.65rem] text-[#8C8798] font-semibold">{t("game.secretWord")}</p>
               <p className="text-white font-black text-lg leading-tight">{t("how.demo.word")}</p>
@@ -49,19 +49,20 @@ export default function HowItWorksScreen({ onBack, onNext }: Props) {
       illustration: (
         <div className="w-60 flex flex-col gap-2.5">
           <div className="relative h-32 rounded-2xl bg-[#0a0a0a] border border-white/[0.1] overflow-hidden">
-            <svg className="w-full h-full" viewBox="0 0 120 64">
-              <path d="M30 44 L60 14 L90 44 Z" fill="none" stroke="#FBBF24" strokeWidth="3" strokeLinejoin="round" />
-              <circle cx="52" cy="34" r="3" fill="#FBBF24" />
-              <circle cx="66" cy="38" r="2.5" fill="#FBBF24" />
-              <circle cx="60" cy="27" r="2" fill="#FBBF24" />
+            {/* A bed, someone asleep, and the Z's doing all the work */}
+            <svg className="w-full h-full" viewBox="0 0 120 64" fill="none" stroke="#FBBF24" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 54 V26 M14 42 H106 V54 M14 49 H106" />
+              <circle cx="30" cy="34" r="5.5" />
+              <path d="M38 41 C 52 35, 64 39, 78 36 S 96 35, 104 38" />
+              <path d="M56 22 h6 l-6 7 h6 M67 13 h8 l-8 9 h8 M80 3 h10 l-10 11 h10" />
             </svg>
             <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-red-300 text-[0.6rem] font-bold">0:12</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            {[t("how.demo.opt1"), t("how.demo.word"), t("how.demo.opt2"), t("how.demo.opt3")].map((option, index) => (
+          <div className="grid grid-cols-2 gap-1.5">
+            {[t("how.demo.opt1"), t("how.demo.word"), t("how.demo.opt2"), t("how.demo.opt3"), t("how.demo.opt4"), t("how.demo.opt5")].map((option, index) => (
               <span
                 key={option}
-                className={`py-2 rounded-xl text-xs font-bold text-center border ${index === 1 ? "bg-amber-400 text-black border-amber-300" : "bg-white/[0.05] text-white/70 border-white/[0.1]"}`}
+                className={`min-h-[30px] px-1.5 py-1 flex items-center justify-center rounded-xl text-[0.65rem] leading-tight font-bold text-center border ${index === 1 ? "bg-amber-400 text-black border-amber-300" : "bg-white/[0.05] text-white/70 border-white/[0.1]"}`}
               >
                 {index === 1 ? "✓ " : ""}{option}
               </span>
@@ -79,9 +80,9 @@ export default function HowItWorksScreen({ onBack, onNext }: Props) {
         <div className="w-60 flex flex-col gap-2.5">
           <div className="grid grid-cols-2 gap-2.5">
             <div className="aspect-square rounded-2xl bg-[#0a0a0a] border border-white/[0.12] flex items-center justify-center">
-              <svg className="w-3/4 h-3/4" viewBox="0 0 64 64"><path d="M8 48 L32 14 L56 48 Z" fill="none" stroke="#FBBF24" strokeWidth="3" strokeLinejoin="round" /><circle cx="28" cy="38" r="3" fill="#FBBF24" /><circle cx="38" cy="40" r="2.5" fill="#FBBF24" /></svg>
+              <svg className="w-3/4 h-3/4" viewBox="0 0 64 64" fill="none" stroke="#FBBF24" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M6 52 V30 M6 44 H58 V52 M6 49 H58" /><circle cx="16" cy="38" r="4.5" /><path d="M22 42 C 32 37, 40 40, 56 39" /><path d="M30 24 h5 l-5 6 h5 M40 13 h7 l-7 8 h7" /></svg>
             </div>
-            <div className="aspect-square rounded-2xl bg-gradient-to-br from-secondary/15 to-primary/10 border border-secondary/30 flex items-center justify-center text-5xl">🧀</div>
+            <div className="aspect-square rounded-2xl bg-gradient-to-br from-secondary/15 to-primary/10 border border-secondary/30 flex items-center justify-center text-5xl">😴</div>
           </div>
           <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-green-500/10 border border-green-400/40">
             <span className="text-green-300 text-sm font-black">{t("result.guessCorrect")}</span>

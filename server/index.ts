@@ -1307,7 +1307,7 @@ function createGameServer() {
     response.json({
       status: "ok",
       protocol: 2,
-      release: "v11",
+      release: "v12",
       rooms: rooms.size,
       sessions: sessions.size,
       ai: isAiJudgeEnabled(),
@@ -1498,7 +1498,7 @@ function createGameServer() {
   app.use((error: Error & { status?: number; type?: string }, _request: Request, response: Response, next: NextFunction) => {
     if (response.headersSent) return next(error);
     const status = error.status && error.status >= 400 && error.status < 600 ? error.status : 500;
-    response.status(status).json({ error: status === 413 ? "Çizim çok büyük." : "Sunucu hatası." });
+    response.status(status).json({ error: status === 413 ? "PAYLOAD_TOO_LARGE" : "SERVER_ERROR" });
   });
 
   // Optional: serve the web build too (handy for testing in a browser).
@@ -1525,6 +1525,33 @@ function createGameServer() {
       : "—";
     response.setHeader("Cache-Control", "public, max-age=300");
     response.type("html").send(page.replaceAll("{{CONTACT_EMAIL}}", contact));
+  });
+  // Invite links: the chat preview says who is inviting ("Yusuf invited you to a drawing duel").
+  let indexHtml: string | null = null;
+  const INVITE_PREVIEW: Record<string, { title: string; description: string }> = {
+    en: { title: "{name} invited you to a drawing duel 💞", description: "Tap to join. No app needed: it opens in your browser." },
+    tr: { title: "{name} seni çizim düellosuna çağırıyor 💞", description: "Katılmak için dokun. Uygulama gerekmez, tarayıcıda açılır." },
+    de: { title: "{name} fordert dich zum Zeichenduell heraus 💞", description: "Tippe zum Mitmachen. Keine App nötig: Es öffnet sich im Browser." },
+    es: { title: "{name} te reta a un duelo de dibujo 💞", description: "Toca para unirte. No necesitas la app: se abre en el navegador." },
+  };
+  const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char] || char);
+  app.get("/join/:code", (request, response, next) => {
+    const room = rooms.get(String(request.params.code || "").toUpperCase().slice(0, 6));
+    const host = room ? sessions.get(room.players[0]) : undefined;
+    const open = Boolean(room && !room.random && !room.solo && room.state === "waiting" && room.players.length < 2);
+    const name = (host?.username || "").trim().slice(0, 24);
+    if (!open || !name || name === "Player") return next();
+    try {
+      indexHtml ??= readFileSync(path.join(staticPath, "index.html"), "utf8");
+    } catch {
+      return next();
+    }
+    const text = INVITE_PREVIEW[host!.locale] || INVITE_PREVIEW.en;
+    const title = escapeHtml(text.title.replace("{name}", name));
+    response.setHeader("Cache-Control", "no-store");
+    response.type("html").send(indexHtml
+      .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${title}" />`)
+      .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${escapeHtml(text.description)}" />`));
   });
   app.use(express.static(staticPath));
   app.get("*", (_request, response) => response.sendFile(path.join(staticPath, "index.html"), (error) => {

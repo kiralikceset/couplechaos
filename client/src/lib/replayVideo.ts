@@ -83,9 +83,8 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, max
 
 const ease = (t: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
 
-export async function makeReplayVideo(input: ReplayInput): Promise<{ blob: Blob; extension: "mp4" | "webm" }> {
-  const mimeType = MIME_TYPES.find((type) => MediaRecorder.isTypeSupported(type));
-  if (!mimeType) throw new Error("no_video_support");
+/** Builds the replay scene; `scale` renders the same 720×1280 layout at a higher resolution. */
+async function buildScene(input: ReplayInput, scale = 1): Promise<{ canvas: HTMLCanvasElement; render: (t: number) => void }> {
   try {
     await Promise.all([document.fonts.load(`700 64px ${DISPLAY}`), document.fonts.load(`500 30px ${BODY}`)]);
   } catch {
@@ -93,22 +92,24 @@ export async function makeReplayVideo(input: ReplayInput): Promise<{ blob: Blob;
   }
 
   const canvas = document.createElement("canvas");
-  canvas.width = W;
-  canvas.height = H;
+  canvas.width = Math.round(W * scale);
+  canvas.height = Math.round(H * scale);
   const ctx = canvas.getContext("2d")!;
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
 
   // Static background with the sketchbook dot grid.
   const background = document.createElement("canvas");
-  background.width = W;
-  background.height = H;
+  background.width = Math.round(W * scale);
+  background.height = Math.round(H * scale);
   const bg = background.getContext("2d")!;
+  bg.setTransform(scale, 0, 0, scale, 0, 0);
   bg.fillStyle = INK;
   bg.fillRect(0, 0, W, H);
   bg.fillStyle = "rgba(247,243,255,0.06)";
   for (let y = 12; y < H; y += 26) for (let x = 12; x < W; x += 26) bg.fillRect(x, y, 2, 2);
 
   // Drawing area: pink frame, dark inside, drawing fitted with its own ratio.
-  const frame = { x: 60, y: 262, w: 600, h: 620 };
+  const frame = { x: 60, y: 262, w: 600, h: 580 };
   const inner = { x: frame.x + 18, y: frame.y + 18, w: frame.w - 36, h: frame.h - 36 };
   const aspect = input.aspect > 0.2 && input.aspect < 4 ? input.aspect : 0.75;
   let dw = inner.w;
@@ -180,7 +181,7 @@ export async function makeReplayVideo(input: ReplayInput): Promise<{ blob: Blob;
   const commentChars = commentLines.join("\n").length;
 
   const render = (t: number) => {
-    ctx.drawImage(background, 0, 0);
+    ctx.drawImage(background, 0, 0, W, H);
 
     // Header: logo + verdict
     ctx.fillStyle = PAPER;
@@ -234,9 +235,9 @@ export async function makeReplayVideo(input: ReplayInput): Promise<{ blob: Blob;
       ctx.globalAlpha = pop;
       ctx.fillStyle = MUTED;
       ctx.font = `500 26px ${BODY}`;
-      ctx.fillText(input.labels.should, 60, 940);
+      ctx.fillText(input.labels.should, 60, 900);
       ctx.save();
-      ctx.translate(120, 1020);
+      ctx.translate(120, 980);
       ctx.scale(0.6 + 0.4 * pop, 0.6 + 0.4 * pop);
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -253,17 +254,17 @@ export async function makeReplayVideo(input: ReplayInput): Promise<{ blob: Blob;
       ctx.textAlign = "right";
       ctx.fillStyle = input.score >= 60 ? YELLOW : input.score >= 30 ? "#FB923C" : "#F87171";
       ctx.font = `700 120px ${DISPLAY}`;
-      ctx.fillText(String(value), 572, 1060);
+      ctx.fillText(String(value), 572, 1020);
       ctx.textAlign = "left";
       ctx.fillStyle = MUTED;
       ctx.font = `700 36px ${DISPLAY}`;
-      ctx.fillText("/100", 582, 1060);
+      ctx.fillText("/100", 582, 1020);
     }
 
     // The jury's verdict types out
     const typed = Math.floor(commentChars * Math.min(1, Math.max(0, (t - TYPE_START) / (TYPE_END - TYPE_START))));
     if (typed > 0) {
-      const box = { x: 60, y: 1090, w: 600, h: 40 + commentLines.length * 40 };
+      const box = { x: 60, y: 1050, w: 600, h: 40 + commentLines.length * 40 };
       ctx.fillStyle = YELLOW;
       roundRect(ctx, box.x, box.y, box.w, box.h, 26);
       ctx.fill();
@@ -281,9 +282,17 @@ export async function makeReplayVideo(input: ReplayInput): Promise<{ blob: Blob;
     ctx.fillStyle = MUTED;
     ctx.font = `500 26px ${BODY}`;
     ctx.textAlign = "center";
-    ctx.fillText(`${input.labels.cta}: Couple Chaos`, W / 2, H - 36);
+    ctx.fillText(`${input.labels.cta}: Couple Chaos`, W / 2, H - 26);
     ctx.textAlign = "left";
   };
+
+  return { canvas, render };
+}
+
+export async function makeReplayVideo(input: ReplayInput): Promise<{ blob: Blob; extension: "mp4" | "webm" }> {
+  const mimeType = MIME_TYPES.find((type) => MediaRecorder.isTypeSupported(type));
+  if (!mimeType) throw new Error("no_video_support");
+  const { canvas, render } = await buildScene(input);
 
   const stream = canvas.captureStream(30);
   const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 4_000_000 });
@@ -309,4 +318,16 @@ export async function makeReplayVideo(input: ReplayInput): Promise<{ blob: Blob;
   stream.getTracks().forEach((track) => track.stop());
   const type = mimeType.split(";")[0];
   return { blob: new Blob(chunks, { type }), extension: type === "video/mp4" ? "mp4" : "webm" };
+}
+
+/**
+ * The replay's last frame as a 1080×1920 story image: drawing, the real thing, score and
+ * the AI's verdict on one card, ready for Instagram/WhatsApp stories. No video support needed.
+ */
+export async function makeResultCard(input: Omit<ReplayInput, "onProgress">): Promise<Blob> {
+  const { canvas, render } = await buildScene({ ...input }, 1.5);
+  render(TOTAL);
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("card_failed"))), "image/png");
+  });
 }
