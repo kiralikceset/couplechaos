@@ -1310,7 +1310,7 @@ function createGameServer() {
     response.json({
       status: "ok",
       protocol: 2,
-      release: "v12",
+      release: "v13",
       rooms: rooms.size,
       sessions: sessions.size,
       ai: isAiJudgeEnabled(),

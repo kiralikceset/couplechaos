@@ -557,9 +557,9 @@ describe("fair AI scoring (blind look)", () => {
     // a scene the blind look names in its own words: the key thing ("luggage", "Koffer") counts
     expect(__test.scoreFromBlind(look([["suitcase", 80], ["box", 60], ["bag", 40]]), "Lost luggage")).toBeLessThan(20);
     expect(__test.scoreFromBlind(look([["backpack on a bench", 85], ["bag", 40]]), "Sırt çantası")).toBe(85);
-    expect(__test.scoreFromBlind(look([["dog", 60], ["sofa", 50], ["cat with keyboard", 50]]), "Klavyedeki kedi")).toBe(33);
-    expect(__test.scoreFromBlind(look([["person snoring in bed", 30]]), "Snoring partner")).toBe(55); // recognised but unsure → fair floor
-    // blind miss, but the judge who knows the scene says a stranger would get it → a pass, not a fail
+    expect(__test.scoreFromBlind(look([["dog", 60], ["sofa", 50], ["cat", 50]]), "Kedi")).toBe(33);
+    expect(__test.scoreFromBlind(look([["person snoring in bed", 30]]), "Horlama")).toBe(55); // recognised but unsure → fair floor
+    // blind miss, but the judge who knows the word says a stranger would get it → a pass, not a fail
     expect(__test.scoreFromBlind(look([["suitcase", 80]]), "Lost luggage", true)).toBe(45);
     expect(__test.scoreFromBlind(look([["suitcase", 80]]), "Lost luggage", false)).toBeLessThan(20);
     expect(__test.blindPrompt("classic")).not.toMatch(/secret word/i);

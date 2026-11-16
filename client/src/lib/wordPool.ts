@@ -1,7 +1,7 @@
 /**
- * Word pool: short, drawable things from life as a couple ("Pillow fight", "Suitcase",
- * "Cat on the keyboard"), grouped by theme. Every scene can be drawn in 20 seconds and is
- * clean enough for all ages. "Mixed" mixes them all.
+ * Word pool: one simple thing per word ("Cat", "Pizza", "Ring", "Suitcase"), grouped by
+ * themes from life as a couple. Anyone can draw any of them with a finger in a few seconds;
+ * the fun comes from the doodles and the AI judge, not from hard words. "Mixed" mixes them all.
  *
  * Every entry has an emoji that is shown on the result screen next to the players' drawing.
  */
@@ -54,191 +54,191 @@ export function normalizeCategory(value: unknown): WordCategory {
 }
 
 const HOME_SCENES: WordEntry[] = [
-  { id: 10001, tr: "Battaniye kavgası", en: "Blanket tug-of-war", de: "Kampf um die Decke", es: "Pelea por la manta", emoji: "🛏️" },
-  { id: 10002, tr: "Horlayan sevgili", en: "Snoring partner", de: "Schnarchender Partner", es: "Pareja que ronca", emoji: "😴" },
-  { id: 10003, tr: "Kumanda kavgası", en: "Fight over the remote", de: "Streit um die Fernbedienung", es: "Pelea por el mando", emoji: "📺" },
-  { id: 10004, tr: "Bulaşık dağı", en: "Pile of dishes", de: "Geschirrberg", es: "Montaña de platos", emoji: "🫧" },
-  { id: 10005, tr: "Çamaşır dağı", en: "Laundry pile", de: "Wäscheberg", es: "Montaña de ropa", emoji: "👕" },
-  { id: 10006, tr: "Klozet kapağı", en: "Toilet seat up", de: "Klobrille oben", es: "Tapa del váter", emoji: "🚽" },
-  { id: 10007, tr: "Tuvalet kağıdı", en: "Toilet paper", de: "Klopapier", es: "Papel higiénico", emoji: "🧻" },
-  { id: 10008, tr: "Mobilya kurmak", en: "Building furniture", de: "Möbel aufbauen", es: "Montar muebles", emoji: "🪛" },
-  { id: 10009, tr: "Örümcek paniği", en: "Spider panic", de: "Spinnenalarm", es: "Pánico a la araña", emoji: "🕷️" },
-  { id: 10010, tr: "Duşta şarkı", en: "Shower singing", de: "Singen unter der Dusche", es: "Cantar en la ducha", emoji: "🚿" },
-  { id: 10011, tr: "Dağınık saç", en: "Bed hair", de: "Wuschelhaare", es: "Pelo revuelto", emoji: "💇" },
-  { id: 10012, tr: "Çalar saat", en: "Alarm clock", de: "Wecker", es: "Despertador", emoji: "⏰" },
-  { id: 10013, tr: "Kanepede uyumak", en: "Couch nap", de: "Sofaschläfchen", es: "Siesta en el sofá", emoji: "💤" },
-  { id: 10014, tr: "Ütü yapmak", en: "Ironing", de: "Bügeln", es: "Planchar", emoji: "👔" },
-  { id: 10015, tr: "Şarj bitti", en: "Dead battery", de: "Akku leer", es: "Sin batería", emoji: "🪫" },
-  { id: 10016, tr: "İnternet gitti", en: "Wi-Fi is down", de: "WLAN ist weg", es: "Se cayó el wifi", emoji: "📶" },
-  { id: 10017, tr: "Dizi maratonu", en: "Binge-watching", de: "Serienmarathon", es: "Maratón de series", emoji: "🍿" },
-  { id: 10018, tr: "Yastık savaşı", en: "Pillow fight", de: "Kissenschlacht", es: "Guerra de almohadas", emoji: "🪶" },
-  { id: 10019, tr: "Evde spor", en: "Home workout", de: "Training zu Hause", es: "Ejercicio en casa", emoji: "🏋️" },
-  { id: 10020, tr: "Çöp çıkarmak", en: "Taking out the trash", de: "Müll rausbringen", es: "Sacar la basura", emoji: "🗑️" },
-  { id: 10021, tr: "Kuruyan çiçek", en: "Dead plant", de: "Vertrocknete Pflanze", es: "Planta marchita", emoji: "🥀" },
-  { id: 10022, tr: "Kirli çorap", en: "Dirty socks", de: "Dreckige Socken", es: "Calcetines sucios", emoji: "🧦" },
+  { id: 10001, tr: "Yatak", en: "Bed", de: "Bett", es: "Cama", emoji: "🛏️" },
+  { id: 10002, tr: "Horlama", en: "Snoring", de: "Schnarchen", es: "Ronquidos", emoji: "😴" },
+  { id: 10003, tr: "Televizyon", en: "TV", de: "Fernseher", es: "Televisión", emoji: "📺" },
+  { id: 10004, tr: "Kanepe", en: "Sofa", de: "Sofa", es: "Sofá", emoji: "🛋️" },
+  { id: 10005, tr: "Ampul", en: "Light bulb", de: "Glühbirne", es: "Bombilla", emoji: "💡" },
+  { id: 10006, tr: "Kapı", en: "Door", de: "Tür", es: "Puerta", emoji: "🚪" },
+  { id: 10007, tr: "Pencere", en: "Window", de: "Fenster", es: "Ventana", emoji: "🪟" },
+  { id: 10008, tr: "Ayna", en: "Mirror", de: "Spiegel", es: "Espejo", emoji: "🪞" },
+  { id: 10009, tr: "Süpürge", en: "Broom", de: "Besen", es: "Escoba", emoji: "🧹" },
+  { id: 10010, tr: "Klozet", en: "Toilet", de: "Toilette", es: "Váter", emoji: "🚽" },
+  { id: 10011, tr: "Tuvalet kağıdı", en: "Toilet paper", de: "Klopapier", es: "Papel higiénico", emoji: "🧻" },
+  { id: 10012, tr: "Diş fırçası", en: "Toothbrush", de: "Zahnbürste", es: "Cepillo de dientes", emoji: "🪥" },
+  { id: 10013, tr: "Duş", en: "Shower", de: "Dusche", es: "Ducha", emoji: "🚿" },
+  { id: 10014, tr: "Küvet", en: "Bathtub", de: "Badewanne", es: "Bañera", emoji: "🛁" },
+  { id: 10015, tr: "Çorap", en: "Sock", de: "Socke", es: "Calcetín", emoji: "🧦" },
+  { id: 10016, tr: "Çalar saat", en: "Alarm clock", de: "Wecker", es: "Despertador", emoji: "⏰" },
+  { id: 10017, tr: "Saksı çiçeği", en: "Potted plant", de: "Topfpflanze", es: "Maceta", emoji: "🪴" },
+  { id: 10018, tr: "Sandalye", en: "Chair", de: "Stuhl", es: "Silla", emoji: "🪑" },
+  { id: 10019, tr: "Merdiven", en: "Ladder", de: "Leiter", es: "Escalera", emoji: "🪜" },
+  { id: 10020, tr: "Çekiç", en: "Hammer", de: "Hammer", es: "Martillo", emoji: "🔨" },
+  { id: 10021, tr: "Kova", en: "Bucket", de: "Eimer", es: "Cubo", emoji: "🪣" },
+  { id: 10022, tr: "Sabun", en: "Soap", de: "Seife", es: "Jabón", emoji: "🧼" },
 ];
 
 const DATE_SCENES: WordEntry[] = [
-  { id: 11001, tr: "Sinema gecesi", en: "Movie night", de: "Kinoabend", es: "Noche de cine", emoji: "🎬" },
-  { id: 11002, tr: "Mumlu yemek", en: "Candlelit dinner", de: "Candlelight-Dinner", es: "Cena con velas", emoji: "🕯️" },
-  { id: 11003, tr: "Dans pisti", en: "Dance floor", de: "Tanzfläche", es: "Pista de baile", emoji: "🪩" },
-  { id: 11004, tr: "Kahve randevusu", en: "Coffee date", de: "Kaffee-Date", es: "Cita para un café", emoji: "☕" },
-  { id: 11005, tr: "Patlamış mısır", en: "Popcorn", de: "Popcorn", es: "Palomitas", emoji: "🍿" },
-  { id: 11006, tr: "Korku filmi", en: "Horror movie", de: "Horrorfilm", es: "Peli de terror", emoji: "👻" },
-  { id: 11007, tr: "Milkshake", en: "Milkshake", de: "Milchshake", es: "Batido", emoji: "🥤" },
-  { id: 11008, tr: "Çarpışan arabalar", en: "Bumper cars", de: "Autoscooter", es: "Coches de choque", emoji: "🏎️" },
-  { id: 11009, tr: "Gün batımı", en: "Sunset", de: "Sonnenuntergang", es: "Atardecer", emoji: "🌅" },
-  { id: 11010, tr: "Piknik", en: "Picnic", de: "Picknick", es: "Pícnic", emoji: "🧺" },
-  { id: 11011, tr: "Bowling", en: "Bowling", de: "Bowling", es: "Bolos", emoji: "🎳" },
-  { id: 11012, tr: "Karaoke", en: "Karaoke", de: "Karaoke", es: "Karaoke", emoji: "🎤" },
-  { id: 11013, tr: "Oyuncak ayı", en: "Teddy bear", de: "Teddybär", es: "Osito de peluche", emoji: "🧸" },
-  { id: 11014, tr: "Buz pateni", en: "Ice skating", de: "Eislaufen", es: "Patinaje sobre hielo", emoji: "⛸️" },
-  { id: 11015, tr: "Dönme dolap", en: "Ferris wheel", de: "Riesenrad", es: "Noria", emoji: "🎡" },
-  { id: 11016, tr: "Şemsiye altında", en: "Under the umbrella", de: "Unterm Regenschirm", es: "Bajo el paraguas", emoji: "🌂" },
-  { id: 11017, tr: "Kırmızı gül", en: "Red rose", de: "Rote Rose", es: "Rosa roja", emoji: "🌹" },
-  { id: 11018, tr: "Mesajlaşmak", en: "Texting", de: "Chatten", es: "Chatear", emoji: "📱" },
-  { id: 11019, tr: "Garson", en: "Waiter", de: "Kellner", es: "Camarero", emoji: "🤵" },
-  { id: 11020, tr: "Tandem bisiklet", en: "Tandem bike", de: "Tandem", es: "Tándem", emoji: "🚴" },
-  { id: 11021, tr: "Fotoğraf kabini", en: "Photo booth", de: "Fotoautomat", es: "Fotomatón", emoji: "📸" },
+  { id: 11001, tr: "Patlamış mısır", en: "Popcorn", de: "Popcorn", es: "Palomitas", emoji: "🍿" },
+  { id: 11002, tr: "Mum", en: "Candle", de: "Kerze", es: "Vela", emoji: "🕯️" },
+  { id: 11003, tr: "Gitar", en: "Guitar", de: "Gitarre", es: "Guitarra", emoji: "🎸" },
+  { id: 11004, tr: "Kahve", en: "Coffee", de: "Kaffee", es: "Café", emoji: "☕" },
+  { id: 11005, tr: "Milkshake", en: "Milkshake", de: "Milchshake", es: "Batido", emoji: "🥤" },
+  { id: 11006, tr: "Bowling", en: "Bowling", de: "Bowling", es: "Bolos", emoji: "🎳" },
+  { id: 11007, tr: "Mikrofon", en: "Microphone", de: "Mikrofon", es: "Micrófono", emoji: "🎤" },
+  { id: 11008, tr: "Oyuncak ayı", en: "Teddy bear", de: "Teddybär", es: "Osito de peluche", emoji: "🧸" },
+  { id: 11009, tr: "Dönme dolap", en: "Ferris wheel", de: "Riesenrad", es: "Noria", emoji: "🎡" },
+  { id: 11010, tr: "Hız treni", en: "Roller coaster", de: "Achterbahn", es: "Montaña rusa", emoji: "🎢" },
+  { id: 11011, tr: "Şemsiye", en: "Umbrella", de: "Regenschirm", es: "Paraguas", emoji: "🌂" },
+  { id: 11012, tr: "Fotoğraf makinesi", en: "Camera", de: "Kamera", es: "Cámara", emoji: "📷" },
+  { id: 11013, tr: "Piknik sepeti", en: "Picnic basket", de: "Picknickkorb", es: "Cesta de pícnic", emoji: "🧺" },
+  { id: 11014, tr: "Gün batımı", en: "Sunset", de: "Sonnenuntergang", es: "Atardecer", emoji: "🌅" },
+  { id: 11015, tr: "Telefon", en: "Phone", de: "Handy", es: "Móvil", emoji: "📱" },
+  { id: 11016, tr: "Ruj", en: "Lipstick", de: "Lippenstift", es: "Pintalabios", emoji: "💄" },
+  { id: 11017, tr: "Elbise", en: "Dress", de: "Kleid", es: "Vestido", emoji: "👗" },
+  { id: 11018, tr: "Kravat", en: "Tie", de: "Krawatte", es: "Corbata", emoji: "👔" },
+  { id: 11019, tr: "Parfüm", en: "Perfume", de: "Parfüm", es: "Perfume", emoji: "🧴" },
+  { id: 11020, tr: "Dans", en: "Dancing", de: "Tanzen", es: "Baile", emoji: "💃" },
+  { id: 11021, tr: "Ay", en: "Moon", de: "Mond", es: "Luna", emoji: "🌙" },
 ];
 
 const TRAVEL_SCENES: WordEntry[] = [
   { id: 12001, tr: "Valiz", en: "Suitcase", de: "Koffer", es: "Maleta", emoji: "🧳" },
-  { id: 12002, tr: "Güneş yanığı", en: "Sunburn", de: "Sonnenbrand", es: "Quemadura de sol", emoji: "🥵" },
-  { id: 12003, tr: "Uçak", en: "Airplane", de: "Flugzeug", es: "Avión", emoji: "✈️" },
-  { id: 12004, tr: "Sırt çantası", en: "Backpack", de: "Rucksack", es: "Mochila", emoji: "🎒" },
-  { id: 12005, tr: "Yolcu gemisi", en: "Cruise ship", de: "Kreuzfahrtschiff", es: "Crucero", emoji: "🚢" },
-  { id: 12006, tr: "Açık büfe", en: "Buffet", de: "Buffet", es: "Bufé libre", emoji: "🍽️" },
-  { id: 12007, tr: "Kumdan kale", en: "Sandcastle", de: "Sandburg", es: "Castillo de arena", emoji: "🏰" },
-  { id: 12008, tr: "Şezlong", en: "Sunbed", de: "Sonnenliege", es: "Tumbona", emoji: "🏖️" },
-  { id: 12009, tr: "Harita", en: "Map", de: "Landkarte", es: "Mapa", emoji: "🗺️" },
-  { id: 12010, tr: "Pasaport", en: "Passport", de: "Reisepass", es: "Pasaporte", emoji: "🛂" },
-  { id: 12011, tr: "Çadır kurmak", en: "Pitching a tent", de: "Zelt aufbauen", es: "Montar la tienda", emoji: "⛺" },
-  { id: 12012, tr: "Selfie çubuğu", en: "Selfie stick", de: "Selfie-Stick", es: "Palo de selfie", emoji: "🤳" },
-  { id: 12013, tr: "Pisa Kulesi", en: "Leaning Tower of Pisa", de: "Schiefer Turm von Pisa", es: "Torre de Pisa", emoji: "🏛️" },
-  { id: 12014, tr: "Havuza atlamak", en: "Cannonball", de: "Arschbombe", es: "Salto bomba", emoji: "🏊" },
-  { id: 12015, tr: "Tren yolculuğu", en: "Train ride", de: "Zugfahrt", es: "Viaje en tren", emoji: "🚆" },
-  { id: 12016, tr: "Hamak", en: "Hammock", de: "Hängematte", es: "Hamaca", emoji: "🌴" },
-  { id: 12017, tr: "Şnorkel", en: "Snorkeling", de: "Schnorcheln", es: "Esnórquel", emoji: "🤿" },
-  { id: 12018, tr: "Benzin bitti", en: "Out of gas", de: "Kein Benzin", es: "Sin gasolina", emoji: "⛽" },
-  { id: 12019, tr: "Uçan şapka", en: "Hat blown away", de: "Weggewehter Hut", es: "Sombrero volando", emoji: "👒" },
-  { id: 12020, tr: "Kayak", en: "Skiing", de: "Skifahren", es: "Esquí", emoji: "⛷️" },
-  { id: 12021, tr: "Deve gezisi", en: "Camel ride", de: "Kamelritt", es: "Paseo en camello", emoji: "🐪" },
+  { id: 12002, tr: "Uçak", en: "Airplane", de: "Flugzeug", es: "Avión", emoji: "✈️" },
+  { id: 12003, tr: "Pasaport", en: "Passport", de: "Reisepass", es: "Pasaporte", emoji: "🛂" },
+  { id: 12004, tr: "Harita", en: "Map", de: "Landkarte", es: "Mapa", emoji: "🗺️" },
+  { id: 12005, tr: "Çadır", en: "Tent", de: "Zelt", es: "Tienda de campaña", emoji: "⛺" },
+  { id: 12006, tr: "Kumdan kale", en: "Sandcastle", de: "Sandburg", es: "Castillo de arena", emoji: "🏰" },
+  { id: 12007, tr: "Plaj şemsiyesi", en: "Beach umbrella", de: "Sonnenschirm", es: "Sombrilla", emoji: "🏖️" },
+  { id: 12008, tr: "Güneş gözlüğü", en: "Sunglasses", de: "Sonnenbrille", es: "Gafas de sol", emoji: "🕶️" },
+  { id: 12009, tr: "Gemi", en: "Ship", de: "Schiff", es: "Barco", emoji: "🚢" },
+  { id: 12010, tr: "Tren", en: "Train", de: "Zug", es: "Tren", emoji: "🚆" },
+  { id: 12011, tr: "Palmiye", en: "Palm tree", de: "Palme", es: "Palmera", emoji: "🌴" },
+  { id: 12012, tr: "Deniz kabuğu", en: "Seashell", de: "Muschel", es: "Concha", emoji: "🐚" },
+  { id: 12013, tr: "Dağ", en: "Mountain", de: "Berg", es: "Montaña", emoji: "⛰️" },
+  { id: 12014, tr: "Pusula", en: "Compass", de: "Kompass", es: "Brújula", emoji: "🧭" },
+  { id: 12015, tr: "Sırt çantası", en: "Backpack", de: "Rucksack", es: "Mochila", emoji: "🎒" },
+  { id: 12016, tr: "Kayak", en: "Skis", de: "Skier", es: "Esquís", emoji: "⛷️" },
+  { id: 12017, tr: "Sörf tahtası", en: "Surfboard", de: "Surfbrett", es: "Tabla de surf", emoji: "🏄" },
+  { id: 12018, tr: "Can simidi", en: "Life ring", de: "Rettungsring", es: "Salvavidas", emoji: "🛟" },
+  { id: 12019, tr: "Deve", en: "Camel", de: "Kamel", es: "Camello", emoji: "🐪" },
+  { id: 12020, tr: "Eyfel Kulesi", en: "Eiffel Tower", de: "Eiffelturm", es: "Torre Eiffel", emoji: "🗼" },
+  { id: 12021, tr: "Güneş", en: "Sun", de: "Sonne", es: "Sol", emoji: "☀️" },
 ];
 
 const FOOD_SCENES: WordEntry[] = [
-  { id: 13001, tr: "Yanmış tost", en: "Burnt toast", de: "Verbrannter Toast", es: "Tostada quemada", emoji: "🍞" },
-  { id: 13002, tr: "Buzdolabı baskını", en: "Fridge raid", de: "Kühlschrank plündern", es: "Asalto a la nevera", emoji: "🌙" },
-  { id: 13003, tr: "Son dilim pizza", en: "Last slice of pizza", de: "Letztes Stück Pizza", es: "Último trozo de pizza", emoji: "🍕" },
+  { id: 13001, tr: "Pizza", en: "Pizza", de: "Pizza", es: "Pizza", emoji: "🍕" },
+  { id: 13002, tr: "Hamburger", en: "Burger", de: "Burger", es: "Hamburguesa", emoji: "🍔" },
+  { id: 13003, tr: "Dondurma", en: "Ice cream", de: "Eistüte", es: "Helado", emoji: "🍦" },
   { id: 13004, tr: "Spagetti", en: "Spaghetti", de: "Spaghetti", es: "Espaguetis", emoji: "🍝" },
-  { id: 13005, tr: "Acı biber", en: "Hot pepper", de: "Scharfe Chili", es: "Chile picante", emoji: "🌶️" },
-  { id: 13006, tr: "Açılmayan kavanoz", en: "Stuck jar", de: "Klemmendes Glas", es: "Frasco atascado", emoji: "🫙" },
-  { id: 13007, tr: "Kek yapmak", en: "Baking a cake", de: "Kuchen backen", es: "Hornear un pastel", emoji: "🧁" },
-  { id: 13008, tr: "Yatakta kahvaltı", en: "Breakfast in bed", de: "Frühstück im Bett", es: "Desayuno en la cama", emoji: "🥐" },
-  { id: 13009, tr: "Mangal", en: "Barbecue", de: "Grillen", es: "Barbacoa", emoji: "🍖" },
-  { id: 13010, tr: "Soğan doğramak", en: "Chopping onions", de: "Zwiebeln schneiden", es: "Cortar cebolla", emoji: "🧅" },
-  { id: 13011, tr: "Dondurma", en: "Ice cream", de: "Eistüte", es: "Helado", emoji: "🍦" },
-  { id: 13012, tr: "Hamburger", en: "Burger", de: "Burger", es: "Hamburguesa", emoji: "🍔" },
-  { id: 13013, tr: "Yemek çubukları", en: "Chopsticks", de: "Essstäbchen", es: "Palillos", emoji: "🥢" },
-  { id: 13014, tr: "Çorba", en: "Soup", de: "Suppe", es: "Sopa", emoji: "🍲" },
-  { id: 13015, tr: "Taşan süt", en: "Milk boiling over", de: "Überkochende Milch", es: "Leche hirviendo", emoji: "🥛" },
-  { id: 13016, tr: "Dökülen kahve", en: "Spilled coffee", de: "Verschütteter Kaffee", es: "Café derramado", emoji: "🫗" },
-  { id: 13017, tr: "Paket servis", en: "Food delivery", de: "Essenslieferung", es: "Comida a domicilio", emoji: "🛵" },
-  { id: 13018, tr: "Kurabiye kavanozu", en: "Cookie jar", de: "Keksdose", es: "Tarro de galletas", emoji: "🍪" },
-  { id: 13019, tr: "Fondü", en: "Fondue", de: "Fondue", es: "Fondue", emoji: "🫕" },
-  { id: 13020, tr: "Pankek", en: "Pancakes", de: "Pfannkuchen", es: "Tortitas", emoji: "🥞" },
-  { id: 13021, tr: "Karpuz", en: "Watermelon", de: "Wassermelone", es: "Sandía", emoji: "🍉" },
-  { id: 13022, tr: "Kırık yumurta", en: "Broken egg", de: "Zerbrochenes Ei", es: "Huevo roto", emoji: "🥚" },
+  { id: 13005, tr: "Muz", en: "Banana", de: "Banane", es: "Plátano", emoji: "🍌" },
+  { id: 13006, tr: "Yumurta", en: "Egg", de: "Ei", es: "Huevo", emoji: "🥚" },
+  { id: 13007, tr: "Tava", en: "Frying pan", de: "Pfanne", es: "Sartén", emoji: "🍳" },
+  { id: 13008, tr: "Ekmek", en: "Bread", de: "Brot", es: "Pan", emoji: "🍞" },
+  { id: 13009, tr: "Peynir", en: "Cheese", de: "Käse", es: "Queso", emoji: "🧀" },
+  { id: 13010, tr: "Havuç", en: "Carrot", de: "Karotte", es: "Zanahoria", emoji: "🥕" },
+  { id: 13011, tr: "Çilek", en: "Strawberry", de: "Erdbeere", es: "Fresa", emoji: "🍓" },
+  { id: 13012, tr: "Karpuz", en: "Watermelon", de: "Wassermelone", es: "Sandía", emoji: "🍉" },
+  { id: 13013, tr: "Acı biber", en: "Chili pepper", de: "Chilischote", es: "Chile", emoji: "🌶️" },
+  { id: 13014, tr: "Kurabiye", en: "Cookie", de: "Keks", es: "Galleta", emoji: "🍪" },
+  { id: 13015, tr: "Pankek", en: "Pancakes", de: "Pfannkuchen", es: "Tortitas", emoji: "🥞" },
+  { id: 13016, tr: "Simit", en: "Bagel", de: "Bagel", es: "Rosca", emoji: "🥯" },
+  { id: 13017, tr: "Tencere", en: "Pot", de: "Kochtopf", es: "Olla", emoji: "🍲" },
+  { id: 13018, tr: "Ananas", en: "Pineapple", de: "Ananas", es: "Piña", emoji: "🍍" },
+  { id: 13019, tr: "Kiraz", en: "Cherries", de: "Kirschen", es: "Cerezas", emoji: "🍒" },
+  { id: 13020, tr: "Sosisli", en: "Hot dog", de: "Hotdog", es: "Perrito caliente", emoji: "🌭" },
+  { id: 13021, tr: "Donut", en: "Donut", de: "Donut", es: "Dónut", emoji: "🍩" },
+  { id: 13022, tr: "Bal", en: "Honey", de: "Honig", es: "Miel", emoji: "🍯" },
 ];
 
 const PETS_SCENES: WordEntry[] = [
-  { id: 14001, tr: "Klavyedeki kedi", en: "Cat on the keyboard", de: "Katze auf der Tastatur", es: "Gato en el teclado", emoji: "⌨️" },
-  { id: 14002, tr: "Bardak deviren kedi", en: "Cat knocking over a glass", de: "Katze wirft Glas um", es: "Gato tirando un vaso", emoji: "🐈" },
-  { id: 14003, tr: "Çorap çalan köpek", en: "Dog stealing a sock", de: "Hund klaut Socke", es: "Perro robando un calcetín", emoji: "🧦" },
-  { id: 14004, tr: "Kutudaki kedi", en: "Cat in a box", de: "Katze im Karton", es: "Gato en una caja", emoji: "📦" },
-  { id: 14005, tr: "Yataktaki köpek", en: "Dog in the bed", de: "Hund im Bett", es: "Perro en la cama", emoji: "🐕" },
-  { id: 14006, tr: "Islak köpek", en: "Wet dog", de: "Nasser Hund", es: "Perro mojado", emoji: "💦" },
-  { id: 14007, tr: "Köpek gezdirmek", en: "Dog walk", de: "Gassi gehen", es: "Pasear al perro", emoji: "🦮" },
-  { id: 14008, tr: "Kedi ve lazer", en: "Cat and laser", de: "Katze und Laser", es: "Gato y láser", emoji: "🔴" },
-  { id: 14009, tr: "Kostümlü köpek", en: "Dog in a costume", de: "Hund im Kostüm", es: "Perro disfrazado", emoji: "🐶" },
-  { id: 14010, tr: "Hamster", en: "Hamster", de: "Hamster", es: "Hámster", emoji: "🐹" },
-  { id: 14011, tr: "Ağaçtaki kedi", en: "Cat in a tree", de: "Katze im Baum", es: "Gato en el árbol", emoji: "🙀" },
-  { id: 14012, tr: "Papağan", en: "Parrot", de: "Papagei", es: "Loro", emoji: "🦜" },
-  { id: 14013, tr: "Akvaryum", en: "Fish tank", de: "Aquarium", es: "Pecera", emoji: "🐠" },
-  { id: 14014, tr: "Havlayan köpek", en: "Barking dog", de: "Bellender Hund", es: "Perro ladrando", emoji: "🐩" },
-  { id: 14015, tr: "Tırmalanan kanepe", en: "Scratched sofa", de: "Zerkratztes Sofa", es: "Sofá arañado", emoji: "🛋️" },
-  { id: 14016, tr: "Kuyruk kovalamak", en: "Chasing its tail", de: "Schwanzjagd", es: "Perseguir la cola", emoji: "🌀" },
-  { id: 14017, tr: "Mama kabı", en: "Food bowl", de: "Futternapf", es: "Comedero", emoji: "🥣" },
-  { id: 14018, tr: "Veteriner", en: "At the vet", de: "Beim Tierarzt", es: "En el veterinario", emoji: "🩺" },
-  { id: 14019, tr: "Yün yumağı", en: "Ball of yarn", de: "Wollknäuel", es: "Ovillo de lana", emoji: "🧶" },
-  { id: 14020, tr: "Top getirmek", en: "Playing fetch", de: "Ball holen", es: "Traer la pelota", emoji: "🎾" },
+  { id: 14001, tr: "Kedi", en: "Cat", de: "Katze", es: "Gato", emoji: "🐈" },
+  { id: 14002, tr: "Köpek", en: "Dog", de: "Hund", es: "Perro", emoji: "🐕" },
+  { id: 14003, tr: "Balık", en: "Fish", de: "Fisch", es: "Pez", emoji: "🐟" },
+  { id: 14004, tr: "Kuş", en: "Bird", de: "Vogel", es: "Pájaro", emoji: "🐦" },
+  { id: 14005, tr: "Papağan", en: "Parrot", de: "Papagei", es: "Loro", emoji: "🦜" },
+  { id: 14006, tr: "Hamster", en: "Hamster", de: "Hamster", es: "Hámster", emoji: "🐹" },
+  { id: 14007, tr: "Tavşan", en: "Rabbit", de: "Hase", es: "Conejo", emoji: "🐇" },
+  { id: 14008, tr: "Kaplumbağa", en: "Turtle", de: "Schildkröte", es: "Tortuga", emoji: "🐢" },
+  { id: 14009, tr: "Fare", en: "Mouse", de: "Maus", es: "Ratón", emoji: "🐁" },
+  { id: 14010, tr: "Kemik", en: "Bone", de: "Knochen", es: "Hueso", emoji: "🦴" },
+  { id: 14011, tr: "Mama kabı", en: "Pet bowl", de: "Futternapf", es: "Comedero", emoji: "🥣" },
+  { id: 14012, tr: "Akvaryum", en: "Fish tank", de: "Aquarium", es: "Pecera", emoji: "🐠" },
+  { id: 14013, tr: "Yün yumağı", en: "Ball of yarn", de: "Wollknäuel", es: "Ovillo de lana", emoji: "🧶" },
+  { id: 14014, tr: "Tenis topu", en: "Tennis ball", de: "Tennisball", es: "Pelota de tenis", emoji: "🎾" },
+  { id: 14015, tr: "Pati izi", en: "Paw print", de: "Pfotenabdruck", es: "Huella de pata", emoji: "🐾" },
+  { id: 14016, tr: "Ördek", en: "Duck", de: "Ente", es: "Pato", emoji: "🦆" },
+  { id: 14017, tr: "Kurbağa", en: "Frog", de: "Frosch", es: "Rana", emoji: "🐸" },
+  { id: 14018, tr: "Kirpi", en: "Hedgehog", de: "Igel", es: "Erizo", emoji: "🦔" },
+  { id: 14019, tr: "Kelebek", en: "Butterfly", de: "Schmetterling", es: "Mariposa", emoji: "🦋" },
+  { id: 14020, tr: "Salyangoz", en: "Snail", de: "Schnecke", es: "Caracol", emoji: "🐌" },
 ];
 
 const EVERYDAY_SCENES: WordEntry[] = [
-  { id: 15001, tr: "Trafik", en: "Traffic jam", de: "Stau", es: "Atasco", emoji: "🚗" },
-  { id: 15002, tr: "Otobüs durağı", en: "Bus stop", de: "Bushaltestelle", es: "Parada de autobús", emoji: "🚏" },
-  { id: 15003, tr: "Yağmur", en: "Rain", de: "Regen", es: "Lluvia", emoji: "🌧️" },
-  { id: 15004, tr: "Kırık şemsiye", en: "Broken umbrella", de: "Kaputter Schirm", es: "Paraguas roto", emoji: "☂️" },
-  { id: 15005, tr: "Market arabası", en: "Shopping cart", de: "Einkaufswagen", es: "Carrito de compras", emoji: "🛒" },
-  { id: 15006, tr: "Asansör", en: "Elevator", de: "Aufzug", es: "Ascensor", emoji: "🛗" },
-  { id: 15007, tr: "Spor salonu", en: "Gym", de: "Fitnessstudio", es: "Gimnasio", emoji: "💪" },
-  { id: 15008, tr: "Muz kabuğu", en: "Banana peel", de: "Bananenschale", es: "Cáscara de plátano", emoji: "🍌" },
-  { id: 15009, tr: "Saç kesimi", en: "Haircut", de: "Haarschnitt", es: "Corte de pelo", emoji: "✂️" },
-  { id: 15010, tr: "Bilgisayar", en: "Computer", de: "Rechner", es: "Ordenador", emoji: "💻" },
-  { id: 15011, tr: "Park etmek", en: "Parking", de: "Einparken", es: "Aparcar", emoji: "🅿️" },
-  { id: 15012, tr: "Arı", en: "Bee", de: "Biene", es: "Abeja", emoji: "🐝" },
-  { id: 15013, tr: "Anahtarlar", en: "Keys", de: "Schlüssel", es: "Llaves", emoji: "🔑" },
-  { id: 15014, tr: "Bisiklet", en: "Bike", de: "Fahrrad", es: "Bicicleta", emoji: "🚲" },
-  { id: 15015, tr: "Yoga", en: "Yoga", de: "Yoga", es: "Yoga", emoji: "🧘" },
-  { id: 15016, tr: "Kar topu", en: "Snowball fight", de: "Schneeballschlacht", es: "Guerra de nieve", emoji: "❄️" },
-  { id: 15017, tr: "Kardan adam", en: "Snowman", de: "Schneemann", es: "Muñeco de nieve", emoji: "⛄" },
-  { id: 15018, tr: "Su tabancası", en: "Water gun", de: "Wasserpistole", es: "Pistola de agua", emoji: "💧" },
-  { id: 15019, tr: "Koşu", en: "Jogging", de: "Joggen", es: "Correr", emoji: "🏃" },
+  { id: 15001, tr: "Araba", en: "Car", de: "Auto", es: "Coche", emoji: "🚗" },
+  { id: 15002, tr: "Otobüs", en: "Bus", de: "Bus", es: "Autobús", emoji: "🚌" },
+  { id: 15003, tr: "Bisiklet", en: "Bike", de: "Fahrrad", es: "Bicicleta", emoji: "🚲" },
+  { id: 15004, tr: "Trafik lambası", en: "Traffic light", de: "Ampel", es: "Semáforo", emoji: "🚦" },
+  { id: 15005, tr: "Yağmur", en: "Rain", de: "Regen", es: "Lluvia", emoji: "🌧️" },
+  { id: 15006, tr: "Bulut", en: "Cloud", de: "Wolke", es: "Nube", emoji: "☁️" },
+  { id: 15007, tr: "Gökkuşağı", en: "Rainbow", de: "Regenbogen", es: "Arcoíris", emoji: "🌈" },
+  { id: 15008, tr: "Şimşek", en: "Lightning", de: "Blitz", es: "Rayo", emoji: "⚡" },
+  { id: 15009, tr: "Kardan adam", en: "Snowman", de: "Schneemann", es: "Muñeco de nieve", emoji: "⛄" },
+  { id: 15010, tr: "Ağaç", en: "Tree", de: "Baum", es: "Árbol", emoji: "🌳" },
+  { id: 15011, tr: "Ev", en: "House", de: "Haus", es: "Casa", emoji: "🏠" },
+  { id: 15012, tr: "Market arabası", en: "Shopping cart", de: "Einkaufswagen", es: "Carrito", emoji: "🛒" },
+  { id: 15013, tr: "Anahtar", en: "Key", de: "Schlüssel", es: "Llave", emoji: "🔑" },
+  { id: 15014, tr: "Gözlük", en: "Glasses", de: "Brille", es: "Gafas", emoji: "👓" },
+  { id: 15015, tr: "Şapka", en: "Cap", de: "Kappe", es: "Gorra", emoji: "🧢" },
+  { id: 15016, tr: "Spor ayakkabı", en: "Sneaker", de: "Turnschuh", es: "Zapatilla", emoji: "👟" },
+  { id: 15017, tr: "Kitap", en: "Book", de: "Buch", es: "Libro", emoji: "📖" },
+  { id: 15018, tr: "Kol saati", en: "Watch", de: "Armbanduhr", es: "Reloj", emoji: "⌚" },
+  { id: 15019, tr: "Futbol topu", en: "Soccer ball", de: "Fußball", es: "Balón de fútbol", emoji: "⚽" },
   { id: 15020, tr: "Uçurtma", en: "Kite", de: "Drachen", es: "Cometa", emoji: "🪁" },
 ];
 
 const LOVE_SCENES: WordEntry[] = [
-  { id: 16001, tr: "Evlenme teklifi", en: "Proposal", de: "Heiratsantrag", es: "Pedida de mano", emoji: "💍" },
-  { id: 16002, tr: "Öpücük", en: "Kiss", de: "Kuss", es: "Beso", emoji: "💋" },
-  { id: 16003, tr: "Aşk mektubu", en: "Love letter", de: "Liebesbrief", es: "Carta de amor", emoji: "💌" },
-  { id: 16004, tr: "Gül yaprakları", en: "Rose petals", de: "Rosenblätter", es: "Pétalos de rosa", emoji: "🌹" },
-  { id: 16005, tr: "Ağaçta kalp", en: "Heart on a tree", de: "Herz im Baum", es: "Corazón en el árbol", emoji: "🌳" },
-  { id: 16006, tr: "Serenat", en: "Serenade", de: "Ständchen", es: "Serenata", emoji: "🎸" },
-  { id: 16007, tr: "Sarılıp uyumak", en: "Cuddling in bed", de: "Kuscheln im Bett", es: "Abrazados en la cama", emoji: "🛌" },
-  { id: 16008, tr: "Sarılmak", en: "Hug", de: "Umarmung", es: "Abrazo", emoji: "🫂" },
-  { id: 16009, tr: "Oklu kalp", en: "Cupid's arrow", de: "Amors Pfeil", es: "Flecha de Cupido", emoji: "💘" },
-  { id: 16010, tr: "Kalpli balon", en: "Heart balloon", de: "Herzballon", es: "Globo de corazón", emoji: "🎈" },
-  { id: 16011, tr: "Çiçek buketi", en: "Bouquet", de: "Blumenstrauß", es: "Ramo de flores", emoji: "💐" },
-  { id: 16012, tr: "Görüntülü arama", en: "Video call", de: "Videoanruf", es: "Videollamada", emoji: "📹" },
-  { id: 16013, tr: "Gelinlik", en: "Wedding dress", de: "Brautkleid", es: "Vestido de novia", emoji: "👰" },
-  { id: 16014, tr: "Düğün pastası", en: "Wedding cake", de: "Hochzeitstorte", es: "Pastel de boda", emoji: "💒" },
-  { id: 16015, tr: "Gelin arabası", en: "Wedding car", de: "Hochzeitsauto", es: "Coche de boda", emoji: "🚙" },
-  { id: 16016, tr: "Aşk kilidi", en: "Love lock", de: "Liebesschloss", es: "Candado del amor", emoji: "🔒" },
-  { id: 16017, tr: "Kalpli kahve", en: "Latte heart", de: "Latte-Herz", es: "Café con corazón", emoji: "☕" },
-  { id: 16018, tr: "Kırık kalp", en: "Broken heart", de: "Gebrochenes Herz", es: "Corazón roto", emoji: "💔" },
-  { id: 16019, tr: "Çikolata kutusu", en: "Box of chocolates", de: "Pralinenschachtel", es: "Caja de bombones", emoji: "🍫" },
-  { id: 16020, tr: "Romantik dans", en: "Slow dance", de: "Engtanz", es: "Baile lento", emoji: "💃" },
+  { id: 16001, tr: "Kalp", en: "Heart", de: "Herz", es: "Corazón", emoji: "❤️" },
+  { id: 16002, tr: "Kırık kalp", en: "Broken heart", de: "Gebrochenes Herz", es: "Corazón roto", emoji: "💔" },
+  { id: 16003, tr: "Yüzük", en: "Ring", de: "Ring", es: "Anillo", emoji: "💍" },
+  { id: 16004, tr: "Öpücük", en: "Kiss", de: "Kuss", es: "Beso", emoji: "💋" },
+  { id: 16005, tr: "Gül", en: "Rose", de: "Rose", es: "Rosa", emoji: "🌹" },
+  { id: 16006, tr: "Aşk mektubu", en: "Love letter", de: "Liebesbrief", es: "Carta de amor", emoji: "💌" },
+  { id: 16007, tr: "Çikolata", en: "Chocolate", de: "Schokolade", es: "Chocolate", emoji: "🍫" },
+  { id: 16008, tr: "Oklu kalp", en: "Cupid's arrow", de: "Amors Pfeil", es: "Flecha de Cupido", emoji: "💘" },
+  { id: 16009, tr: "Gelinlik", en: "Wedding dress", de: "Brautkleid", es: "Vestido de novia", emoji: "👰" },
+  { id: 16010, tr: "Damat", en: "Groom", de: "Bräutigam", es: "Novio", emoji: "🤵" },
+  { id: 16011, tr: "Düğün pastası", en: "Wedding cake", de: "Hochzeitstorte", es: "Pastel de boda", emoji: "💒" },
+  { id: 16012, tr: "Çiçek buketi", en: "Bouquet", de: "Blumenstrauß", es: "Ramo de flores", emoji: "💐" },
+  { id: 16013, tr: "Sarılmak", en: "Hug", de: "Umarmung", es: "Abrazo", emoji: "🫂" },
+  { id: 16014, tr: "Kuğu", en: "Swan", de: "Schwan", es: "Cisne", emoji: "🦢" },
+  { id: 16015, tr: "Yıldız", en: "Star", de: "Stern", es: "Estrella", emoji: "⭐" },
+  { id: 16016, tr: "Melek", en: "Angel", de: "Engel", es: "Ángel", emoji: "👼" },
+  { id: 16017, tr: "Kalpli balon", en: "Heart balloon", de: "Herzballon", es: "Globo de corazón", emoji: "🎈" },
+  { id: 16018, tr: "Asma kilit", en: "Padlock", de: "Vorhängeschloss", es: "Candado", emoji: "🔒" },
+  { id: 16019, tr: "Selfie", en: "Selfie", de: "Selfie", es: "Selfie", emoji: "🤳" },
+  { id: 16020, tr: "Taç", en: "Crown", de: "Krone", es: "Corona", emoji: "👑" },
 ];
 
 const SPECIAL_SCENES: WordEntry[] = [
-  { id: 17001, tr: "Sürpriz parti", en: "Surprise party", de: "Überraschungsparty", es: "Fiesta sorpresa", emoji: "🎉" },
-  { id: 17002, tr: "Doğum günü pastası", en: "Birthday cake", de: "Geburtstagstorte", es: "Pastel de cumpleaños", emoji: "🎂" },
-  { id: 17003, tr: "Geri sayım", en: "Countdown", de: "Countdown", es: "Cuenta atrás", emoji: "⏳" },
-  { id: 17004, tr: "Noel Baba", en: "Santa Claus", de: "Weihnachtsmann", es: "Papá Noel", emoji: "🎅" },
-  { id: 17005, tr: "Yılbaşı ağacı", en: "Christmas tree", de: "Weihnachtsbaum", es: "Árbol de Navidad", emoji: "🎄" },
-  { id: 17006, tr: "Cadılar Bayramı", en: "Halloween", de: "Halloween", es: "Halloween", emoji: "🎃" },
-  { id: 17007, tr: "Sevgililer Günü", en: "Valentine's Day", de: "Valentinstag", es: "San Valentín", emoji: "💝" },
-  { id: 17008, tr: "Paskalya yumurtası", en: "Easter egg", de: "Osterei", es: "Huevo de Pascua", emoji: "🐣" },
-  { id: 17009, tr: "Konfeti", en: "Confetti", de: "Konfetti", es: "Confeti", emoji: "🎊" },
-  { id: 17010, tr: "Hediye paketi", en: "Gift box", de: "Geschenk", es: "Regalo", emoji: "🎁" },
-  { id: 17011, tr: "Parti şapkası", en: "Party hat", de: "Partyhut", es: "Gorro de fiesta", emoji: "🥳" },
-  { id: 17012, tr: "Mezuniyet", en: "Graduation", de: "Abschlussfeier", es: "Graduación", emoji: "🎓" },
-  { id: 17013, tr: "Havai fişek", en: "Fireworks", de: "Feuerwerk", es: "Fuegos artificiales", emoji: "🎇" },
-  { id: 17014, tr: "Bebek arabası", en: "Baby stroller", de: "Kinderwagen", es: "Carrito de bebé", emoji: "👶" },
-  { id: 17015, tr: "Yeni ev", en: "New home", de: "Neues Zuhause", es: "Casa nueva", emoji: "🏡" },
-  { id: 17016, tr: "Yüze pasta", en: "Pie in the face", de: "Torte ins Gesicht", es: "Tarta en la cara", emoji: "🥧" },
-  { id: 17017, tr: "Piyango bileti", en: "Lottery ticket", de: "Lotterielos", es: "Billete de lotería", emoji: "🎟️" },
-  { id: 17018, tr: "Balonlar", en: "Balloons", de: "Luftballons", es: "Globos", emoji: "🎈" },
+  { id: 17001, tr: "Doğum günü pastası", en: "Birthday cake", de: "Geburtstagstorte", es: "Pastel de cumpleaños", emoji: "🎂" },
+  { id: 17002, tr: "Balon", en: "Balloon", de: "Luftballon", es: "Globo", emoji: "🎈" },
+  { id: 17003, tr: "Hediye", en: "Gift", de: "Geschenk", es: "Regalo", emoji: "🎁" },
+  { id: 17004, tr: "Konfeti", en: "Confetti", de: "Konfetti", es: "Confeti", emoji: "🎊" },
+  { id: 17005, tr: "Parti şapkası", en: "Party hat", de: "Partyhut", es: "Gorro de fiesta", emoji: "🥳" },
+  { id: 17006, tr: "Havai fişek", en: "Fireworks", de: "Feuerwerk", es: "Fuegos artificiales", emoji: "🎆" },
+  { id: 17007, tr: "Noel Baba", en: "Santa Claus", de: "Weihnachtsmann", es: "Papá Noel", emoji: "🎅" },
+  { id: 17008, tr: "Yılbaşı ağacı", en: "Christmas tree", de: "Weihnachtsbaum", es: "Árbol de Navidad", emoji: "🎄" },
+  { id: 17009, tr: "Balkabağı", en: "Pumpkin", de: "Kürbis", es: "Calabaza", emoji: "🎃" },
+  { id: 17010, tr: "Hayalet", en: "Ghost", de: "Gespenst", es: "Fantasma", emoji: "👻" },
+  { id: 17011, tr: "Paskalya yumurtası", en: "Easter egg", de: "Osterei", es: "Huevo de Pascua", emoji: "🐣" },
+  { id: 17012, tr: "Kep", en: "Graduation cap", de: "Doktorhut", es: "Birrete", emoji: "🎓" },
+  { id: 17013, tr: "Kupa", en: "Trophy", de: "Pokal", es: "Trofeo", emoji: "🏆" },
+  { id: 17014, tr: "Madalya", en: "Medal", de: "Medaille", es: "Medalla", emoji: "🏅" },
+  { id: 17015, tr: "Çan", en: "Bell", de: "Glocke", es: "Campana", emoji: "🔔" },
+  { id: 17016, tr: "Kurdele", en: "Bow", de: "Schleife", es: "Lazo", emoji: "🎀" },
+  { id: 17017, tr: "Sihirbaz şapkası", en: "Top hat", de: "Zylinder", es: "Sombrero de copa", emoji: "🎩" },
+  { id: 17018, tr: "Bilet", en: "Ticket", de: "Ticket", es: "Entrada", emoji: "🎟️" },
   { id: 17019, tr: "Kamp ateşi", en: "Campfire", de: "Lagerfeuer", es: "Fogata", emoji: "🔥" },
 ];
 
@@ -367,34 +367,49 @@ export function resetUsedWords(): void {
  */
 const LOOK_ALIKE: number[][] = [
   // at home
-  [10001, 10018], // blanket tug-of-war, pillow fight
-  [10002, 10013], // snoring partner, couch nap
-  [10003, 10017], // fight over the remote, binge-watching
-  [10004, 10005], // pile of dishes, laundry pile
-  [10006, 10007], // toilet seat, toilet paper
+  [10001, 10002], // bed, snoring
+  [10006, 10007], // door, window
+  [10003, 10008], // tv, mirror
+  [10004, 10018], // sofa, chair
+  [10010, 10011], // toilet, toilet paper
+  [10013, 10014], // shower, bathtub
   // date night
-  [11001, 11005, 11006], // movie night, popcorn, horror movie
-  [11002, 11019], // candlelit dinner, waiter
+  [11002, 11016], // candle, lipstick
+  [11004, 11005], // coffee, milkshake
+  [11009, 11010], // ferris wheel, roller coaster
+  [11014, 11021], // sunset, moon
+  [11017, 11018], // dress, tie
   // travel
-  [12001, 12004], // suitcase, backpack
-  [12008, 12016], // sunbed, hammock
+  [12001, 12015], // suitcase, backpack
+  [12007, 12011], // beach umbrella, palm tree
+  [12009, 12018], // ship, life ring
+  [12013, 12016], // mountain, skis
+  [12008, 12021], // sunglasses, sun
   // kitchen
-  [13001, 13008], // burnt toast, breakfast in bed
-  [13015, 13016], // milk boiling over, spilled coffee
-  [13006, 13018], // stuck jar, cookie jar
+  [13006, 13007], // egg, frying pan
+  [13011, 13019], // strawberry, cherries
+  [13014, 13015], // cookie, pancakes
+  [13016, 13021], // bagel, donut
+  // pets
+  [14001, 14013, 14015], // cat, ball of yarn, paw print
+  [14002, 14010, 14014, 14015], // dog, bone, tennis ball, paw print
+  [14003, 14012], // fish, fish tank
+  [14004, 14005], // bird, parrot
+  [14006, 14009], // hamster, mouse
   // everyday
-  [15003, 15004], // rain, broken umbrella
-  [15016, 15017], // snowball fight, snowman
+  [15001, 15002], // car, bus
+  [15005, 15006, 15008], // rain, cloud, lightning
   // love
-  [16005, 16009, 16010, 16017, 16018], // hearts: on a tree, cupid's arrow, balloon, latte, broken
-  [16007, 16008], // cuddling in bed, hug
-  [16004, 16011], // rose petals, bouquet
-  [16013, 16014, 16015], // wedding dress, cake, car
+  [16001, 16002, 16008, 16017], // heart, broken heart, cupid's arrow, heart balloon
+  [16005, 16012], // rose, bouquet
+  [16009, 16010, 16011], // wedding dress, groom, wedding cake
   // special days
-  [17003, 17013], // countdown, fireworks
-  [17001, 17009, 17018], // surprise party, confetti, balloons
-  [17002, 17016], // birthday cake, pie in the face
-  [17004, 17005], // santa, christmas tree
+  [17003, 17016], // gift, bow
+  [17004, 17006], // confetti, fireworks
+  [17005, 17017], // party hat, top hat
+  [17007, 17008], // santa, christmas tree
+  [17009, 17010], // pumpkin, ghost
+  [17013, 17014], // trophy, medal
 ];
 
 function entryOf(word: string): WordEntry | undefined {

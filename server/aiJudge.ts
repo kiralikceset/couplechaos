@@ -247,8 +247,8 @@ function blindPrompt(mode: "classic" | "co-draw"): string {
     "This is a quick finger doodle from a phone drawing game (light strokes on a dark background).",
     mode === "co-draw" ? "Two people drew it at the same time on one canvas." : `One person drew it in about ${DRAW_SECONDS} seconds.`,
     "You do NOT know what it was supposed to be. Look only at the drawing.",
-    "List the 5 things or little scenes it most likely shows, most likely first, as short English phrases (1-6 words)",
-    'that name the main things and what is happening, e.g. "cat on a laptop" or "person snoring in bed",',
+    "List the 5 things it most likely shows, most likely first, as short English names (1-4 words)",
+    'of the main thing or what is happening, e.g. "cat", "slice of pizza" or "person snoring",',
     "each with a confidence 0-100 that it is really that. Be honest: a vague scribble gets low confidence.",
     "If the canvas is empty or just random lines, say so as the first guess.",
     "Also describe what it literally looks like in max 8 words, oddly specific and funny.",
@@ -276,13 +276,13 @@ export function parseBlind(text: string): BlindLook | null {
   }
 }
 
-/** Score when the blind look missed but the judge who knows the scene says a stranger would get it. */
+/** Score when the blind look missed but the judge who knows the word says a stranger would get it. */
 const RECOGNISED_FLOOR = 45;
 
 /**
- * Where the real word lands among the blind guesses decides the score. Scenes ("Snoring partner")
- * are harder to name blind than objects, so a miss is lifted to a pass when the second look,
- * which knows the scene, honestly says it is recognisable.
+ * Where the real word lands among the blind guesses decides the score. Some words ("Snoring",
+ * "Hug") are harder to name blind than objects, so a miss is lifted to a pass when the second
+ * look, which knows the word, honestly says the drawing is recognisable.
  */
 export function scoreFromBlind(look: BlindLook, word: string, recognisable?: boolean): number {
   const rank = look.guesses.findIndex((guess) => hintRevealsWord(guess.label, word));
@@ -313,7 +313,7 @@ function commentPrompt(word: string, mode: "classic" | "co-draw", languages: Loc
     "\"recognisable\": your honest answer to that.",
     "\"guess\": what it actually looks like, absurd and oddly specific (max 8 words), e.g. \"a potato filing its taxes\".",
     "\"comment\": max 2 short sentences, max 180 characters, 1-2 emoji. Make it ABSURD, not generic: people screenshot it and send it to friends.",
-    "Pick one trick: an oddly specific comparison (\"looks like a sock that saw a ghost\"), a fake official verdict (\"The Ministry of Art has been informed\"), a tiny dramatic backstory for the doodle (\"this cat has clearly been through a divorce\"), a mock museum label, or the scene's own characters reacting.",
+    "Pick one trick: an oddly specific comparison (\"looks like a sock that saw a ghost\"), a fake official verdict (\"The Ministry of Art has been informed\"), a tiny dramatic backstory for the doodle (\"this cat has clearly been through a divorce\"), a mock museum label, or the drawn thing itself complaining about how it was drawn.",
     "Never say \"nice try\", \"good effort\", \"not bad\" or \"keep practising\"; never explain the joke. Recognisable: a backhanded compliment. Not recognisable: a roast.",
     "Mock the drawing and the teamwork, never people's looks, bodies, identity or intelligence. No sexual content, profanity or slurs.",
     ...output,

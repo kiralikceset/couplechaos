@@ -45,8 +45,8 @@ describe("word pool", () => {
       expect(seen.has(entry.tr.toLowerCase())).toBe(false);
       seen.add(entry.tr.toLowerCase());
     }
-    // The old single-object list is gone; scenes are short enough for the guess buttons.
-    for (const banned of ["Kedi", "Köpek", "Elma", "Araba", "Peynir", "Demokrasi", "Kaka"]) expect(findWordEmoji(banned)).toBe("");
+    // nothing abstract or crude, and every word fits a guess button
+    for (const banned of ["Demokrasi", "Kaka", "Küs sevgililer"]) expect(findWordEmoji(banned)).toBe("");
     for (const entry of getAllWords()) {
       for (const value of [entry.tr, entry.en, entry.de, entry.es]) {
         expect(value.length).toBeLessThanOrEqual(36);
@@ -56,9 +56,9 @@ describe("word pool", () => {
   });
 
   it("returns the reference emoji in any language", () => {
-    expect(findWordEmoji("Klavyedeki kedi")).toBe("⌨️");
-    expect(findWordEmoji("cat on the keyboard")).toBe("⌨️");
-    expect(findWordEmoji("Katze auf der Tastatur")).toBe("⌨️");
+    expect(findWordEmoji("Kedi")).toBe("🐈");
+    expect(findWordEmoji("cat")).toBe("🐈");
+    expect(findWordEmoji("Katze")).toBe("🐈");
     const picked = pickWord("pets", "es");
     expect(findWordEmoji(picked.word)).toBe(picked.emoji);
   });
@@ -70,10 +70,10 @@ describe("word pool", () => {
     expect(normalizeCategory("vehicles")).toBe("travel");
     expect(normalizeCategory("pets")).toBe("pets");
     expect(pickWord("daily", "tr").category).toBe("mixed");
-    // distractors come from the scene's own theme: a pets scene only gets other pets scenes
-    const options = getDistractors("Klavyedeki kedi", "mixed", "tr", 100);
-    expect(options.length).toBe(19);
-    expect(options).toContain("Çorap çalan köpek");
+    // distractors come from the word's own theme: a pets word only gets other pets words
+    const options = getDistractors("Kedi", "mixed", "tr", 100);
+    expect(options.length).toBe(17); // 20 pets, minus the cat and its two look-alikes (yarn, paw print)
+    expect(options).toContain("Köpek");
     expect(options).not.toContain("Valiz");
     expect(getDistractors("Suitcase", "travel", "en", 3)).toHaveLength(3);
   });
@@ -82,9 +82,9 @@ describe("word pool", () => {
     for (let run = 0; run < 30; run++) {
       expect(getDistractors("Valiz", "travel", "tr", 3)).not.toContain("Sırt çantası");
       const hearts = getDistractors("Broken heart", "love", "en", 100);
-      expect(hearts).not.toEqual(expect.arrayContaining(["Heart on a tree"]));
-      expect(hearts).not.toContain("Latte heart");
-      expect(getDistractors("Fuegos artificiales", "special", "es", 100)).not.toContain("Cuenta atrás");
+      expect(hearts).not.toContain("Heart");
+      expect(hearts).not.toContain("Heart balloon");
+      expect(getDistractors("Fuegos artificiales", "special", "es", 100)).not.toContain("Confeti");
     }
     // every word still gets three fair wrong answers that share no word with it
     for (const locale of ["tr", "en", "de", "es"] as const) {
@@ -99,8 +99,10 @@ describe("word pool", () => {
 
   it("keeps words you can actually draw: short, no feelings or vague ideas", () => {
     for (const word of getAllWords()) expect(word.tr.split(/\s+/).length).toBeLessThanOrEqual(3);
+    // one simple thing per word: almost all are one or two words long
+    expect(getAllWords().filter((word) => word.en.split(/\s+/).length > 2).length).toBeLessThanOrEqual(5);
     // replaced after play tests: a mood or a concept has nothing to draw in 20 seconds
-    for (const vague of ["Küs sevgililer", "Kıskanç sevgili", "Balayı", "Kör randevu", "Pijama günü", "Hediyelik eşya avı", "Diyet ama pasta", "Kalp şeklinde pizza", "Kaşık pozisyonunda uyumak", "Teneke kutulu gelin arabası"]) {
+    for (const vague of ["Küs sevgililer", "Kıskanç sevgili", "Balayı", "Kör randevu", "Pijama günü", "Hediyelik eşya avı", "Diyet ama pasta", "Kalp şeklinde pizza", "Kaşık pozisyonunda uyumak", "Teneke kutulu gelin arabası", "Klavyedeki kedi", "Battaniye kavgası"]) {
       expect(findWordEmoji(vague)).toBe("");
     }
     // the love theme's many hearts never compete with each other as answers

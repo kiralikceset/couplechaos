@@ -27,7 +27,7 @@ describe("server AI judge", () => {
     })));
     vi.stubGlobal("fetch", fetchMock);
     const { judgeDrawing } = await import("../../../server/aiJudge");
-    const verdict = await judgeDrawing({ imageData: IMAGE, word: "Klavyedeki kedi", locale: "tr" });
+    const verdict = await judgeDrawing({ imageData: IMAGE, word: "Kedi", locale: "tr" });
     expect(verdict?.score).toBe(42); // the cat was only in the 2nd blind guess → 30% × 0.8, floor 42
     expect(verdict?.guess).toBe("üzgün patates");
     const calls = fetchMock.mock.calls as unknown as Array<[string, RequestInit]>;
@@ -36,7 +36,7 @@ describe("server AI judge", () => {
     expect((init.headers as Record<string, string>)["x-api-key"]).toBe("test-key");
     const body = JSON.parse(String(init.body));
     expect(body.messages[0].content[0].source).toEqual({ type: "base64", media_type: "image/jpeg", data: "AAAA" });
-    expect(JSON.stringify(body)).not.toContain("Klavye"); // the blind look never sees the word
+    expect(JSON.stringify(body)).not.toContain("Kedi"); // the blind look never sees the word
   });
 
   it.each([
@@ -51,7 +51,7 @@ describe("server AI judge", () => {
     })));
     vi.stubGlobal("fetch", fetchMock);
     const { judgeDrawing } = await import("../../../server/aiJudge");
-    const verdict = await judgeDrawing({ imageData: IMAGE, word: "Kutudaki kedi", locale: "tr" });
+    const verdict = await judgeDrawing({ imageData: IMAGE, word: "Kedi", locale: "tr" });
     expect(verdict?.score).toBe(42);
     expect(verdict?.comment).toContain("bulut"); // no "recognisable" field → the joke is kept
     const [url, init] = (fetchMock.mock.calls as unknown as Array<[string, RequestInit]>).find(([, request]) => String(request.body).includes("do NOT know"))!;

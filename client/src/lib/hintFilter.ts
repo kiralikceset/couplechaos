@@ -26,8 +26,8 @@ export function foldText(value: string): string {
 }
 
 /**
- * Little words that appear in many scenes ("Cat on THE keyboard", "Kampf UM DIE Decke").
- * They never count as giving a scene away, or no hint with "the" or "und" could be sent.
+ * Little words that appear in many names and hints ("Pastel DE cumpleaños", "Toilet paper FOR you").
+ * They never count as giving a word away, or no hint with "the" or "und" could be sent.
  */
 const STOPWORDS = new Set([
   // en
@@ -88,14 +88,37 @@ function hintTokens(hint: string): string[] {
 /** Turkish case/plural/possessive endings (ASCII-folded) that may follow a short word. */
 const SHORT_SUFFIX = /^(lar|ler)?(i|u|a|e|si|su|yi|yu|ya|ye|nin|nun|in|un|de|da|te|ta|den|dan|ten|tan|li|lu|siz|suz|ci|cu|cik|ciklar|cikler|yla|yle|la|le|sini|sunu|ini|unu|ler|lar)?$/;
 
+/** Plural endings of the other game languages ("Eier", "TVs"). */
+const SHORT_PLURAL = /^(s|es|er)$/;
+
+/**
+ * Two-letter words ("Ay", "Ev", "Ei", "TV") are too short to match inside other words, so:
+ * the word itself counts as a whole word or with an ending ("evler", "ayın", "Eier"), and its
+ * translations count only as whole words. "evet", "ayna" or "devasa" are never blocked.
+ */
+function revealsShortWord(tokens: string[], word: string): boolean {
+  const own = foldText(word);
+  if (own.length > 0 && own.length < 3) {
+    const hit = tokens.some((token) => {
+      if (!token.startsWith(own)) return false;
+      const tail = token.slice(own.length);
+      return SHORT_SUFFIX.test(tail) || SHORT_PLURAL.test(tail);
+    });
+    if (hit) return true;
+  }
+  const entry = getAllWords().find((item) => [item.tr, item.en, item.de, item.es].some((value) => foldText(value) === own));
+  if (!entry) return false;
+  return [entry.tr, entry.en, entry.de, entry.es]
+    .map(foldText)
+    .some((short) => short.length > 0 && short.length < 3 && tokens.includes(short));
+}
+
 /** True when the hint contains the secret word (or its root / a translation). */
 export function hintRevealsWord(hint: string, word: string): boolean {
   const squashed = foldText(hint);
   if (!squashed) return false;
   const tokens = hintTokens(hint);
-  const shortWord = foldText(word);
-  // Very short words ("At", "Ay", "Ev"): only the exact word counts.
-  if (shortWord.length > 0 && shortWord.length < 3 && tokens.includes(shortWord)) return true;
+  if (revealsShortWord(tokens, word)) return true;
   return forbiddenRoots(word).some((root) =>
     root.length >= 5
       ? squashed.includes(root) // long: catches suffixes, spacing, punctuation tricks
