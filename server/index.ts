@@ -19,7 +19,7 @@ import { createServer } from "node:http";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { dailyKey, getDailyWord, getDistractors, normalizeCategory, pickWord } from "../client/src/lib/wordPool";
+import { dailyKey, getDailyWord, getDistractors, normalizeCategory, pickWord, themeIdOf } from "../client/src/lib/wordPool";
 import { foldText, hintRevealsWord } from "../client/src/lib/hintFilter";
 import { botDraw, generateHints, isAiJudgeEnabled, judgeDrawing, type BotDrawing, type Locale } from "./aiJudge";
 import { sketchToPng } from "./sketch";
@@ -456,7 +456,8 @@ function botHandIn(room: Room, round: number): void {
 
 /** Gap between the AI hint-giver's hints. */
 /** Wrong answers shown next to the right one (6 buttons in all), all from the same theme. */
-const GUESS_DISTRACTORS = 5;
+// 4 options: enough to make the guess a real choice, few enough to pick one while drawing.
+const GUESS_DISTRACTORS = 3;
 const BOT_HINT_EVERY_MS = num("BOT_HINT_EVERY_MS", 3000);
 /** How long the AI hint-giver holds back the ready-made hints for its own (slower) ones. */
 const BOT_AI_WAIT_MS = num("BOT_AI_WAIT_MS", 4500);
@@ -469,11 +470,13 @@ function stopBotHints(room: Room): void {
 /**
  * The AI partner in solo mode gives hints from vague to obvious, one every few seconds,
  * through the describe phase AND while you draw (its own timer survives the phase change).
- * Order: category → AI-written hints (whenever they arrive) → letter count → first letter → emoji.
+ * Order: theme (Mixed only) → AI-written hints (whenever they arrive) → letter count → first letter → emoji.
  */
 function runBotDescriber(room: Room, round: number): void {
   const option = (kind: HintOption["kind"]) => room.hintOptions.find((item) => item.kind === kind)?.text;
-  const opener = room.category === "daily_challenge" ? [] : [`🗂️ ${msg("categoryHint", room.locale)}: ${categoryName(room.category, room.locale)}`];
+  // The theme only helps when the player didn't pick one (Mixed, daily word); otherwise it says nothing new.
+  const theme = room.category === "mixed" || room.category === "daily_challenge" ? themeIdOf(room.word) : null;
+  const opener = theme ? [`🗂️ ${msg("categoryHint", room.locale)}: ${categoryName(theme, room.locale)}`] : [];
   const smart: string[] = [];
   const giveaways = [option("letters"), option("first"), option("emoji")].filter((text): text is string => Boolean(text));
   let sent = 0;

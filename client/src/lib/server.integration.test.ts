@@ -245,10 +245,10 @@ describe("hints, tokens and guesses (classic)", () => {
     await new Promise((resolve) => setTimeout(resolve, 200));
     expect(guest.log.filter((entry) => entry.event === "hint_received")).toHaveLength(2);
 
-    // 3) drawing starts with 6 options containing the word; the guess is live for the describer
+    // 3) drawing starts with 4 options containing the word; the guess is live for the describer
     host.socket.emit("description_done", { code });
     const drawing = (await waitFor(guest.log, "start_drawing")).data;
-    expect(drawing.options).toHaveLength(6);
+    expect(drawing.options).toHaveLength(4);
     expect(drawing.options).toContain(word);
     guest.socket.emit("submit_guess", { code, guess: "not-an-option" });
     guest.socket.emit("submit_guess", { code, guess: word });
@@ -440,9 +440,10 @@ describe("solo vs AI", () => {
     expect((await waitFor(me.log, "player_joined")).data).toMatchObject({ partnerName: "Yapay Zekâ", partnerAvatar: "🤖" });
     expect((await waitFor(me.log, "your_role")).data.role).toBe("drawer");
     const firstHint = (await waitFor(me.log, "hint_received")).data;
-    expect(firstHint.text).toContain("Hayvanlar"); // offline bot starts with the category
+    // the player picked the theme, so the offline bot doesn't waste a hint repeating it
+    expect(firstHint.text).not.toContain("Evcil Hayvanlar");
     const options = (await waitFor(me.log, "start_drawing")).data.options as string[];
-    expect(options).toHaveLength(6);
+    expect(options).toHaveLength(4);
     // Hints keep coming AFTER the canvas opens (they used to stop when drawing began)
     const drawingAt = me.log.findIndex((entry) => entry.event === "start_drawing");
     await new Promise((resolve) => setTimeout(resolve, 900));
@@ -555,7 +556,7 @@ describe("fair AI scoring (blind look)", () => {
     const look = (labels: Array<[string, number]>) => ({ guesses: labels.map(([label, confidence]) => ({ label, confidence })), looksLike: "" });
     // a scene the blind look names in its own words: the key thing ("luggage", "Koffer") counts
     expect(__test.scoreFromBlind(look([["suitcase", 80], ["box", 60], ["bag", 40]]), "Lost luggage")).toBeLessThan(20);
-    expect(__test.scoreFromBlind(look([["lost luggage at airport", 85], ["bag", 40]]), "Kaybolan valiz")).toBe(85);
+    expect(__test.scoreFromBlind(look([["backpack on a bench", 85], ["bag", 40]]), "Sırt çantası")).toBe(85);
     expect(__test.scoreFromBlind(look([["dog", 60], ["sofa", 50], ["cat with keyboard", 50]]), "Klavyedeki kedi")).toBe(33);
     expect(__test.scoreFromBlind(look([["person snoring in bed", 30]]), "Snoring partner")).toBe(55); // recognised but unsure → fair floor
     // blind miss, but the judge who knows the scene says a stranger would get it → a pass, not a fail

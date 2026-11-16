@@ -74,25 +74,33 @@ describe("word pool", () => {
     const options = getDistractors("Klavyedeki kedi", "mixed", "tr", 100);
     expect(options.length).toBe(19);
     expect(options).toContain("Çorap çalan köpek");
-    expect(options).not.toContain("Kaybolan valiz");
-    expect(getDistractors("Lost luggage", "travel", "en", 5)).toHaveLength(5);
+    expect(options).not.toContain("Valiz");
+    expect(getDistractors("Suitcase", "travel", "en", 3)).toHaveLength(3);
   });
 
   it("never offers look-alike scenes as guess options", () => {
     for (let run = 0; run < 30; run++) {
-      expect(getDistractors("Kaybolan valiz", "travel", "tr", 5)).not.toContain("Kapanmayan valiz");
+      expect(getDistractors("Valiz", "travel", "tr", 3)).not.toContain("Sırt çantası");
       const hearts = getDistractors("Broken heart", "love", "en", 100);
-      expect(hearts).not.toEqual(expect.arrayContaining(["Heart carved in a tree"]));
-      expect(hearts).not.toContain("Latte art heart");
-      expect(getDistractors("Fuegos artificiales", "special", "es", 100)).not.toContain("Cuenta atrás de Año Nuevo");
+      expect(hearts).not.toEqual(expect.arrayContaining(["Heart on a tree"]));
+      expect(hearts).not.toContain("Latte heart");
+      expect(getDistractors("Fuegos artificiales", "special", "es", 100)).not.toContain("Cuenta atrás");
     }
-    // every scene still gets five fair wrong answers
-    for (const word of getAllWords()) expect(getDistractors(word.en, "mixed", "en", 5)).toHaveLength(5);
+    // every word still gets three fair wrong answers that share no word with it
+    for (const locale of ["tr", "en", "de", "es"] as const) {
+      for (const word of getAllWords()) {
+        const options = getDistractors(word[locale], "mixed", locale, 3);
+        expect(options).toHaveLength(3);
+        const mine = word[locale].toLocaleLowerCase("tr").split(/[^\p{L}]+/u).filter((part) => part.length >= 4);
+        for (const option of options) for (const part of mine) expect(option.toLocaleLowerCase("tr").split(/[^\p{L}]+/u)).not.toContain(part);
+      }
+    }
   });
 
-  it("keeps scenes you can actually draw: no feelings or vague ideas", () => {
+  it("keeps words you can actually draw: short, no feelings or vague ideas", () => {
+    for (const word of getAllWords()) expect(word.tr.split(/\s+/).length).toBeLessThanOrEqual(3);
     // replaced after play tests: a mood or a concept has nothing to draw in 20 seconds
-    for (const vague of ["Küs sevgililer", "Kıskanç sevgili", "Balayı", "Kör randevu", "Pijama günü", "Hediyelik eşya avı", "Diyet ama pasta"]) {
+    for (const vague of ["Küs sevgililer", "Kıskanç sevgili", "Balayı", "Kör randevu", "Pijama günü", "Hediyelik eşya avı", "Diyet ama pasta", "Kalp şeklinde pizza", "Kaşık pozisyonunda uyumak", "Teneke kutulu gelin arabası"]) {
       expect(findWordEmoji(vague)).toBe("");
     }
     // the love theme's many hearts never compete with each other as answers

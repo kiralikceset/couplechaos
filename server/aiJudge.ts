@@ -389,9 +389,10 @@ export const __test = { parseJudgeJson, buildPrompt, parseBlind, scoreFromBlind,
 // ── Smart hints ("Akıllı ipucu") for the describer ─────────────────────────
 function hintPrompt(word: string, locale: Locale): string {
   return [
-    `Secret word or little scene for a couples drawing game: "${word}".`,
-    `Write 3 short, fun hints in ${LANGUAGE_NAMES[locale]} that help someone guess and draw it.`,
-    "Each hint max 5 words. Say who is in it, what happens, where, or what it looks like.",
+    `Secret word for a couples drawing game: "${word}". Your partner has 20 seconds to draw it and must guess it from 4 options.`,
+    `Write 3 hints in ${LANGUAGE_NAMES[locale]}, from helpful to clear, so they get it within a few seconds:`,
+    "1) where or when you meet it, 2) what it looks like or what happens, 3) the one thing to draw.",
+    "Each hint 2 to 5 words, plain everyday language, a little playful. Not a riddle, not too vague.",
     "NEVER write the word itself, a part of it, its root, a translation or the first letter.",
     'Reply with ONLY a JSON array of 3 strings, e.g. ["...","...","..."].',
   ].join("\n");
@@ -465,7 +466,7 @@ function botDrawPrompt(hints: string[], options: string[], locale: Locale): stri
     `Your partner's hints so far (${LANGUAGE_NAMES[locale]}): ${hints.length ? hints.map((hint) => `"${hint}"`).join(", ") : "(none yet)"}.`,
     `The answer is one of: ${options.map((option) => `"${option}"`).join(", ")}.`,
     "1. Pick the option the hints point to (if there are no hints, guess).",
-    "2. Draw that scene as a simple, slightly clumsy phone doodle: 3 to 8 strokes, each 4 to 20 points. Show its key thing clearly.",
+    "2. Draw it as a simple, slightly clumsy phone doodle: 3 to 8 strokes, each 4 to 20 points. Show its key thing clearly.",
     "Canvas is 100 wide and 130 tall, (0,0) top-left. Keep it centered and big.",
     'Reply with ONLY this JSON: {"guess": "<one option exactly>", "strokes": [[[x,y],[x,y],...], ...]}',
   ].join("\n");

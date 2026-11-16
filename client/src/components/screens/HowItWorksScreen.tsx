@@ -59,7 +59,7 @@ export default function HowItWorksScreen({ onBack, onNext }: Props) {
             <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-red-300 text-[0.6rem] font-bold">0:12</span>
           </div>
           <div className="grid grid-cols-2 gap-1.5">
-            {[t("how.demo.opt1"), t("how.demo.word"), t("how.demo.opt2"), t("how.demo.opt3"), t("how.demo.opt4"), t("how.demo.opt5")].map((option, index) => (
+            {[t("how.demo.opt1"), t("how.demo.word"), t("how.demo.opt2"), t("how.demo.opt3")].map((option, index) => (
               <span
                 key={option}
                 className={`min-h-[30px] px-1.5 py-1 flex items-center justify-center rounded-xl text-[0.65rem] leading-tight font-bold text-center border ${index === 1 ? "bg-amber-400 text-black border-amber-300" : "bg-white/[0.05] text-white/70 border-white/[0.1]"}`}
