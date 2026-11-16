@@ -90,6 +90,15 @@ describe("word pool", () => {
     for (const word of getAllWords()) expect(getDistractors(word.en, "mixed", "en", 5)).toHaveLength(5);
   });
 
+  it("keeps scenes you can actually draw: no feelings or vague ideas", () => {
+    // replaced after play tests: a mood or a concept has nothing to draw in 20 seconds
+    for (const vague of ["Küs sevgililer", "Kıskanç sevgili", "Balayı", "Kör randevu", "Pijama günü", "Hediyelik eşya avı", "Diyet ama pasta"]) {
+      expect(findWordEmoji(vague)).toBe("");
+    }
+    // the love theme's many hearts never compete with each other as answers
+    for (let run = 0; run < 20; run++) expect(getDistractors("Cupid's arrow", "love", "en", 100)).not.toContain("Broken heart");
+  });
+
   it("look-alike groups only point at real words", () => {
     const ids = new Set(getAllWords().map((word) => word.id));
     for (const word of getAllWords()) for (const id of lookAlikeIds(word.id)) expect(ids.has(id)).toBe(true);

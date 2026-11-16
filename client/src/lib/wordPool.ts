@@ -75,7 +75,7 @@ const HOME_SCENES: WordEntry[] = [
   { id: 10019, tr: "Evde spor", en: "Home workout", de: "Training zu Hause", es: "Ejercicio en casa", emoji: "🏋️" },
   { id: 10020, tr: "Kapıda kalmak", en: "Locked out", de: "Ausgesperrt", es: "Quedarse fuera", emoji: "🚪" },
   { id: 10021, tr: "Kuruyan saksı çiçeği", en: "Dead houseplant", de: "Vertrocknete Pflanze", es: "Planta marchita", emoji: "🥀" },
-  { id: 10022, tr: "Pijama günü", en: "Pajama day", de: "Pyjamatag", es: "Día de pijama", emoji: "🛌" },
+  { id: 10022, tr: "Yerdeki kirli çoraplar", en: "Dirty socks on the floor", de: "Dreckige Socken am Boden", es: "Calcetines sucios en el suelo", emoji: "🧦" },
 ];
 
 const DATE_SCENES: WordEntry[] = [
@@ -86,7 +86,7 @@ const DATE_SCENES: WordEntry[] = [
   { id: 11005, tr: "Sinemada mısır dökmek", en: "Spilled popcorn", de: "Verschüttetes Popcorn", es: "Palomitas derramadas", emoji: "🎬" },
   { id: 11006, tr: "Korku filminde sarılmak", en: "Scared at a horror film", de: "Angst im Horrorfilm", es: "Miedo en una peli de terror", emoji: "👻" },
   { id: 11007, tr: "İki pipetli milkshake", en: "Milkshake with two straws", de: "Milchshake mit zwei Strohhalmen", es: "Batido con dos pajitas", emoji: "🥤" },
-  { id: 11008, tr: "Kör randevu", en: "Blind date", de: "Blind Date", es: "Cita a ciegas", emoji: "🙈" },
+  { id: 11008, tr: "Çarpışan arabalar", en: "Bumper cars", de: "Autoscooter", es: "Coches de choque", emoji: "🏎️" },
   { id: 11009, tr: "Gün batımında yürüyüş", en: "Sunset walk", de: "Spaziergang im Sonnenuntergang", es: "Paseo al atardecer", emoji: "🌅" },
   { id: 11010, tr: "Piknik randevusu", en: "Picnic date", de: "Picknick zu zweit", es: "Pícnic en pareja", emoji: "🧺" },
   { id: 11011, tr: "Bowlingde oluk topu", en: "Gutter ball", de: "Rinnenwurf beim Bowling", es: "Bola a la canaleta", emoji: "🎳" },
@@ -123,7 +123,7 @@ const TRAVEL_SCENES: WordEntry[] = [
   { id: 12018, tr: "Yolda benzin bitti", en: "Out of gas", de: "Benzin leer", es: "Sin gasolina", emoji: "⛽" },
   { id: 12019, tr: "Rüzgarda uçan şapka", en: "Hat blown away", de: "Hut weggeweht", es: "Sombrero volando", emoji: "👒" },
   { id: 12020, tr: "Kayakta düşmek", en: "Ski crash", de: "Skisturz", es: "Caída esquiando", emoji: "⛷️" },
-  { id: 12021, tr: "Hediyelik eşya avı", en: "Souvenir shopping", de: "Souvenirs kaufen", es: "Compras de recuerdos", emoji: "🛍️" },
+  { id: 12021, tr: "Deve gezisi", en: "Camel ride", de: "Kamelritt", es: "Paseo en camello", emoji: "🐪" },
 ];
 
 const FOOD_SCENES: WordEntry[] = [
@@ -132,7 +132,7 @@ const FOOD_SCENES: WordEntry[] = [
   { id: 13003, tr: "Son pizza dilimi", en: "Last slice of pizza", de: "Das letzte Stück Pizza", es: "El último trozo de pizza", emoji: "🍕" },
   { id: 13004, tr: "Spagetti öpücüğü", en: "Spaghetti kiss", de: "Spaghetti-Kuss", es: "Beso de espagueti", emoji: "🍝" },
   { id: 13005, tr: "Çok acı biber", en: "Way-too-hot chili", de: "Viel zu scharfe Chili", es: "Chile demasiado picante", emoji: "🌶️" },
-  { id: 13006, tr: "Diyet ama pasta", en: "Diet vs. cake", de: "Diät gegen Torte", es: "Dieta contra pastel", emoji: "🍰" },
+  { id: 13006, tr: "Açılmayan kavanoz", en: "Jar that won't open", de: "Glas geht nicht auf", es: "Frasco que no abre", emoji: "🫙" },
   { id: 13007, tr: "Çöken kek", en: "Collapsed cake", de: "Eingefallener Kuchen", es: "Pastel hundido", emoji: "🧁" },
   { id: 13008, tr: "Yatakta kahvaltı", en: "Breakfast in bed", de: "Frühstück im Bett", es: "Desayuno en la cama", emoji: "🥐" },
   { id: 13009, tr: "Yanmayan mangal", en: "BBQ that won't light", de: "Grill, der nicht angeht", es: "Barbacoa que no prende", emoji: "🍖" },
@@ -206,13 +206,13 @@ const LOVE_SCENES: WordEntry[] = [
   { id: 16006, tr: "Balkon altında serenat", en: "Serenade under the balcony", de: "Ständchen unterm Balkon", es: "Serenata bajo el balcón", emoji: "🎸" },
   { id: 16007, tr: "Kaşık pozisyonunda uyumak", en: "Spooning", de: "Löffelchenstellung", es: "Dormir de cucharita", emoji: "🥄" },
   { id: 16008, tr: "Ayı gibi sarılmak", en: "Bear hug", de: "Bärenumarmung", es: "Abrazo de oso", emoji: "🫂" },
-  { id: 16009, tr: "Kıskanç sevgili", en: "Jealous partner", de: "Eifersüchtiger Partner", es: "Pareja celosa", emoji: "😒" },
-  { id: 16010, tr: "Küs sevgililer", en: "Silent treatment", de: "Schweigen nach dem Streit", es: "La ley del hielo", emoji: "🤐" },
+  { id: 16009, tr: "Oklu kalp", en: "Cupid's arrow", de: "Amors Pfeil", es: "Flecha de Cupido", emoji: "💘" },
+  { id: 16010, tr: "Kalp şeklinde pizza", en: "Heart-shaped pizza", de: "Pizza in Herzform", es: "Pizza en forma de corazón", emoji: "🍕" },
   { id: 16011, tr: "Özür çiçekleri", en: "Sorry flowers", de: "Blumen zur Entschuldigung", es: "Flores de disculpa", emoji: "💐" },
   { id: 16012, tr: "Uzaktan görüntülü arama", en: "Long-distance video call", de: "Videoanruf in der Fernbeziehung", es: "Videollamada a distancia", emoji: "💻" },
   { id: 16013, tr: "Gelin buketini yakalamak", en: "Catching the bouquet", de: "Brautstrauß fangen", es: "Atrapar el ramo", emoji: "👰" },
   { id: 16014, tr: "Devrilen düğün pastası", en: "Toppling wedding cake", de: "Umkippende Hochzeitstorte", es: "Tarta de boda cayéndose", emoji: "💒" },
-  { id: 16015, tr: "Balayı", en: "Honeymoon", de: "Flitterwochen", es: "Luna de miel", emoji: "🏝️" },
+  { id: 16015, tr: "Teneke kutulu gelin arabası", en: "Just-married car", de: "Hochzeitsauto mit Dosen", es: "Coche de recién casados", emoji: "🚙" },
   { id: 16016, tr: "Köprüde aşk kilidi", en: "Love lock on a bridge", de: "Liebesschloss an der Brücke", es: "Candado del amor en un puente", emoji: "🔒" },
   { id: 16017, tr: "Kahvede kalp köpüğü", en: "Latte art heart", de: "Latte-Art-Herz", es: "Corazón en el café", emoji: "☕" },
   { id: 16018, tr: "Kırık kalp", en: "Broken heart", de: "Gebrochenes Herz", es: "Corazón roto", emoji: "💔" },
@@ -381,12 +381,13 @@ const LOOK_ALIKE: number[][] = [
   // kitchen
   [13011, 13022], // dropped ice cream, egg on the floor
   [13015, 13016], // milk boiling over, spilled coffee
-  [13006, 13007], // diet vs. cake, collapsed cake
+  [13006, 13018], // jar that won't open, hand in the cookie jar
   // everyday
   [15003, 15004], // caught in the rain, umbrella inside out
   [15016, 15017], // snowball fight, snowman
   // love
-  [16005, 16017, 16018], // hearts: carved, latte, broken
+  [16005, 16009, 16010, 16017, 16018], // hearts: carved, cupid's arrow, heart pizza, latte, broken
+  [16004, 16011], // rose petals, sorry flowers
   [16007, 16008], // spooning, bear hug
   [16013, 16014], // bouquet, wedding cake
   // special days
