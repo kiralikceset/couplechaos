@@ -351,6 +351,26 @@
   .cc-press:active { transform: none; }
 }
 
+/* Login: the polaroid drops in, the couple draws itself, stickers pop around it. */
+.cc-login-card { opacity: 0; transform: translateY(24px) rotate(-8deg) scale(.92); animation: cc-login-card .55s cubic-bezier(.3,1.4,.5,1) .05s forwards; }
+@keyframes cc-login-card { to { opacity: 1; transform: rotate(-3deg); } }
+.cc-login-draw path { stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; animation: cc-login-pen .55s cubic-bezier(.6,0,.3,1) .45s forwards; }
+@keyframes cc-login-pen { from { opacity: 1; stroke-dashoffset: 1; } to { opacity: 1; stroke-dashoffset: 0; } }
+.cc-login-draw .cc-d2 { animation-delay: .75s; }
+.cc-login-draw .cc-d3 { animation-delay: 1.05s; animation-duration: .45s; }
+.cc-login-draw .cc-d4 { animation-delay: 1.3s; animation-duration: .4s; }
+.cc-login-draw .cc-d5 { animation-delay: 1.55s; animation-duration: .45s; }
+.cc-login-chip { opacity: 0; transform: scale(.3) rotate(-20deg); animation: cc-chip-in .4s cubic-bezier(.3,1.6,.5,1) forwards, cc-chip-float 2.6s ease-in-out infinite alternate; }
+.cc-chip-1 { animation-delay: .9s, 1.3s; --r: -10deg; }
+.cc-chip-2 { animation-delay: 1.1s, 1.5s; --r: 9deg; }
+.cc-chip-3 { animation-delay: 1.3s, 1.7s; --r: -6deg; }
+@keyframes cc-chip-in { to { opacity: 1; transform: rotate(var(--r)); } }
+@keyframes cc-chip-float { from { opacity: 1; transform: rotate(var(--r)) translateY(0); } to { opacity: 1; transform: rotate(calc(var(--r) * -1)) translateY(-7px); } }
+@media (prefers-reduced-motion: reduce) {
+  .cc-login-card, .cc-login-chip { animation: none; opacity: 1; transform: rotate(-3deg); }
+  .cc-login-draw path { animation: none; stroke-dashoffset: 0; opacity: 1; }
+}
+
 /* Onboarding: the jury's verdict lands right after the doodle is drawn. */
 .cc-verdict { opacity: 0; transform: translateY(8px); animation: cc-verdict 0.35s ease-out 1.45s forwards; }
 @keyframes cc-verdict { to { opacity: 1; transform: none; } }

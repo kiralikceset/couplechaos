@@ -1,7 +1,6 @@
 /**
- * DESIGN: Electric Pulse - Login Screen
- * Professional login with Google + Apple sign-in
- * Beautiful aurora background, premium feel
+ * Login: a taped polaroid of the couple draws itself, and what sign-in keeps
+ * (streak, tokens, drawings) floats around it as stickers. Google + Apple sign-in.
  * Flow: After onboarding → Login → Premium → Home
  */
 
@@ -71,14 +70,27 @@ export default function LoginScreen({ onSkip, onSignedIn }: Props) {
 
   return (
     <div className="cc-sketchbook relative flex flex-col h-[100dvh] w-full bg-[#07060A] text-[#F7F3FF] overflow-hidden">
-      <main className="relative z-10 flex-1 flex flex-col justify-center px-6 pt-12">
-        {/* What you keep when you sign in */}
-        <div className="flex gap-2.5" aria-hidden>
-          <span className="flex-1 h-24 rounded-[22px] bg-[#FF1A6C] flex flex-col justify-between p-3"><span className="text-2xl">🔥</span><span className="h-2 w-10 rounded-full bg-white/60" /></span>
-          <span className="flex-1 h-24 rounded-[22px] bg-[#FBBF24] flex flex-col justify-between p-3 mt-5"><span className="text-2xl">🪙</span><span className="h-2 w-8 rounded-full bg-black/40" /></span>
-          <span className="flex-1 h-24 rounded-[22px] bg-[#8B5CF6] flex flex-col justify-between p-3 mt-2"><span className="text-2xl">🎨</span><span className="h-2 w-12 rounded-full bg-white/60" /></span>
+      <main className="relative z-10 flex-1 flex flex-col justify-center px-6 pt-10">
+        {/* Hero: a taped polaroid of the two of you, drawing itself. What you keep floats around it. */}
+        <div className="relative mx-auto w-full max-w-[300px]" aria-hidden>
+          <div className="cc-login-card relative mx-auto w-[78%] rounded-[22px] bg-[#FF1A6C] p-3 pb-4 shadow-[0_26px_50px_-22px_rgba(255,26,108,0.65)]">
+            <span className="absolute -top-3 left-1/2 -ml-10 h-6 w-20 rotate-[-4deg] rounded-[4px] bg-[#FBBF24]/85" />
+            <div className="aspect-[1.15] rounded-[14px] bg-[#FFF4F8] text-[#07060A]">
+              <svg viewBox="0 10 230 160" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="cc-login-draw h-full w-full">
+                <path pathLength={1} strokeWidth={5} d="M38 118 C 30 82, 52 58, 82 60 C 110 62, 122 88, 116 116 C 110 144, 46 148, 38 118 Z" />
+                <path pathLength={1} strokeWidth={5} className="cc-d2" d="M120 112 C 116 80, 138 58, 166 62 C 196 66, 206 94, 196 120 C 186 146, 126 142, 120 112 Z" />
+                <path pathLength={1} strokeWidth={4.5} className="cc-d3" d="M44 76 C 54 50, 92 44, 108 70 M126 74 C 136 52, 176 46, 192 76 M150 58 l -4 -14 M164 58 l 6 -14" />
+                <path pathLength={1} strokeWidth={4} className="cc-d4" d="M64 100 h 2 M92 98 h 2 M66 118 q 12 12 24 0 M146 98 q 5 -6 10 0 M174 98 q 5 -6 10 0 M150 118 q 12 10 26 0" />
+                <path pathLength={1} strokeWidth={4.5} stroke="#FF1A6C" className="cc-d5" d="M118 52 C 104 40, 98 30, 106 24 C 112 19, 118 24, 118 30 C 118 24, 124 19, 130 24 C 138 30, 132 40, 118 52 Z" />
+              </svg>
+            </div>
+            <p className="mt-2.5 text-center text-white font-display font-bold text-[1.05rem] tracking-[-0.01em]">{t("login.caption")}</p>
+          </div>
+          <span className="cc-login-chip cc-chip-1 absolute -left-1 top-6 flex h-14 w-14 items-center justify-center rounded-[18px] bg-[#FBBF24] text-2xl shadow-lg">🔥</span>
+          <span className="cc-login-chip cc-chip-2 absolute -right-2 top-[38%] flex h-14 w-14 items-center justify-center rounded-[18px] bg-[#8B5CF6] text-2xl shadow-lg">🎨</span>
+          <span className="cc-login-chip cc-chip-3 absolute left-2 bottom-4 flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#F7F3FF] text-xl shadow-lg">🪙</span>
         </div>
-        <h1 className="mt-8 font-display text-[2.1rem] leading-[1.05] font-bold tracking-[-0.02em]">{t("login.heading")}</h1>
+        <h1 className="mt-9 font-display text-[2.1rem] leading-[1.05] font-bold tracking-[-0.02em]">{t("login.heading")}</h1>
         <p className="mt-3 text-[#B9B3C7] text-base leading-relaxed max-w-[320px]">{t("login.lead")}</p>
       </main>
 
