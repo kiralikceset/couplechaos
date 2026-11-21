@@ -1,5 +1,5 @@
 /**
- * Plays once per app start, on top of the first screen while it loads:
+ * Plays only the first time the app is opened, on top of the first screen while it loads:
  * the dark native splash bursts into pink, the icon drops in, the name pops,
  * two little faces bump into each other. About two seconds; a tap skips it.
  */
@@ -18,21 +18,35 @@ function reducedMotion() {
 
 const HEART = "M80 135 C 20 95, 5 55, 35 30 C 55 14, 75 28, 80 48 C 85 28, 105 14, 125 30 C 155 55, 140 95, 80 135 Z";
 
+const SEEN_KEY = "cc_intro_seen";
+
+function alreadySeen() {
+  try {
+    if (localStorage.getItem(SEEN_KEY)) return true;
+    localStorage.setItem(SEEN_KEY, "1");
+  } catch {
+    /* storage blocked: show it this time */
+  }
+  return false;
+}
+
 export default function LaunchIntro() {
   const [reduced] = useState(reducedMotion);
+  const [seen] = useState(alreadySeen);
   const [leaving, setLeaving] = useState(false);
   const [done, setDone] = useState(false);
 
   useEffect(() => {
+    if (seen) return;
     const leave = window.setTimeout(() => setLeaving(true), (reduced ? REDUCED_MS : TOTAL_MS) - 350);
     const end = window.setTimeout(() => setDone(true), reduced ? REDUCED_MS : TOTAL_MS);
     return () => {
       window.clearTimeout(leave);
       window.clearTimeout(end);
     };
-  }, [reduced]);
+  }, [reduced, seen]);
 
-  if (done) return null;
+  if (seen || done) return null;
 
   const skip = () => {
     setLeaving(true);
