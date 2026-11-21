@@ -9,6 +9,7 @@
  *   Android → Google (when VITE_GOOGLE_WEB_CLIENT_ID is set)
  *   Web     → none (guest play only)
  * A provider that isn't configured is simply not shown, so there is never a dead button.
+ * Email (6-digit code, no password) is offered everywhere; the server sends the code.
  */
 import { Capacitor } from "@capacitor/core";
 import { getServerBaseUrl } from "./socket";
@@ -18,7 +19,7 @@ export type AuthProvider = "apple" | "google";
 
 export interface Account {
   id: string;
-  provider: AuthProvider;
+  provider: AuthProvider | "email";
   name: string;
   email: string | null;
   signedInAt: string;
@@ -197,13 +198,47 @@ async function completeSignIn(provider: AuthProvider, idToken: string, displayNa
   const payload = await response.json() as { user?: { id: string; name?: string; email?: string | null } };
   if (!payload.user?.id) throw new Error("VERIFY_FAILED");
 
-  const account: Account = {
+  return storeAccount({
     id: payload.user.id,
     provider,
     name: payload.user.name || displayName || "",
     email: payload.user.email || null,
     signedInAt: new Date().toISOString(),
-  };
+  });
+}
+
+/** Error codes from the email endpoints ("WRONG_CODE", "CODE_EXPIRED", …), or "NETWORK". */
+export class EmailAuthError extends Error {}
+
+async function postEmail(path: string, body: Record<string, string>) {
+  const base = getServerBaseUrl() || (isWebPlatform() ? window.location.origin : "");
+  if (!base) throw new EmailAuthError("NETWORK");
+  let response: Response;
+  try {
+    response = await fetch(`${base}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  } catch {
+    throw new EmailAuthError("NETWORK");
+  }
+  const payload = await response.json().catch(() => ({})) as { error?: string; user?: { id: string; email?: string | null } };
+  if (!response.ok) throw new EmailAuthError(payload.error || `HTTP_${response.status}`);
+  return payload;
+}
+
+/** Step 1: the server emails a 6-digit code. */
+export async function startEmailSignIn(email: string, locale: string): Promise<void> {
+  await postEmail("/api/auth/email/start", { email, locale });
+}
+
+/** Step 2: the code from the email signs you in. */
+export async function verifyEmailCode(email: string, code: string): Promise<Account> {
+  const payload = await postEmail("/api/auth/email/verify", { email, code });
+  if (!payload.user?.id) throw new EmailAuthError("VERIFY_FAILED");
+  const address = payload.user.email || email.trim().toLowerCase();
+  return storeAccount({ id: payload.user.id, provider: "email", name: "", email: address, signedInAt: new Date().toISOString() });
+}
+
+function storeAccount(account: Account): Account {
+  const provider = account.provider;
   try {
     localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account));
     localStorage.setItem("cc_logged_in", provider);
@@ -227,7 +262,7 @@ export async function signOut(): Promise<void> {
   if (account && isWebPlatform()) {
     (window as { google?: { accounts?: { id?: GoogleIdApi } } }).google?.accounts?.id?.disableAutoSelect();
   }
-  if (account && platform() !== "web") {
+  if (account && account.provider !== "email" && platform() !== "web") {
     try {
       const SocialLogin = await plugin();
       await SocialLogin.logout({ provider: account.provider });
@@ -243,7 +278,7 @@ export async function signOut(): Promise<void> {
  */
 export async function deleteAccountAndData(): Promise<void> {
   const account = getAccount();
-  if (account && platform() !== "web") {
+  if (account && account.provider !== "email" && platform() !== "web") {
     try {
       const SocialLogin = await plugin();
       await SocialLogin.logout({ provider: account.provider, ...(account.provider === "apple" ? { clearCachedUserInfo: true } : {}) } as never);

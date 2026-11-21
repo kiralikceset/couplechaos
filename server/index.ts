@@ -24,6 +24,7 @@ import { foldText, hintRevealsWord } from "../client/src/lib/hintFilter";
 import { botDraw, generateHints, isAiJudgeEnabled, judgeDrawing, type BotDrawing, type Locale } from "./aiJudge";
 import { sketchToPng } from "./sketch";
 import { AuthError, isProviderConfigured, verifyIdToken } from "./auth";
+import { createEmailAuth } from "./emailAuth";
 
 // ── Tunables (env-overridable, mostly for tests) ───────────────────────────
 const num = (name: string, fallback: number) => {
@@ -1389,6 +1390,37 @@ function createGameServer() {
     } catch (error) {
       const status = error instanceof AuthError ? error.status : 500;
       response.status(status).json({ error: error instanceof Error ? error.message : "AUTH_FAILED" });
+    }
+  });
+
+  const emailAuth = createEmailAuth();
+  const emailError = (response: Response, error: unknown) => {
+    const status = error instanceof AuthError ? error.status : 500;
+    response.status(status).json({ error: error instanceof AuthError ? error.message : "AUTH_FAILED" });
+  };
+  app.post("/api/auth/email/start", async (request, response) => {
+    if (!allowSessionCreate(`email:${request.ip || "unknown"}`) || !allowSessionCreate(`auth:${request.ip || "unknown"}`)) {
+      response.status(429).json({ error: "RATE_LIMITED" });
+      return;
+    }
+    const body = (request.body || {}) as { email?: unknown; locale?: unknown };
+    try {
+      await emailAuth.start(body.email, body.locale);
+      response.json({ ok: true });
+    } catch (error) {
+      emailError(response, error);
+    }
+  });
+  app.post("/api/auth/email/verify", (request, response) => {
+    if (!allowSessionCreate(`auth:${request.ip || "unknown"}`)) {
+      response.status(429).json({ error: "RATE_LIMITED" });
+      return;
+    }
+    const body = (request.body || {}) as { email?: unknown; code?: unknown };
+    try {
+      response.json({ user: emailAuth.verify(body.email, body.code) });
+    } catch (error) {
+      emailError(response, error);
     }
   });
 

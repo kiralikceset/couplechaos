@@ -11,6 +11,7 @@ import { playError, playSuccess, playTap } from "@/lib/sounds";
 import { toast } from "sonner";
 import { AuthCancelled, getAvailableProviders, isWebPlatform, renderGoogleWebButton, signIn, type AuthProvider } from "@/lib/auth";
 import PrivacySheet from "@/components/PrivacySheet";
+import EmailSignInSheet from "@/components/EmailSignInSheet";
 
 interface Props {
   onSkip: () => void;
@@ -24,6 +25,7 @@ export default function LoginScreen({ onSkip, onSignedIn }: Props) {
   const providers = getAvailableProviders();
   const [busy, setBusy] = useState<AuthProvider | null>(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
 
   async function handleProviderLogin(provider: AuthProvider) {
     if (busy) return;
@@ -131,16 +133,29 @@ export default function LoginScreen({ onSkip, onSignedIn }: Props) {
             </motion.button>
           )}
 
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={() => { playTap(); setEmailOpen(true); }}
+            disabled={busy !== null}
+            className={`w-full h-14 flex items-center justify-center gap-3 font-semibold text-base rounded-2xl disabled:opacity-60 ${
+              providers.length || useWebGoogle
+                ? "bg-transparent text-[#F7F3FF] border border-white/25"
+                : "bg-[#F7F3FF] text-[#07060A]"
+            }`}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="3" />
+              <path d="m4 7 8 6 8-6" />
+            </svg>
+            {t("login.email")}
+          </motion.button>
+
           <button
             onClick={handleSkip}
             disabled={busy !== null}
-            className={`w-full text-center font-semibold transition-colors ${
-              providers.length
-                ? "text-[#B9B3C7] text-sm py-3"
-                : "bg-[#F7F3FF] text-[#07060A] text-base h-14 rounded-2xl"
-            }`}
+            className="w-full text-center font-semibold transition-colors text-[#B9B3C7] text-sm py-3"
           >
-            {providers.length ? t("login.guest") : t("login.skip")}
+            {t("login.guest")}
           </button>
 
           <p className="text-[#8C8798] text-xs text-center leading-relaxed px-4">
@@ -151,6 +166,7 @@ export default function LoginScreen({ onSkip, onSignedIn }: Props) {
           </p>
         </div>
       <PrivacySheet open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
+      <EmailSignInSheet open={emailOpen} onClose={() => setEmailOpen(false)} onSignedIn={() => { setEmailOpen(false); (onSignedIn || onSkip)(); }} />
     </div>
   );
 }

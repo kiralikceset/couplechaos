@@ -16,3 +16,7 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_IDS
         sync: false
+      - key: BREVO_API_KEY      # e-posta ile giriş kodları (brevo.com, ücretsiz: günde 300)
+        sync: false
+      - key: MAIL_FROM          # Brevo'da doğrulanmış gönderen adresi
+        sync: false

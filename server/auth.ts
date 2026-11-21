@@ -13,7 +13,7 @@ export type Provider = "apple" | "google";
 
 export interface VerifiedUser {
   id: string;
-  provider: Provider;
+  provider: Provider | "email";
   email: string | null;
   name: string;
 }
