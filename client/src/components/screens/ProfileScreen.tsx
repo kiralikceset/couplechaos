@@ -14,7 +14,7 @@ import { playTap, playSuccess } from "@/lib/sounds";
 import { isSoundEnabled, toggleSound } from "@/lib/sounds";
 import { isPremiumUser, premiumOffered } from "@/lib/premium";
 import { deleteAccountAndData, getAccount, signOut, type Account } from "@/lib/auth";
-import PrivacySheet from "@/components/PrivacySheet";
+import PrivacySheet, { type LegalPage } from "@/components/PrivacySheet";
 import { toast } from "sonner";
 
 const APP_VERSION = "1.3.0";
@@ -72,7 +72,7 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
   const tokens = getTokens();
   const [account, setAccount] = useState<Account | null>(getAccount());
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [legal, setLegal] = useState<LegalPage | null>(null);
 
   async function handleSignOut() {
     playTap();
@@ -327,10 +327,16 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
               ) : null}
             </div>
 
-            <button onClick={() => { playTap(); setPrivacyOpen(true); }} className="w-full flex items-center justify-between px-4 py-3 text-sm text-white/70">
-              <span>🔒 {t("profile.privacy")}</span>
-              <span className="text-white/30">›</span>
-            </button>
+            {([
+              ["privacy", "🔒", "profile.privacy"],
+              ["terms", "📄", "legal.terms"],
+              ["support", "💬", "legal.support"],
+            ] as const).map(([page, icon, key]) => (
+              <button key={page} onClick={() => { playTap(); setLegal(page); }} className="w-full flex items-center justify-between px-4 py-3 text-sm text-white/70">
+                <span>{icon} {t(key)}</span>
+                <span className="text-white/30">›</span>
+              </button>
+            ))}
           </div>
         )}
 
@@ -347,7 +353,7 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
           </div>
         )}
       </main>
-      <PrivacySheet open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
+      <PrivacySheet open={legal !== null} page={legal ?? "privacy"} onClose={() => setLegal(null)} />
     </div>
   );
 }

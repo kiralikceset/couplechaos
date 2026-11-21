@@ -10,7 +10,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { playError, playSuccess, playTap } from "@/lib/sounds";
 import { toast } from "sonner";
 import { AuthCancelled, getAvailableProviders, isWebPlatform, renderGoogleWebButton, signIn, type AuthProvider } from "@/lib/auth";
-import PrivacySheet from "@/components/PrivacySheet";
+import PrivacySheet, { type LegalPage } from "@/components/PrivacySheet";
 import EmailSignInSheet from "@/components/EmailSignInSheet";
 
 interface Props {
@@ -24,7 +24,7 @@ export default function LoginScreen({ onSignedIn }: Props) {
   const useWebGoogle = isWebPlatform() && getAvailableProviders().includes("google");
   const providers = getAvailableProviders();
   const [busy, setBusy] = useState<AuthProvider | null>(null);
-  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [legal, setLegal] = useState<LegalPage | null>(null);
   const [emailOpen, setEmailOpen] = useState(false);
 
   async function handleProviderLogin(provider: AuthProvider) {
@@ -145,12 +145,13 @@ export default function LoginScreen({ onSignedIn }: Props) {
           </motion.button>
 
           <p className="text-[#8C8798] text-xs text-center leading-relaxed px-4">
-            <button onClick={() => { playTap(); setPrivacyOpen(true); }} className="underline decoration-white/30 underline-offset-2">
-              {t("login.privacy")}
-            </button>
+            {t("login.agree")}{" "}
+            <button onClick={() => { playTap(); setLegal("terms"); }} className="underline decoration-white/30 underline-offset-2 text-[#B9B3C7]">{t("legal.terms")}</button>
+            {" · "}
+            <button onClick={() => { playTap(); setLegal("privacy"); }} className="underline decoration-white/30 underline-offset-2 text-[#B9B3C7]">{t("profile.privacy")}</button>
           </p>
         </div>
-      <PrivacySheet open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
+      <PrivacySheet open={legal !== null} page={legal ?? "privacy"} onClose={() => setLegal(null)} />
       <EmailSignInSheet open={emailOpen} onClose={() => setEmailOpen(false)} onSignedIn={() => { setEmailOpen(false); onSignedIn(); }} />
     </div>
   );

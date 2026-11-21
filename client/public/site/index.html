@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Couple Chaos: the drawing game for two</title>
+<meta name="description" content="One gives hints, one draws, and an AI judges you both. A silly drawing game for couples on iPhone, Android and the web.">
+<meta property="og:title" content="Couple Chaos: the drawing game for two">
+<meta property="og:description" content="One gives hints, one draws, and an AI judges you both. Mercilessly.">
+<meta property="og:image" content="/images/og-card.png">
+<meta name="theme-color" content="#FF1A6C">
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{--ink:#07060A;--ink2:#17141D;--pink:#FF1A6C;--deep:#C80F52;--yellow:#FBBF24;--violet:#8B5CF6;--paper:#FBFAF7;--mute:#B9B3C7}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ink);color:#F7F3FF;font:400 17px/1.6 'Outfit',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+h1,h2,h3{font-family:'Space Grotesk',system-ui,sans-serif;letter-spacing:-.03em;line-height:1.02;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+:focus-visible{outline:3px solid var(--yellow);outline-offset:3px;border-radius:8px}
+
+/* header */
+header{position:absolute;inset:0 0 auto 0;z-index:5}
+header .wrap{display:flex;align-items:center;justify-content:space-between;height:76px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;font:700 21px/1 'Space Grotesk';letter-spacing:-.02em}
+.brand img{width:40px;height:40px;border-radius:11px}
+nav{display:flex;gap:26px;align-items:center;font-weight:600;font-size:15px}
+nav a{text-decoration:none;opacity:.9}
+nav a:hover{opacity:1;text-decoration:underline;text-underline-offset:4px}
+@media (max-width:720px){nav .hide{display:none}}
+
+/* hero */
+.hero{position:relative;overflow:hidden;background:radial-gradient(120% 90% at 30% 30%,#FF3B80 0%,var(--pink) 45%,var(--deep) 100%);padding:140px 0 110px}
+.hero::after{content:"";position:absolute;inset:0;opacity:.07;background-image:radial-gradient(#000 1px,transparent 1.3px);background-size:7px 7px;pointer-events:none}
+.hero .wrap{position:relative;z-index:1;display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center}
+.hero h1{font-size:clamp(52px,8.4vw,108px);font-weight:700}
+.hero h1 span{display:block}
+.hero p.lead{font-size:clamp(18px,2vw,21px);max-width:30ch;margin:26px 0 34px;color:#FFE4EE}
+.ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:10px;height:56px;padding:0 24px;border-radius:16px;font-weight:700;font-size:16px;text-decoration:none;border:0;cursor:pointer}
+.btn-main{background:var(--ink);color:#fff;box-shadow:0 16px 30px -14px rgba(60,0,20,.7)}
+.btn-main:hover{transform:translateY(-1px)}
+.store{display:inline-flex;align-items:center;gap:10px;height:56px;padding:0 18px;border-radius:16px;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.4);color:#fff;font-size:14px;line-height:1.15}
+.store b{display:block;font-size:16px}
+.store small{opacity:.8}
+.hero-art{position:relative;height:580px}
+.hero-art .shot{position:absolute;width:230px;border-radius:30px;box-shadow:0 40px 70px -30px rgba(60,0,20,.8)}
+.hero-art .s1{left:10px;top:20px;transform:rotate(-7deg)}
+.hero-art .s2{left:170px;top:60px;transform:rotate(6deg)}
+.stamp{position:absolute;right:-6px;top:-10px;width:150px;height:150px;border-radius:50%;background:var(--yellow);color:var(--ink);display:flex;align-items:center;justify-content:center;transform:rotate(12deg);box-shadow:0 22px 40px -16px rgba(60,0,20,.8);font:700 72px/1 'Space Grotesk';letter-spacing:-5px;animation:stamp .5s cubic-bezier(.6,0,.4,1) .5s both}
+.stamp::after{content:"";position:absolute;inset:10px;border-radius:50%;border:4px dashed rgba(7,6,10,.25)}
+@keyframes stamp{from{transform:scale(2.6) rotate(-30deg);opacity:0}to{transform:rotate(12deg);opacity:1}}
+@media (max-width:900px){
+  .hero{padding:120px 0 70px}
+  .hero .wrap{grid-template-columns:1fr}
+  .hero-art{height:430px;max-width:400px;margin:20px auto 0;width:100%}
+  .hero-art .shot{width:175px}.hero-art .s1{left:8px;top:10px}.hero-art .s2{left:150px;top:40px}
+  .stamp{width:110px;height:110px;font-size:52px;right:-4px;top:auto;bottom:6px}
+}
+@media (prefers-reduced-motion:reduce){.stamp{animation:none}}
+
+/* steps */
+section{padding:110px 0}
+.kicker{font:700 28px/1 'Space Grotesk';color:var(--yellow);margin:0 0 14px}
+h2{font-size:clamp(38px,5.4vw,64px)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:56px;counter-reset:s}
+.step{position:relative;padding-top:74px}
+.step::before{counter-increment:s;content:counter(s);position:absolute;top:0;left:0;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:700 26px/1 'Space Grotesk';color:var(--ink)}
+.step:nth-child(1)::before{background:var(--violet);color:#fff}
+.step:nth-child(2)::before{background:var(--pink);color:#fff}
+.step:nth-child(3)::before{background:var(--yellow)}
+.step h3{font-size:30px}
+.step p{color:var(--mute);margin:10px 0 0;max-width:32ch}
+@media (max-width:820px){.steps{grid-template-columns:1fr;gap:40px}}
+
+/* gallery */
+.gallery{background:var(--paper);color:var(--ink);padding-bottom:90px}
+.gallery h2{max-width:14ch}
+.gallery .sub{color:#5B5463;margin:16px 0 0;max-width:46ch}
+.rail{display:flex;gap:22px;overflow-x:auto;scroll-snap-type:x mandatory;padding:46px 24px 28px;margin:0 auto;max-width:1120px;scrollbar-width:thin}
+.rail img{flex:none;width:250px;border-radius:26px;scroll-snap-align:start;box-shadow:0 26px 50px -30px rgba(40,20,0,.6)}
+.rail img:nth-child(odd){transform:rotate(-1.5deg)}.rail img:nth-child(even){transform:rotate(1.5deg)}
+
+/* promises */
+.promises{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:56px;border-top:1px solid #2A2531}
+.promise{padding:28px 22px 6px 0}
+.promise b{display:block;font:700 22px/1.15 'Space Grotesk';letter-spacing:-.02em;color:#fff}
+.promise span{display:block;color:var(--mute);font-size:15px;margin-top:8px}
+@media (max-width:820px){.promises{grid-template-columns:1fr 1fr}}
+
+/* faq */
+.faq{background:var(--ink2)}
+.faq .wrap{max-width:820px}
+details{border-bottom:1px solid #2A2531;padding:22px 0}
+summary{cursor:pointer;list-style:none;font:700 21px/1.3 'Space Grotesk';letter-spacing:-.01em;display:flex;justify-content:space-between;gap:20px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--pink);font-size:28px;line-height:1;transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{color:var(--mute);margin:12px 0 0;max-width:62ch}
+
+/* final cta */
+.final{background:var(--yellow);color:var(--ink);text-align:center;padding:100px 0}
+.final h2{font-size:clamp(40px,6vw,76px)}
+.final p{margin:18px auto 30px;max-width:36ch;color:#3B2A05}
+
+footer{padding:48px 0 60px;color:#8C8798;font-size:15px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:20px 36px;justify-content:space-between;align-items:flex-start}
+footer ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:10px 22px}
+footer a{color:#D9D4E3;text-decoration:none}
+footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/site"><img src="/images/icon-192.png" alt="">Couple Chaos</a>
+    <nav aria-label="Main">
+      <a class="hide" href="#how">How it works</a>
+      <a class="hide" href="#faq">FAQ</a>
+      <a href="/" >Play in browser</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap">
+      <div>
+        <h1 id="hero-title"><span>Draw badly.</span><span>Laugh together.</span></h1>
+        <p class="lead">The drawing game for two. One gives hints, one draws, and an AI judges you both. Mercilessly.</p>
+        <div class="ctas">
+          <a class="btn btn-main" href="/">Play in your browser</a>
+          <span class="store" aria-label="App Store: coming soon"><svg width="20" height="24" viewBox="0 0 17 20" fill="currentColor" aria-hidden="true"><path d="M13.545 10.239c-.022-2.234 1.823-3.306 1.906-3.358-.037-.054-1.494-2.159-3.816-2.159-1.624 0-2.94.968-3.726.968-.81 0-2.04-.943-3.36-.918C2.612 4.797.877 6.093.877 8.874c0 1.661.645 3.42 1.44 4.56.79 1.14 1.657 2.293 2.84 2.25 1.14-.044 1.57-.737 2.95-.737 1.36 0 1.75.737 2.95.713 1.23-.02 1.98-1.16 2.76-2.3.87-1.32 1.23-2.6 1.25-2.67-.027-.01-2.4-.92-2.42-3.65l-.1-.8z"/><path d="M11.15 3.21c.66-.8 1.1-1.9.98-3.01-.95.04-2.1.63-2.78 1.43-.6.7-1.13 1.82-.99 2.9 1.06.08 2.14-.54 2.79-1.32z"/></svg><span><small>Coming soon</small><b>App Store</b></span></span>
+          <span class="store" aria-label="Google Play: coming soon"><svg width="20" height="22" viewBox="0 0 24 26" fill="currentColor" aria-hidden="true"><path d="M1.5 1.2 13.3 13 1.5 24.8c-.3-.3-.5-.8-.5-1.3V2.5c0-.5.2-1 .5-1.3Zm13.2 13.2 3 3-13.5 7.7 10.5-10.7Zm0-2.8L4.2.9l13.5 7.7-3 3Zm4.3 2.1-3.3-3.3 3.4-3.4 4 2.3c1.2.7 1.2 2.4 0 3.1l-4.1 1.3Z"/></svg><span><small>Coming soon</small><b>Google Play</b></span></span>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <img class="shot s1" src="/site/img/3-step2-draw.webp" alt="">
+        <img class="shot s2" src="/site/img/4-step3-score.webp" alt="">
+        <div class="stamp">34</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" aria-labelledby="how-title">
+    <div class="wrap">
+      <p class="kicker">How it works</p>
+      <h2 id="how-title">Three steps. Zero talent needed.</h2>
+      <div class="steps">
+        <div class="step"><h3>Give hints</h3><p>One of you sees a secret word and sends hints. Saying the word itself is not allowed.</p></div>
+        <div class="step"><h3>Draw and guess</h3><p>The other one draws from the hints, live, then picks the answer out of four options.</p></div>
+        <div class="step"><h3>Get judged</h3><p>An AI scores the drawing out of 100 and roasts it. Then you swap roles and do it again.</p></div>
+      </div>
+      <div class="promises">
+        <div class="promise"><b>One link</b><span>Your partner taps it and joins. No app needed, it opens in the browser.</span></div>
+        <div class="promise"><b>Partner busy?</b><span>Play against the AI: you give the hints, it draws.</span></div>
+        <div class="promise"><b>A new word daily</b><span>Everyone gets the same one. See where you land on the board.</span></div>
+        <div class="promise"><b>No ads, no tracking</b><span>Your game stays on your phone. We don't sell anything about you.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="gallery" aria-labelledby="gallery-title">
+    <div class="wrap">
+      <h2 id="gallery-title">See the chaos up close.</h2>
+      <p class="sub">Swipe through. Yes, that is supposed to be a person snoring.</p>
+    </div>
+    <div class="rail" tabindex="0" aria-label="App screenshots">
+      <img src="/site/img/1-how-it-works.webp" alt="One sees the word, one draws it, then the AI judges you" loading="lazy">
+      <img src="/site/img/2-step1-hint.webp" alt="Give hints without saying the word" loading="lazy">
+      <img src="/site/img/3-step2-draw.webp" alt="Draw from the hints, then pick from four options" loading="lazy">
+      <img src="/site/img/4-step3-score.webp" alt="The AI scores the drawing 34 out of 100" loading="lazy">
+      <img src="/site/img/5-invite.webp" alt="Invite your partner with a link on WhatsApp" loading="lazy">
+      <img src="/site/img/7-play-the-ai.webp" alt="Play against the AI when your partner is busy" loading="lazy">
+    </div>
+  </section>
+
+  <section class="faq" id="faq" aria-labelledby="faq-title">
+    <div class="wrap">
+      <h2 id="faq-title">Questions</h2>
+      <details><summary>Is it free?</summary><p>Yes. Couple Chaos is free to play, with no ads.</p></details>
+      <details><summary>Do we both need the app?</summary><p>No. One of you sends a link and the other can play straight from the browser on any phone.</p></details>
+      <details><summary>Can we play in the same room on one phone?</summary><p>Each of you needs a screen, since one person must not see the secret word. Two phones, or one phone and a laptop, works best.</p></details>
+      <details><summary>Which languages?</summary><p>English, Turkish, German and Spanish.</p></details>
+      <details><summary>What happens to our drawings?</summary><p>Your game history stays on your phone. A finished drawing is sent to an AI service only to score it, without your name or email. Details are in the <a href="/privacy">Privacy Policy</a>.</p></details>
+      <details><summary>How do I delete my account?</summary><p>In the app: Profile, then “Delete account &amp; data”. More in <a href="/delete-account">Account deletion</a>.</p></details>
+    </div>
+  </section>
+
+  <section class="final" aria-labelledby="final-title">
+    <div class="wrap">
+      <h2 id="final-title">Bring your partner.<br>Leave your pride.</h2>
+      <p>iPhone and Android apps are coming soon. The browser version works today.</p>
+      <a class="btn btn-main" href="/">Play in your browser</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>© 2026 Couple Chaos · Contact: {{CONTACT_EMAIL}}</div>
+    <ul>
+      <li><a href="/privacy">Privacy Policy</a></li>
+      <li><a href="/terms">Terms of Use</a></li>
+      <li><a href="/delete-account">Account deletion</a></li>
+      <li><a href="/support">Support</a></li>
+    </ul>
+  </div>
+</footer>
+</body>
+</html>

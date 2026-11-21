@@ -1540,11 +1540,14 @@ function createGameServer() {
   const staticPath = process.env.NODE_ENV === "production"
     ? path.resolve(path.dirname(fileURLToPath(import.meta.url)), "public")
     : path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "dist", "public");
-  // Privacy policy and support pages (App Store links). CONTACT_EMAIL is set on the server,
+  // Website, privacy policy, terms, account deletion and support pages (store links). CONTACT_EMAIL is set on the server,
   // so the address can change without a new app release.
   const legalPages: Record<string, string> = {
     "/privacy": "privacy.html", "/privacy.html": "privacy.html",
     "/support": "support.html", "/support.html": "support.html",
+    "/terms": "terms.html", "/terms.html": "terms.html",
+    "/delete-account": "delete-account.html", "/delete-account.html": "delete-account.html",
+    "/site": "site/index.html", "/site/": "site/index.html", "/site/index.html": "site/index.html",
   };
   app.get(Object.keys(legalPages), (request, response) => {
     let page: string;
