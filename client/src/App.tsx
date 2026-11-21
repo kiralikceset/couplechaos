@@ -6,6 +6,7 @@ import { LocaleProvider } from "./contexts/LocaleContext";
 import OnboardingScreen from "./components/screens/OnboardingScreen";
 import HowItWorksScreen from "./components/screens/HowItWorksScreen";
 import { initAudio } from "@/lib/sounds";
+import LaunchIntro from "./components/LaunchIntro";
 import {
   loadLoginScreen,
   loadProfileScreen,
@@ -190,6 +191,7 @@ export default function App() {
           >
             <Startup />
           </Suspense>
+          <LaunchIntro />
         </LocaleProvider>
       </ThemeProvider>
     </ErrorBoundary>
