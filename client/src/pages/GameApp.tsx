@@ -55,6 +55,7 @@ import { findWordEmoji, getDailyWord } from "@/lib/wordPool";
 import { getRoast } from "@/lib/aiRoast";
 import { earnTokens, TOKEN_REWARD_CORRECT, TOKEN_REWARD_ROUND } from "@/lib/tokens";
 import OnboardingScreen from "@/components/screens/OnboardingScreen";
+import { isSignedIn } from "@/lib/auth";
 import ConnectScreen from "@/components/screens/ConnectScreen";
 import LeaderboardScreen from "@/components/screens/LeaderboardScreen";
 import InviteScreen from "@/components/screens/InviteScreen";
@@ -157,7 +158,8 @@ export default function GameApp({
     let isLoggedIn: string | null = null;
     try {
       hasOnboarded = localStorage.getItem("cc_onboarded");
-      isLoggedIn = localStorage.getItem("cc_logged_in");
+      // Old guest sessions ("guest") must sign in now: only a real account counts.
+      isLoggedIn = isSignedIn() ? "yes" : null;
     } catch {
       // Continue with onboarding if persistent storage is temporarily blocked.
     }
@@ -766,13 +768,8 @@ export default function GameApp({
     setScreen("login");
   }
 
-  // Skip login → Home
-  function handleLoginSkip() {
-    try {
-      localStorage.setItem("cc_logged_in", "guest");
-    } catch {
-      /* Continue in memory. */
-    }
+  // Signed in → Home (or profile setup the first time)
+  function handleSignedIn() {
     setHistory([]);
     const profile = getProfile();
     setScreen(profile.username.trim() ? "home" : "profile");
@@ -828,7 +825,7 @@ export default function GameApp({
         )}
 
         {/* === AUTH FLOW === */}
-        {screen === "login" && <LoginScreen onSkip={handleLoginSkip} onSignedIn={handleLoginSkip} />}
+        {screen === "login" && <LoginScreen onSignedIn={handleSignedIn} />}
 
         {/* === HOME === */}
         {screen === "home" && (
@@ -947,6 +944,11 @@ export default function GameApp({
             partnerName={partnerName}
             onPremium={() => openPaywall("upgrade")}
             onSignIn={() => navigate("login")}
+            onSignedOut={() => {
+              if (roomCode) leaveGame();
+              setHistory([]);
+              setScreen("login");
+            }}
             onAccountDeleted={() => {
               if (roomCode) leaveGame();
               setPartnerName(null);

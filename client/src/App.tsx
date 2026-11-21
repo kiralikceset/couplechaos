@@ -22,9 +22,9 @@ const loadRuntime = async () => {
   if (hasOnboarded()) {
     let loggedIn = false;
     try {
-      loggedIn = !!localStorage.getItem("cc_logged_in");
+      loggedIn = !!localStorage.getItem("cc_account");
     } catch {
-      /* guest login */
+      /* storage blocked: sign in again */
     }
     await (loggedIn ? loadHomeScreen() : loadLoginScreen());
   }

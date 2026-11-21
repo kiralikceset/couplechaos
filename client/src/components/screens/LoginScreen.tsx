@@ -14,11 +14,11 @@ import PrivacySheet from "@/components/PrivacySheet";
 import EmailSignInSheet from "@/components/EmailSignInSheet";
 
 interface Props {
-  onSkip: () => void;
-  onSignedIn?: () => void;
+  onSignedIn: () => void;
 }
 
-export default function LoginScreen({ onSkip, onSignedIn }: Props) {
+/** There is no guest mode: Apple, Google or email (a 6-digit code). */
+export default function LoginScreen({ onSignedIn }: Props) {
   const { t, locale } = useLocale();
   const webGoogleRef = useRef<HTMLDivElement>(null);
   const useWebGoogle = isWebPlatform() && getAvailableProviders().includes("google");
@@ -34,7 +34,7 @@ export default function LoginScreen({ onSkip, onSignedIn }: Props) {
     try {
       await signIn(provider);
       playSuccess();
-      (onSignedIn || onSkip)();
+      onSignedIn();
     } catch (error) {
       if (error instanceof AuthCancelled) {
         toast(t("login.cancelled"));
@@ -53,7 +53,7 @@ export default function LoginScreen({ onSkip, onSignedIn }: Props) {
     renderGoogleWebButton(webGoogleRef.current, ({ account, error }) => {
       if (account) {
         playSuccess();
-        (onSignedIn || onSkip)();
+        onSignedIn();
       } else if (error instanceof AuthCancelled) {
         toast(t("login.cancelled"));
       } else if (error) {
@@ -63,12 +63,6 @@ export default function LoginScreen({ onSkip, onSignedIn }: Props) {
       }
     }, locale).catch((error) => console.warn("[auth] Google button unavailable", error));
   }, [useWebGoogle, locale]);
-
-  function handleSkip() {
-    playTap();
-    try { localStorage.setItem("cc_logged_in", "guest"); } catch { /* Continue in memory. */ }
-    onSkip();
-  }
 
   return (
     <div className="cc-sketchbook relative flex flex-col h-[100dvh] w-full bg-[#07060A] text-[#F7F3FF] overflow-hidden">
@@ -150,23 +144,14 @@ export default function LoginScreen({ onSkip, onSignedIn }: Props) {
             {t("login.email")}
           </motion.button>
 
-          <button
-            onClick={handleSkip}
-            disabled={busy !== null}
-            className="w-full text-center font-semibold transition-colors text-[#B9B3C7] text-sm py-3"
-          >
-            {t("login.guest")}
-          </button>
-
           <p className="text-[#8C8798] text-xs text-center leading-relaxed px-4">
-            {t("login.terms")}{" "}
-            <button onClick={() => { playTap(); setPrivacyOpen(true); }} className="underline text-[#B9B3C7]">
-              {t("login.privacyLink")}
+            <button onClick={() => { playTap(); setPrivacyOpen(true); }} className="underline decoration-white/30 underline-offset-2">
+              {t("login.privacy")}
             </button>
           </p>
         </div>
       <PrivacySheet open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
-      <EmailSignInSheet open={emailOpen} onClose={() => setEmailOpen(false)} onSignedIn={() => { setEmailOpen(false); (onSignedIn || onSkip)(); }} />
+      <EmailSignInSheet open={emailOpen} onClose={() => setEmailOpen(false)} onSignedIn={() => { setEmailOpen(false); onSignedIn(); }} />
     </div>
   );
 }

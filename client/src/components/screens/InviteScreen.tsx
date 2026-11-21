@@ -10,6 +10,8 @@ import { getProfile, saveProfile } from "@/lib/gameData";
 import { getLocale } from "@/lib/i18n";
 import { playTap } from "@/lib/sounds";
 import { toast } from "sonner";
+import { isSignedIn } from "@/lib/auth";
+import LoginScreen from "@/components/screens/LoginScreen";
 
 interface Props {
   code: string;
@@ -58,9 +60,17 @@ export default function InviteScreen({ code, onCancel }: Props) {
     return () => { socket.off("join_error", onError); };
   }, [t]);
 
+  const [needLogin, setNeedLogin] = useState(false);
+
   function join() {
     const username = name.trim();
     if (!username || joining) return;
+    // No guest mode: an invited partner signs in first, then joins straight away.
+    if (!isSignedIn()) {
+      playTap();
+      setNeedLogin(true);
+      return;
+    }
     playTap();
     setJoining(true);
     saveProfile({ ...getProfile(), username, avatar });
@@ -68,7 +78,6 @@ export default function InviteScreen({ code, onCancel }: Props) {
       // Someone who arrives through a link has seen enough intro: skip it next time.
       localStorage.setItem("cc_onboarded", "true");
       localStorage.setItem("cc_how_seen", "true");
-      if (!localStorage.getItem("cc_logged_in")) localStorage.setItem("cc_logged_in", "guest");
     } catch {
       /* continue in memory */
     }
@@ -140,6 +149,11 @@ export default function InviteScreen({ code, onCancel }: Props) {
           {info && !info.open ? t("invite.home") : t("common.cancel")}
         </button>
       </footer>
+      {needLogin && (
+        <div className="fixed inset-0 z-[70]">
+          <LoginScreen onSignedIn={() => { setNeedLogin(false); window.setTimeout(join, 0); }} />
+        </div>
+      )}
     </div>
   );
 }

@@ -116,10 +116,15 @@ export async function renderGoogleWebButton(
   });
 }
 
+/** Playing needs an account (Apple, Google or email); there is no guest mode. */
+export function isSignedIn(): boolean {
+  return getAccount() !== null;
+}
+
 export function getAccount(): Account | null {
   try {
     const parsed = JSON.parse(localStorage.getItem(ACCOUNT_KEY) || "null") as Account | null;
-    return parsed && typeof parsed.id === "string" && (parsed.provider === "apple" || parsed.provider === "google") ? parsed : null;
+    return parsed && typeof parsed.id === "string" && (parsed.provider === "apple" || parsed.provider === "google" || parsed.provider === "email") ? parsed : null;
   } catch {
     return null;
   }
@@ -255,7 +260,7 @@ export async function signOut(): Promise<void> {
   const account = getAccount();
   try {
     localStorage.removeItem(ACCOUNT_KEY);
-    localStorage.setItem("cc_logged_in", "guest");
+    localStorage.removeItem("cc_logged_in");
   } catch {
     /* ignore */
   }

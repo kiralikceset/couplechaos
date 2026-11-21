@@ -13,7 +13,7 @@ import { AVAILABLE_LOCALES, type Locale } from "@/lib/i18n";
 import { playTap, playSuccess } from "@/lib/sounds";
 import { isSoundEnabled, toggleSound } from "@/lib/sounds";
 import { isPremiumUser, premiumOffered } from "@/lib/premium";
-import { deleteAccountAndData, getAccount, getAvailableProviders, signOut, type Account } from "@/lib/auth";
+import { deleteAccountAndData, getAccount, signOut, type Account } from "@/lib/auth";
 import PrivacySheet from "@/components/PrivacySheet";
 import { toast } from "sonner";
 
@@ -58,9 +58,10 @@ interface Props {
   onPremium?: () => void;
   onSignIn?: () => void;
   onAccountDeleted?: () => void;
+  onSignedOut?: () => void;
 }
 
-export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn, onAccountDeleted }: Props) {
+export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn, onAccountDeleted, onSignedOut }: Props) {
   const { t, locale, setLocale } = useLocale();
   const [profile, setProfile] = useState(getProfile());
   const [editing, setEditing] = useState(!profile.username.trim());
@@ -72,12 +73,12 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
   const [account, setAccount] = useState<Account | null>(getAccount());
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
-  const canSignIn = getAvailableProviders().length > 0;
 
   async function handleSignOut() {
     playTap();
     await signOut();
     setAccount(null);
+    onSignedOut?.();
   }
 
   async function handleDelete() {
@@ -317,11 +318,11 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
 
             <div className="flex items-center justify-between gap-3 px-4 py-3">
               <span className="text-sm text-white/70 truncate">
-                👤 {account ? (account.name || account.email || (account.provider === "apple" ? "Apple" : "Google")) : t("profile.guest")}
+                👤 {account ? (account.name || account.email || (account.provider === "apple" ? "Apple" : account.provider === "google" ? "Google" : "E-mail")) : t("profile.guest")}
               </span>
               {account ? (
                 <button onClick={() => void handleSignOut()} className="text-xs font-semibold text-white/60 px-3 py-1.5 rounded-lg bg-white/[0.06]">{t("profile.signOut")}</button>
-              ) : canSignIn && onSignIn ? (
+              ) : onSignIn ? (
                 <button onClick={() => { playTap(); onSignIn(); }} className="text-xs font-bold text-black px-3 py-1.5 rounded-lg bg-white">{t("profile.signIn")}</button>
               ) : null}
             </div>
