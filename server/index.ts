@@ -1559,6 +1559,38 @@ function createGameServer() {
     "/delete-account": "delete-account.html", "/delete-account.html": "delete-account.html",
     "/site": "site/index.html", "/site/": "site/index.html", "/site/index.html": "site/index.html",
   };
+  // Absolute links (canonical, Open Graph, sitemap). PUBLIC_URL wins once a domain is set, e.g. https://couplechaos.app
+  const siteUrl = (request: Request) =>
+    (process.env.PUBLIC_URL || `${request.protocol}://${request.get("host") || "couple-chaos-server.onrender.com"}`).replace(/\/+$/, "");
+  const sitePaths = ["/site", "/privacy", "/terms", "/support", "/delete-account"];
+  app.get("/robots.txt", (request, response) => {
+    response.type("text/plain").send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /join/\n\nSitemap: ${siteUrl(request)}/sitemap.xml\n`);
+  });
+  app.get("/sitemap.xml", (request, response) => {
+    const base = siteUrl(request);
+    response.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitePaths.map((p) => `  <url><loc>${base}${p}</loc></url>`).join("\n")}\n</urlset>\n`);
+  });
+  // For AI assistants and answer engines: a short, factual summary with links.
+  app.get("/llms.txt", (request, response) => {
+    const base = siteUrl(request);
+    response.type("text/plain").send(`# Couple Chaos
+
+> A two-player drawing and guessing game for couples. One partner sees a secret word and gives hints without saying it; the other draws and picks a guess from four options; an AI judge then scores the drawing out of 100 and adds a funny comment.
+
+- Modes: Classic (one hints, one draws), Shared Canvas (draw together), Play with AI (solo), Today's Word (same word for everyone, daily leaderboard)
+- Rounds take about two minutes. Partners join with one invite link; the second player can play in a browser.
+- Languages: English, Turkish, German, Spanish
+- Price: free with 5 games a day, no ads; Premium subscription unlocks unlimited games and all themes
+- Platforms: Android, iOS, web
+
+## Links
+- [Website](${base}/site)
+- [Privacy policy](${base}/privacy)
+- [Terms of use](${base}/terms)
+- [Support](${base}/support)
+- [Delete account](${base}/delete-account)
+`);
+  });
   app.get(Object.keys(legalPages), (request, response) => {
     let page: string;
     try {
@@ -1572,7 +1604,7 @@ function createGameServer() {
       ? `<a href="mailto:${email}" style="color:#FF1A6C">${email}</a>`
       : "—";
     response.setHeader("Cache-Control", "public, max-age=300");
-    response.type("html").send(page.replaceAll("{{CONTACT_EMAIL}}", contact));
+    response.type("html").send(page.replaceAll("{{CONTACT_EMAIL}}", contact).replaceAll("{{SITE_URL}}", siteUrl(request)));
   });
   // Invite links: the chat preview says who is inviting ("Yusuf invited you to a drawing duel").
   let indexHtml: string | null = null;
