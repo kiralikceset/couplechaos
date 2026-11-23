@@ -5,14 +5,20 @@ Videos: 15-25 s, hook fully visible on frame 1, styles alternate (notebook doodl
 Files go to branch social-media: videos/YYYY-MM-DD-a.mp4, covers/YYYY-MM-DD-a.png (raw.githubusercontent.com URLs for Metricool).
 Metricool brand id 8298890 (instagram + tiktok, timezone Europe/Istanbul).
 
-## Topic queue (check each source before writing)
-1. Demand–withdraw: one talks, the other goes quiet
-2. Humor meta-analysis (Hall 2017): laugh with them, not at them  -> app tie-in
-3. Aron 2000: your relationship isn't boring, your routine is
-4. Gratitude (Gordon 2012): thank them for small stuff
-5. Rituals (Garcia-Rada et al.): couples with weird little rituals
-6. 3 questions to ask tonight (Aron 1997)
-7. Responsiveness: feeling seen
-8. Phubbing follow-up (Beukeboom & Pollmann 2021)
+## Topic queue (from the user's 14-day plan; English, 15-25 s, verify every source first)
+1. Demand–withdraw: "One of you talks, the other goes quiet" (day 6)
+2. Aron 2000: "Your relationship isn't boring. Your routine is." (day 2)
+3. Hall 2017 humor meta-analysis: "Laugh with them, not at them" -> app tie-in (day 11)
+4. Aron 1997: "Ask your partner these 3 questions tonight" (day 3)
+5. Responsiveness (Arican-Dinc & Gable 2023): "Listening isn't understanding" (days 4+8 merged)
+6. Gordon 2012 gratitude: "When did you last really thank them?" (day 12)
+7. Rituals (Garcia-Rada, Sezer & Norton): "Happy couples have weird little rituals" (day 13)
+8. "How well does your partner know you? 3-question test" (day 5)
+9. Shared fun (Aron 2000 angle) -> "Couple Chaos" tie-in (day 7)
+10. "3-minute couple game, phones down" (day 14)
+11. Phubbing 2021 (Beukeboom & Pollmann) - only if a fresh angle (day 10)
+Skip: Gottman 69% and love languages (already made). Strip utm_source=chatgpt.com from every link.
+Every post gets a cover image (videoThumbnailUrl; TikTok uses it only on Business accounts).
+
 ## Done
 - love languages (notebook), Gottman 69%, Baylor phubbing, launch teaser
