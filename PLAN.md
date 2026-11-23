@@ -5,6 +5,10 @@ Videos: 15-25 s, hook fully visible on frame 1, styles alternate (notebook doodl
 Files go to branch social-media: videos/YYYY-MM-DD-a.mp4, covers/YYYY-MM-DD-a.png (raw.githubusercontent.com URLs for Metricool).
 Metricool brand id 8298890 (instagram + tiktok, timezone Europe/Istanbul).
 
+## Captions (user approved 2026-11-23)
+Short, fun, curiosity-first: one punchy line + a tag/comment prompt + 4 hashtags. No research recap in the caption.
+Example: "The talker vs. the silent type. Tag your duo 👀💬"
+
 ## Topic queue (from the user's 14-day plan; English, 15-25 s, verify every source first)
 3. Hall 2017 humor meta-analysis: "Laugh with them, not at them" -> app tie-in (day 11)
 4. Aron 1997: "Ask your partner these 3 questions tonight" (day 3)
