@@ -56,14 +56,14 @@ export default function LeaderboardScreen({ onBack, onPlayDaily }: Props) {
       <header className="pt-10 px-5 flex items-center gap-3 flex-shrink-0">
         <button
           onClick={() => { playTap(); onBack(); }}
-          aria-label="back"
+          aria-label={t("common.back")}
           className="size-10 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-white/60"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
         </button>
         <h1 className="font-display text-lg font-black text-white">🏆 {t("board.title")}</h1>
       </header>
-      <p className="px-5 pt-3 text-white/45 text-xs leading-relaxed flex-shrink-0">{t("board.sub")}</p>
+      <p className="px-5 pt-3 text-white/60 text-xs leading-relaxed flex-shrink-0">{t("board.sub")}</p>
 
       <main className="flex-1 min-h-0 overflow-y-auto px-5 py-4">
         {failed ? (
@@ -90,13 +90,13 @@ export default function LeaderboardScreen({ onBack, onPlayDaily }: Props) {
                   <span className="text-xl leading-none">{entry.avatars || "😎"}</span>
                   <div className="min-w-0 flex-1">
                     <p className="text-white text-sm font-bold truncate">{entry.names}{mine ? ` · ${t("board.you")}` : ""}</p>
-                    <p className="text-white/35 text-[0.65rem]">{entry.solo ? t("board.solo") : "💞"}{entry.correct ? " · 🎯" : ""}</p>
+                    <p className="text-white/55 text-[0.65rem]">{entry.solo ? t("board.solo") : "💞"}{entry.correct ? " · 🎯" : ""}</p>
                   </div>
                   <span className="font-display text-lg font-black text-amber-300 tabular-nums">{entry.score}</span>
                 </li>
               );
             })}
-            {total > entries.length && <li className="text-center text-white/30 text-xs pt-2">+{total - entries.length}</li>}
+            {total > entries.length && <li className="text-center text-white/55 text-xs pt-2">+{total - entries.length}</li>}
           </ol>
         )}
       </main>

@@ -256,7 +256,7 @@ export default function GameScreen({
               <div className="absolute left-6 top-5 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-white/10 text-[0.65rem]">
                 <span className="size-1.5 rounded-full bg-red-500 animate-pulse" />
                 <span className="text-white/50">{t("game.partnerGuess").replace("{name}", partner)}</span>
-                <span className={`font-black ${partnerGuess ? "text-amber-300" : "text-white/30"}`}>{partnerGuess || t("game.noGuessYet")}</span>
+                <span className={`font-black ${partnerGuess ? "text-amber-300" : "text-white/55"}`}>{partnerGuess || t("game.noGuessYet")}</span>
               </div>
             </>
           ) : (
@@ -352,7 +352,7 @@ export default function GameScreen({
         {/* Hints from the partner (newest first) */}
         <div className="px-4 pt-3 flex gap-1.5 overflow-x-auto flex-shrink-0 min-h-[34px]">
           {latest.length === 0 ? (
-            <span className="text-white/30 text-xs py-1.5">💬 {t("game.waitHints")}</span>
+            <span className="text-white/55 text-xs py-1.5">💬 {t("game.waitHints")}</span>
           ) : latest.map((m, index) => (
             <motion.span
               key={m.id}
@@ -463,7 +463,7 @@ export default function GameScreen({
           ))}
         </div>
         <h2 className="font-display text-2xl font-bold text-white mb-2">{t("game.starting")}</h2>
-        <p className="text-white/30 text-sm">{t("game.getReady")}</p>
+        <p className="text-white/55 text-sm">{t("game.getReady")}</p>
       </motion.div>
     </div>
   );

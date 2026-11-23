@@ -135,7 +135,7 @@ export default function LiveCanvas({ roundNumber, placeholder, onSnapshot }: { r
       {!hasInk && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none">
           <span className="text-3xl animate-pulse">✏️</span>
-          <span className="text-white/30 text-xs font-semibold">{placeholder}</span>
+          <span className="text-white/55 text-xs font-semibold">{placeholder}</span>
         </div>
       )}
     </div>

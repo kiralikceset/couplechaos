@@ -376,7 +376,7 @@ export default function CoDrawScreen({
           <span className="text-white/70 text-xs font-semibold max-w-[90px] truncate">{myName || t("co.you")}</span>
           {iAmDone && <span className="text-green-400 text-xs">✓</span>}
         </div>
-        <span className="text-white/20 text-xs">+</span>
+        <span className="text-white/50 text-xs">+</span>
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08]">
           <motion.span
             animate={partnerActive ? { scale: [1, 1.5, 1] } : { scale: 1 }}
@@ -389,7 +389,7 @@ export default function CoDrawScreen({
           {partnerDone && <span className="text-green-400 text-xs">✓</span>}
         </div>
       </div>
-      <p className="relative z-10 text-center text-[0.65rem] h-4 mt-1 text-white/35 flex-shrink-0">
+      <p className="relative z-10 text-center text-[0.65rem] h-4 mt-1 text-white/55 flex-shrink-0">
         {partnerDone && !iAmDone
           ? `${partnerLabel} ${t("co.partnerDone")}`
           : iAmDone && !partnerDone
@@ -429,7 +429,7 @@ export default function CoDrawScreen({
               >
                 {countdown || "🎨"}
               </motion.span>
-              <p className="text-white/35 text-xs mt-4 px-10 text-center">{t("co.hint")}</p>
+              <p className="text-white/55 text-xs mt-4 px-10 text-center">{t("co.hint")}</p>
             </motion.div>
           )}
         </AnimatePresence>

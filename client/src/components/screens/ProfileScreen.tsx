@@ -16,6 +16,7 @@ import { isPremiumUser, premiumOffered } from "@/lib/premium";
 import { deleteAccountAndData, getAccount, signOut, type Account } from "@/lib/auth";
 import PrivacySheet, { type LegalPage } from "@/components/PrivacySheet";
 import { toast } from "sonner";
+import { Globe, Volume2, VolumeX, UserRound, Trophy, Lock, FileText, MessageCircle, ChevronRight, Gamepad2, Target, Flame } from "lucide-react";
 
 const APP_VERSION = "1.3.0";
 import { getPlayerStats, getStreakData } from "@/lib/retention";
@@ -59,9 +60,10 @@ interface Props {
   onSignIn?: () => void;
   onAccountDeleted?: () => void;
   onSignedOut?: () => void;
+  onAchievements?: () => void;
 }
 
-export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn, onAccountDeleted, onSignedOut }: Props) {
+export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn, onAccountDeleted, onSignedOut, onAchievements }: Props) {
   const { t, locale, setLocale } = useLocale();
   const [profile, setProfile] = useState(getProfile());
   const [editing, setEditing] = useState(!profile.username.trim());
@@ -122,9 +124,9 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
   const playerStats = getPlayerStats();
   const level = computeLevel((profile.gamesPlayed ?? 0) * 10 + correctGuesses * 15 + playerStats.perfectGuesses * 20);
   const stats = [
-    { label: t("profile.games"), value: profile.gamesPlayed ?? 0, icon: "🎮" },
-    { label: t("profile.wins"), value: correctGuesses, icon: "🎯" },
-    { label: t("profile.streak"), value: streak, icon: "🔥" },
+    { label: t("profile.games"), value: profile.gamesPlayed ?? 0, icon: Gamepad2 },
+    { label: t("profile.wins"), value: correctGuesses, icon: Target },
+    { label: t("profile.streak"), value: streak, icon: Flame },
   ];
 
   return (
@@ -135,6 +137,7 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
       <header className="relative z-10 pt-10 px-5 flex items-center">
         <button
           onClick={() => { playTap(); onBack(); }}
+          aria-label={t("common.back")}
           className="size-10 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center active:scale-90 transition-transform"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-white/60">
@@ -182,7 +185,9 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
             </div>
           </div>
           <div className="flex flex-col items-center flex-shrink-0">
-            <span className="inline-flex items-center justify-center size-8 rounded-full bg-amber-400 text-black text-xs font-black">J</span>
+            <span className="size-8 rounded-full bg-[#FBBF24] flex items-center justify-center shadow-[inset_0_-2px_0_rgba(91,58,0,0.35)]" aria-hidden>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5B3A00" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5.5l1.9 4 4.4.5-3.3 3 .9 4.3L12 15.2l-3.9 2.1.9-4.3-3.3-3 4.4-.5z" /></svg>
+            </span>
             <span className="text-amber-300 text-sm font-black tabular-nums mt-0.5">{tokens}</span>
           </div>
         </div>
@@ -194,7 +199,7 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
               {stats.map(item => (
                 <div key={item.label} className="py-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] text-center">
                   <p className="text-xl font-black text-white tabular-nums leading-none">{item.value}</p>
-                  <p className="text-[0.6rem] text-white/40 mt-1.5">{item.icon} {item.label}</p>
+                  <p className="text-[0.7rem] text-white/50 mt-1.5 inline-flex items-center gap-1"><item.icon className="size-3" aria-hidden /> {item.label}</p>
                 </div>
               ))}
             </div>
@@ -294,13 +299,14 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
         {!editing && (
           <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] divide-y divide-white/[0.06]">
             <div className="flex items-center justify-between gap-3 px-4 py-3">
-              <span className="text-sm text-white/70">🌍 {t("profile.language")}</span>
+              <span className="text-sm text-white/75 inline-flex items-center gap-2.5"><Globe className="size-4 text-white/45" aria-hidden />{t("profile.language")}</span>
               <div className="flex gap-1">
                 {AVAILABLE_LOCALES.map(l => (
                   <button
                     key={l.code}
                     onClick={() => { playTap(); setLocale(l.code as Locale); }}
                     aria-label={l.name}
+                    aria-pressed={locale === l.code}
                     className={`size-9 rounded-lg text-lg flex items-center justify-center transition-colors ${locale === l.code ? "bg-white/15 ring-1 ring-white/40" : "opacity-50"}`}
                   >
                     {l.flag}
@@ -309,16 +315,16 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
               </div>
             </div>
 
-            <button onClick={handleToggleSound} className="w-full flex items-center justify-between px-4 py-3">
-              <span className="text-sm text-white/70">{soundOn ? "🔊" : "🔇"} {t("profile.sound")}</span>
+            <button onClick={handleToggleSound} role="switch" aria-checked={soundOn} className="w-full flex items-center justify-between px-4 py-3 min-h-[52px]">
+              <span className="text-sm text-white/75 inline-flex items-center gap-2.5">{soundOn ? <Volume2 className="size-4 text-white/45" aria-hidden /> : <VolumeX className="size-4 text-white/45" aria-hidden />}{t("profile.sound")}</span>
               <span className={`w-11 h-6 rounded-full relative transition-colors ${soundOn ? "bg-primary" : "bg-white/15"}`}>
                 <span className={`absolute top-0.5 size-5 rounded-full bg-white transition-all ${soundOn ? "left-[22px]" : "left-0.5"}`} />
               </span>
             </button>
 
             <div className="flex items-center justify-between gap-3 px-4 py-3">
-              <span className="text-sm text-white/70 truncate">
-                👤 {account ? (account.name || account.email || (account.provider === "apple" ? "Apple" : account.provider === "google" ? "Google" : "E-mail")) : t("profile.guest")}
+              <span className="text-sm text-white/75 truncate inline-flex items-center gap-2.5 min-w-0">
+                <UserRound className="size-4 text-white/45 shrink-0" aria-hidden />{account ? (account.name || account.email || (account.provider === "apple" ? "Apple" : account.provider === "google" ? "Google" : "E-mail")) : t("profile.guest")}
               </span>
               {account ? (
                 <button onClick={() => void handleSignOut()} className="text-xs font-semibold text-white/60 px-3 py-1.5 rounded-lg bg-white/[0.06]">{t("profile.signOut")}</button>
@@ -327,14 +333,20 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
               ) : null}
             </div>
 
+            {onAchievements && (
+              <button onClick={() => { playTap(); onAchievements(); }} className="w-full flex items-center justify-between px-4 py-3 min-h-[52px] text-sm text-white/75">
+                <span className="inline-flex items-center gap-2.5"><Trophy className="size-4 text-white/45" aria-hidden />{t("profile.achievements")}</span>
+                <ChevronRight className="size-4 text-white/30" aria-hidden />
+              </button>
+            )}
             {([
-              ["privacy", "🔒", "profile.privacy"],
-              ["terms", "📄", "legal.terms"],
-              ["support", "💬", "legal.support"],
-            ] as const).map(([page, icon, key]) => (
-              <button key={page} onClick={() => { playTap(); setLegal(page); }} className="w-full flex items-center justify-between px-4 py-3 text-sm text-white/70">
-                <span>{icon} {t(key)}</span>
-                <span className="text-white/30">›</span>
+              ["privacy", Lock, "profile.privacy"],
+              ["terms", FileText, "legal.terms"],
+              ["support", MessageCircle, "legal.support"],
+            ] as const).map(([page, Icon, key]) => (
+              <button key={page} onClick={() => { playTap(); setLegal(page); }} className="w-full flex items-center justify-between px-4 py-3 min-h-[52px] text-sm text-white/75">
+                <span className="inline-flex items-center gap-2.5"><Icon className="size-4 text-white/45" aria-hidden />{t(key)}</span>
+                <ChevronRight className="size-4 text-white/30" aria-hidden />
               </button>
             ))}
           </div>
@@ -344,12 +356,12 @@ export default function ProfileScreen({ onBack, partnerName, onPremium, onSignIn
           <div className="text-center space-y-2 pt-1">
             {confirmDelete && <p className="text-red-300/80 text-xs leading-relaxed px-4">{t("profile.deleteConfirm")}</p>}
             <div className="flex justify-center gap-3">
-              <button onClick={() => void handleDelete()} className={`text-xs font-semibold px-3 py-2 rounded-lg ${confirmDelete ? "bg-red-500 text-white" : "text-red-300/60"}`}>
+              <button onClick={() => void handleDelete()} className={`text-xs font-semibold px-3 py-2 rounded-lg ${confirmDelete ? "bg-red-500 text-white" : "text-red-300/85"}`}>
                 {t("profile.deleteAccount")}
               </button>
               {confirmDelete && <button onClick={() => setConfirmDelete(false)} className="text-xs px-3 py-2 rounded-lg bg-white/[0.06] text-white/60">{t("profile.cancel")}</button>}
             </div>
-            <p className="text-white/20 text-[0.6rem]">{t("profile.version")} {APP_VERSION}</p>
+            <p className="text-white/50 text-[0.65rem]">{t("profile.version")} {APP_VERSION}</p>
           </div>
         )}
       </main>

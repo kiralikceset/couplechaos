@@ -402,8 +402,8 @@ export function getScoreEmoji(score: number): string {
 export function getScoreLabel(score: number): string {
   const locale = getLocale() as 'tr' | 'en' | 'de' | 'es';
   const labels: Record<string, Record<string, string>> = {
-    terrible: { tr: 'Felaket', en: 'Disaster', de: 'Katastrophe', es: 'Desastre' },
-    bad: { tr: 'Kötü', en: 'Bad', de: 'Schlecht', es: 'Malo' },
+    terrible: { tr: 'Soyut sanat', en: 'Abstract art', de: 'Abstrakte Kunst', es: 'Arte abstracto' },
+    bad: { tr: 'Isınıyorsun', en: 'Warming up', de: 'Wird langsam', es: 'Calentando' },
     okay: { tr: 'Fena Değil', en: 'Not Bad', de: 'Nicht Schlecht', es: 'No Está Mal' },
     good: { tr: 'İyi', en: 'Good', de: 'Gut', es: 'Bueno' },
     amazing: { tr: 'Efsane!', en: 'Amazing!', de: 'Fantastisch!', es: '¡Increíble!' }

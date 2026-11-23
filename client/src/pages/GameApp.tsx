@@ -944,6 +944,7 @@ export default function GameApp({
             partnerName={partnerName}
             onPremium={() => openPaywall("upgrade")}
             onSignIn={() => navigate("login")}
+            onAchievements={() => navigate("achievements")}
             onSignedOut={() => {
               if (roomCode) leaveGame();
               setHistory([]);

@@ -400,3 +400,9 @@
 .cc-verdict { opacity: 0; transform: translateY(8px); animation: cc-verdict 0.35s ease-out 1.45s forwards; }
 @keyframes cc-verdict { to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .cc-verdict { animation: none; opacity: 1; transform: none; } }
+
+/* Keyboard focus everywhere (switch control, hardware keyboards, web) */
+:where(button, a, [role="button"], [role="switch"], [role="radio"], summary):focus-visible {
+  outline: 2px solid #F7F3FF;
+  outline-offset: 3px;
+}
