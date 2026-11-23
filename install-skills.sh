@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # Reinstalls every agent skill Couple Chaos uses into ~/.claude/skills (and agents into ~/.claude/agents).
-# Run: bash install-skills.sh
+# Run: bash install-skills.sh            (everything)
+#      bash install-skills.sh content    (only content/social/design: packages 8, 9, 10)
 set -euo pipefail
 SK=~/.claude/skills; AG=~/.claude/agents; TMP=$(mktemp -d); mkdir -p "$SK" "$AG"
 clone() { git clone -q --depth 1 "https://github.com/$1.git" "$TMP/$(echo "$1" | tr / _)"; }
 put() { local src=$1 name=$2; [ -e "$SK/$name" ] || cp -r "$src" "$SK/$name"; }
 
+MODE=${1:-all}
+if [ "$MODE" = all ]; then
 # 1. App Store Connect CLI skills (rorkai)
 clone rorkai/app-store-connect-cli-skills
 for d in "$TMP"/rorkai_app-store-connect-cli-skills/skills/*/; do put "$d" "$(basename "$d")"; done
@@ -17,6 +20,7 @@ for r in android/skills expo/skills flutter/agent-plugins twostraws/SwiftUI-Agen
     put "$(dirname "$f")" "$pre-$name"
   done
 done
+fi
 # 8. Design + marketing skills, edited (hsynozdamar-byte) + 6 agents
 clone hsynozdamar-byte/claude-skills-edited
 for d in "$TMP"/hsynozdamar-byte_claude-skills-edited/skills/*/; do put "$d" "$(basename "$d")"; done
