@@ -1,7 +1,7 @@
 /**
  * Home — a sketchbook page.
  * One big pink card for the main game (its doodle draws itself once on load),
- * two smaller tiles for the other modes, and a dashed "notebook" card for the
+ * two smaller tiles for the other modes, and a card for the
  * daily word with its letter boxes, time left and the leaderboard.
  */
 
@@ -66,6 +66,14 @@ function timeLeft(ms: number, template: string): string {
   return template.replace("{h}", String(Math.floor(minutes / 60))).replace("{m}", String(minutes % 60));
 }
 
+function Arrow() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
+  );
+}
+
 export default function HomeScreen({
   onPlayClassic,
   onPlayCoDraw,
@@ -121,8 +129,14 @@ export default function HomeScreen({
           className="flex items-center gap-1.5 h-10 pl-3 pr-3.5 rounded-full bg-[#17141D] text-sm font-semibold"
         >
           <span aria-hidden>🔥</span>
-          <span className="tabular-nums">{streak}</span>
-          <span className="text-[#8C8798] font-normal">{t("home.streak")}</span>
+          {streak > 0 ? (
+            <>
+              <span className="tabular-nums">{streak}</span>
+              <span className="text-[#8C8798] font-normal">{t("home.streak")}</span>
+            </>
+          ) : (
+            <span className="text-[#B9B3C7] font-medium">{t("home.streakStart")}</span>
+          )}
         </button>
         <div className="flex items-center gap-2">
           <button
@@ -130,7 +144,9 @@ export default function HomeScreen({
             aria-label={selling ? t("shop.title") : undefined}
             className={`flex items-center gap-1.5 h-10 pl-1.5 rounded-full bg-[#17141D] text-sm font-semibold ${selling ? "pr-1.5" : "pr-3.5"}`}
           >
-            <span className="size-7 rounded-full bg-[#FBBF24] text-[#5B3A00] font-black text-[0.8rem] flex items-center justify-center" aria-hidden>J</span>
+            <span className="size-7 rounded-full bg-[#FBBF24] flex items-center justify-center shadow-[inset_0_-2px_0_rgba(91,58,0,0.35)]" aria-hidden>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B3A00" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5.5l1.9 4 4.4.5-3.3 3 .9 4.3L12 15.2l-3.9 2.1.9-4.3-3.3-3 4.4-.5z" /></svg>
+            </span>
             <span className="tabular-nums">{tokens}</span>
             {selling && <span className="size-7 rounded-full bg-[#FF1A6C] text-white text-lg leading-none flex items-center justify-center" aria-hidden>+</span>}
           </button>
@@ -176,7 +192,7 @@ export default function HomeScreen({
         {/* Main game */}
         <button
           onClick={tap(onPlayClassic)}
-          className="cc-press mt-6 w-full text-left relative overflow-hidden rounded-[28px] bg-[#FF1A6C] text-white p-5 pb-5 min-h-[208px] flex flex-col justify-end"
+          className="cc-press cc-rise mt-6 w-full text-left relative overflow-hidden rounded-[28px] bg-[#FF1A6C] text-white p-5 pb-5 min-h-[208px] flex flex-col justify-end"
         >
           <div className="absolute right-3 top-3 w-[54%] max-w-[210px] aspect-[4/3] text-white/95" aria-hidden>
             <HeartDoodle />
@@ -192,12 +208,15 @@ export default function HomeScreen({
         </button>
 
         {/* Other modes */}
-        <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="cc-rise mt-3 grid grid-cols-2 gap-3" style={{ animationDelay: "60ms" }}>
           <button
             onClick={tap(onPlayCoDraw)}
             className="cc-press text-left rounded-[24px] bg-[#8B5CF6] text-white p-4 min-h-[156px] flex flex-col justify-between"
           >
-            <div className="w-16 h-11 text-white" aria-hidden><CanvasDoodle /></div>
+            <div className="flex items-start justify-between">
+              <div className="w-16 h-11 text-white" aria-hidden><CanvasDoodle /></div>
+              <span className="size-8 rounded-full bg-white/20 flex items-center justify-center" aria-hidden><Arrow /></span>
+            </div>
             <div>
               <h3 className="font-display text-lg font-bold leading-tight">{t("home.coDraw")}</h3>
               <p className="mt-1 text-white/80 text-xs leading-snug">{t("home.coDrawShort")}</p>
@@ -207,7 +226,10 @@ export default function HomeScreen({
             onClick={tap(onPlaySolo)}
             className="cc-press text-left rounded-[24px] bg-[#FBBF24] text-[#07060A] p-4 min-h-[156px] flex flex-col justify-between"
           >
-            <div className="w-12 h-11" aria-hidden><BotDoodle /></div>
+            <div className="flex items-start justify-between">
+              <div className="w-12 h-11" aria-hidden><BotDoodle /></div>
+              <span className="size-8 rounded-full bg-[#07060A]/10 flex items-center justify-center" aria-hidden><Arrow /></span>
+            </div>
             <div>
               <h3 className="font-display text-lg font-bold leading-tight">{t("home.solo")}</h3>
               <p className="mt-1 text-[#07060A]/70 text-xs leading-snug">{t("home.soloShort")}</p>
@@ -216,7 +238,7 @@ export default function HomeScreen({
         </div>
 
         {/* Daily word: a notebook page */}
-        <div className="mt-3 rounded-[24px] border-2 border-dashed border-[#2A2533] p-4">
+        <div className="cc-rise mt-3 rounded-[24px] bg-[#121016] border border-white/[0.06] p-4" style={{ animationDelay: "120ms" }}>
           <button onClick={tap(onDailyChallenge)} className="w-full text-left">
             <div className="flex items-baseline justify-between gap-3">
               <h3 className="font-display text-lg font-bold">{t("home.dailyTitle")}</h3>
@@ -230,7 +252,7 @@ export default function HomeScreen({
                 char === " " ? (
                   <span key={index} className="flex-[0_0_10px]" />
                 ) : (
-                  <span key={index} className="flex-[0_1_28px] min-w-0 h-8 rounded-[6px] bg-[#17141D] border-b-[3px] border-[#FBBF24]" />
+                  <span key={index} className="cc-tile flex-[0_1_28px] min-w-0 h-8 rounded-[6px] bg-[#1D1924] border-b-[3px] border-[#FBBF24]" style={{ animationDelay: `${200 + index * 40}ms` }} />
                 ),
               )}
             </div>
@@ -239,9 +261,10 @@ export default function HomeScreen({
           <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
             <button
               onClick={tap(onDailyChallenge)}
-              className="cc-press h-12 rounded-2xl bg-[#F7F3FF] text-[#07060A] text-sm font-bold"
+              className="cc-press h-12 rounded-2xl bg-[#FBBF24] text-[#07060A] text-sm font-bold inline-flex items-center justify-center gap-2"
             >
-              {t("home.play")}
+              {dailyCompleted ? t("home.dailySeeResult") : t("home.dailyPlay")}
+              <Arrow />
             </button>
             <button
               onClick={tap(onLeaderboard)}

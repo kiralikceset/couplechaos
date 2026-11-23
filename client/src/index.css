@@ -351,6 +351,15 @@
   .cc-press:active { transform: none; }
 }
 
+/* Home: the cards rise in once, the daily word's letter tiles pop one by one. */
+.cc-rise { opacity: 0; transform: translateY(14px); animation: cc-rise .42s cubic-bezier(.2,.8,.2,1) forwards; }
+@keyframes cc-rise { to { opacity: 1; transform: none; } }
+.cc-tile { transform: scaleY(.2); opacity: 0; transform-origin: bottom; animation: cc-tile .3s cubic-bezier(.3,1.5,.5,1) forwards; }
+@keyframes cc-tile { to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .cc-rise, .cc-tile { animation: none; opacity: 1; transform: none; }
+}
+
 /* Login: the polaroid drops in, the couple draws itself, stickers pop around it. */
 .cc-login-card { opacity: 0; transform: translateY(24px) rotate(-8deg) scale(.92); animation: cc-login-card .55s cubic-bezier(.3,1.4,.5,1) .05s forwards; }
 @keyframes cc-login-card { to { opacity: 1; transform: rotate(-3deg); } }
