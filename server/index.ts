@@ -1288,7 +1288,17 @@ function createGameServer() {
   server.keepAliveTimeout = LONG_POLL_MS + 5000;
   server.headersTimeout = LONG_POLL_MS + 6000;
   app.disable("x-powered-by");
-  app.set("trust proxy", true);
+  // Client IPs (rate limits) come from X-Forwarded-For. Render appends to that header instead of replacing it,
+  // so set TRUST_PROXY to the hop count (e.g. 3) once confirmed; "true" keeps the old behaviour.
+  const trustProxy = (process.env.TRUST_PROXY || "true").trim();
+  app.set("trust proxy", /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy === "true");
+  app.use((_request: Request, response: Response, next: NextFunction) => {
+    response.setHeader("X-Content-Type-Options", "nosniff");
+    response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    response.setHeader("X-Frame-Options", "DENY");
+    response.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    next();
+  });
 
   // The app runs from https://localhost (Android) and capacitor://localhost (iOS),
   // so every API call is cross-origin. Auth is a bearer token, not a cookie, so "*" is safe.

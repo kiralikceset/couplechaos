@@ -21,6 +21,11 @@ const CODE_TTL_MS = 10 * 60_000;
 const RESEND_AFTER_MS = 45_000;
 const MAX_ATTEMPTS = 5;
 const MAX_PENDING = 5000;
+const HOUR_MS = 60 * 60_000;
+// Caps that hold even if an attacker rotates IPs: codes per address, and emails per hour overall
+// (protects the Brevo quota and stops the endpoint being used to spam strangers).
+const MAX_SENDS_PER_EMAIL_PER_HOUR = 5;
+const DEFAULT_GLOBAL_SENDS_PER_HOUR = 150;
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[a-z]{2,24}$/i;
 
 interface Pending {
@@ -64,15 +69,22 @@ function brevoSender(): MailSender | null {
   };
 }
 
-export function createEmailAuth(options: { sender?: MailSender | null; now?: () => number; production?: boolean } = {}) {
+export function createEmailAuth(options: { sender?: MailSender | null; now?: () => number; production?: boolean; globalHourlyCap?: number } = {}) {
   const pending = new Map<string, Pending>();
+  const sendsByEmail = new Map<string, number[]>();
+  let globalSends: number[] = [];
   const now = options.now ?? Date.now;
   const production = options.production ?? process.env.NODE_ENV === "production";
   const sender = options.sender !== undefined ? options.sender : brevoSender();
+  const globalCap = options.globalHourlyCap ?? (Number(process.env.EMAIL_HOURLY_CAP) || DEFAULT_GLOBAL_SENDS_PER_HOUR);
 
   function sweep() {
     const time = now();
     pending.forEach((entry, email) => { if (entry.expires < time) pending.delete(email); });
+    sendsByEmail.forEach((times, email) => {
+      const recent = times.filter((t) => time - t < HOUR_MS);
+      if (recent.length) sendsByEmail.set(email, recent); else sendsByEmail.delete(email);
+    });
   }
 
   async function start(rawEmail: unknown, locale: unknown): Promise<void> {
@@ -83,6 +95,16 @@ export function createEmailAuth(options: { sender?: MailSender | null; now?: () 
     if (existing && now() - existing.sentAt < RESEND_AFTER_MS) throw new AuthError(429, "WAIT_BEFORE_RESEND");
     if (pending.size >= MAX_PENDING) sweep();
     if (pending.size >= MAX_PENDING) throw new AuthError(503, "BUSY");
+    const time = now();
+    const lastSends = (sendsByEmail.get(email) || []).filter((t) => time - t < HOUR_MS);
+    if (lastSends.length && time - lastSends[lastSends.length - 1] < RESEND_AFTER_MS) throw new AuthError(429, "WAIT_BEFORE_RESEND");
+    if (lastSends.length >= MAX_SENDS_PER_EMAIL_PER_HOUR) throw new AuthError(429, "WAIT_BEFORE_RESEND");
+    globalSends = globalSends.filter((t) => time - t < HOUR_MS);
+    if (globalSends.length >= globalCap) throw new AuthError(503, "BUSY");
+    lastSends.push(time);
+    sendsByEmail.set(email, lastSends);
+    globalSends.push(time);
+    if (sendsByEmail.size > MAX_PENDING) sweep();
 
     const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
     pending.set(email, { hash: hashCode(email, code), expires: now() + CODE_TTL_MS, sentAt: now(), attempts: 0 });

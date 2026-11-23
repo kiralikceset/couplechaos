@@ -53,4 +53,22 @@ describe("email sign-in", () => {
     const auth = createEmailAuth({ sender: null, production: true });
     await expect(auth.start("a@b.co", "en")).rejects.toThrow("EMAIL_NOT_CONFIGURED");
   });
+
+  it("caps codes per address even after a lockout", async () => {
+    const { auth, tick } = setup();
+    for (let i = 0; i < 5; i++) {
+      await auth.start("a@b.co", "en");
+      for (let j = 0; j < 5; j++) { try { auth.verify("a@b.co", "999999"); } catch { /* wrong */ } }
+      tick(46_000);
+    }
+    await expect(auth.start("a@b.co", "en")).rejects.toThrow("WAIT_BEFORE_RESEND");
+    tick(60 * 60_000);
+    await expect(auth.start("a@b.co", "en")).resolves.toBeUndefined();
+  });
+
+  it("caps emails per hour overall", async () => {
+    const auth = createEmailAuth({ sender: async () => {}, now: () => 5_000_000, production: true, globalHourlyCap: 3 });
+    for (let i = 0; i < 3; i++) await auth.start(`u${i}@b.co`, "en");
+    await expect(auth.start("u9@b.co", "en")).rejects.toThrow("BUSY");
+  });
 });
