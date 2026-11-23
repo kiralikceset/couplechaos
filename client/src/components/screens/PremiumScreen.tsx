@@ -3,7 +3,7 @@
  * Shows what Premium adds, two plans (yearly preselected), the price and renewal terms the
  * App Store requires, and Restore / Terms / Privacy.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useLocale } from "@/contexts/LocaleContext";
 import PrivacySheet from "@/components/PrivacySheet";
@@ -31,24 +31,46 @@ interface Props {
   onPurchased: () => void;
 }
 
-function Crown() {
+
+const PERK_ICONS: Record<string, ReactNode> = {
+  unlimited: <path d="M7 12c0-2.2 1.6-4 3.6-4 3.6 0 4.2 8 7.8 8 2 0 3.6-1.8 3.6-4s-1.6-4-3.6-4c-3.6 0-4.2 8-7.8 8C8.6 16 7 14.2 7 12z" transform="translate(-3 0)" />,
+  partner: <path d="M9 19s-6-3.6-6-8.2C3 8.6 4.6 7 6.6 7 7.8 7 9 7.8 9 9c0-1.2 1.2-2 2.4-2 2 0 3.6 1.6 3.6 3.8M15 21s-4.5-2.7-4.5-6.1c0-1.6 1.2-2.9 2.7-2.9.9 0 1.8.6 1.8 1.5 0-.9.9-1.5 1.8-1.5 1.5 0 2.7 1.3 2.7 2.9 0 3.4-4.5 6.1-4.5 6.1z" />,
+  weekly: <><circle cx="12" cy="12" r="8" /><path d="M12 7.5l1.4 2.9 3.2.4-2.4 2.2.6 3.1L12 14.6l-2.8 1.5.6-3.1-2.4-2.2 3.2-.4z" /></>,
+  double: <path d="M5 8l5 8M10 8l-5 8M14.5 9.5c0-1.4 1.1-2.5 2.6-2.5s2.6 1 2.6 2.4c0 2.6-5.2 3.9-5.2 6.6h5.4" />,
+};
+
+function Perk({ kind, color, title, text, delay }: { kind: string; color: string; title: string; text: string; delay: number }) {
   return (
-    <svg viewBox="0 0 120 92" className="w-[52px] h-auto" aria-hidden>
-      <path d="M8 80 L4 24 L32 48 L60 8 L88 48 L116 24 L112 80 Z" fill="#FBBF24" stroke="#07060A" strokeWidth="6" strokeLinejoin="round" />
-      <circle cx="60" cy="8" r="7" fill="#FF1A6C" stroke="#07060A" strokeWidth="5" />
-      <path d="M22 66 H98" stroke="#07060A" strokeWidth="5" strokeLinecap="round" opacity="0.35" />
-    </svg>
+    <li className="cc-rise flex items-start gap-3.5" style={{ animationDelay: `${delay}ms` }}>
+      <span className="size-11 shrink-0 rounded-[14px] flex items-center justify-center" style={{ background: color }} aria-hidden>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#07060A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{PERK_ICONS[kind]}</svg>
+      </span>
+      <span className="pt-0.5">
+        <span className="block text-[1rem] font-semibold text-[#F7F3FF] leading-tight">{title}</span>
+        <span className="block mt-1 text-[0.85rem] text-[#8C8798] leading-snug">{text}</span>
+      </span>
+    </li>
   );
 }
 
-function Perk({ icon, color, title, text }: { icon: string; color: string; title: string; text: string }) {
+/** The two of you, crowned. */
+function Hero() {
   return (
-    <li className="flex items-center gap-3" title={text}>
-      <span className="size-8 shrink-0 rounded-lg flex items-center justify-center font-display font-bold text-sm text-[#07060A]" style={{ background: color }} aria-hidden>
-        {icon}
-      </span>
-      <span className="text-[0.95rem] font-semibold text-[#F7F3FF] leading-tight">{title}</span>
-    </li>
+    <svg viewBox="0 0 260 150" className="w-[230px] h-auto" aria-hidden>
+      <g className="cc-hero-a"><circle cx="92" cy="98" r="42" fill="#F7F3FF" />
+        <circle cx="78" cy="94" r="4.5" fill="#FF1A6C" /><circle cx="104" cy="94" r="4.5" fill="#FF1A6C" />
+        <path d="M76 110 q16 14 32 0" fill="none" stroke="#FF1A6C" strokeWidth="6" strokeLinecap="round" /></g>
+      <g className="cc-hero-b"><circle cx="168" cy="98" r="42" fill="#07060A" stroke="#F7F3FF" strokeOpacity=".15" strokeWidth="2" />
+        <path d="M150 93 q7-8 14 0 M172 93 q7-8 14 0" fill="none" stroke="#FBBF24" strokeWidth="5" strokeLinecap="round" />
+        <path d="M152 110 q16 14 32 0" fill="none" stroke="#FBBF24" strokeWidth="6" strokeLinecap="round" /></g>
+      <g className="cc-hero-crown">
+        <path d="M100 44 L96 12 L113 26 L130 4 L147 26 L164 12 L160 44 Z" fill="#FBBF24" stroke="#07060A" strokeWidth="4" strokeLinejoin="round" />
+        <circle cx="130" cy="4" r="5" fill="#FF1A6C" stroke="#07060A" strokeWidth="3" />
+      </g>
+      <g className="cc-hero-spark" stroke="#FBBF24" strokeWidth="4" strokeLinecap="round">
+        <path d="M36 40 l-14 -10 M30 62 l-18 0 M224 40 l14 -10 M230 62 l18 0" />
+      </g>
+    </svg>
   );
 }
 
@@ -156,7 +178,7 @@ export default function PremiumScreen({ reason, onBack, onPurchased }: Props) {
         >
           ×
         </button>
-        <Crown />
+        <span className="font-display text-sm font-bold tracking-[0.02em] text-[#FBBF24]">PREMIUM</span>
         {native && !status.isPremium ? (
           <button onClick={() => void restore()} className="h-10 min-w-10 px-2 rounded-full text-sm font-semibold text-[#B9B3C7]">
             {busy === "restore" ? "…" : t("premium.restore")}
@@ -167,20 +189,38 @@ export default function PremiumScreen({ reason, onBack, onPurchased }: Props) {
       </header>
 
       <main className="relative z-10 flex-1 overflow-y-auto px-6 pb-6">
-        <h1 className="mt-5 font-display text-[1.85rem] leading-[1.05] font-bold tracking-[-0.02em]">{title}</h1>
-        <p className="mt-2 text-[#B9B3C7] text-base leading-snug">{lead}</p>
+        <div className="relative -mx-6 mt-3 pt-4 pb-2 flex justify-center overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-full bg-[radial-gradient(60%_80%_at_50%_45%,rgba(255,26,108,0.38),transparent_70%)]" aria-hidden />
+          <div className="relative"><Hero /></div>
+        </div>
+        <h1 className="mt-3 text-center font-display text-[1.85rem] leading-[1.05] font-bold tracking-[-0.02em] text-balance">{title}</h1>
+        <p className="mt-2 text-center text-[#B9B3C7] text-base leading-snug text-balance">{lead}</p>
         {reason === "limit" && !status.isPremium && (
-          <p className="mt-2 text-sm text-[#FBBF24]">
+          <p className="mt-2 text-center text-sm text-[#FBBF24]">
             {t("premium.refill").replace("{h}", String(hours)).replace("{m}", String(minutes))}
           </p>
         )}
 
-        <ul className="mt-5 flex flex-col gap-2.5">
-          <Perk icon="∞" color="#FF1A6C" title={t("premium.perk.unlimited")} text={t("premium.perk.unlimitedText").replace("{n}", String(FREE_DAILY_LIMIT))} />
-          <Perk icon="♥" color="#8B5CF6" title={t("premium.perk.partner")} text={t("premium.perk.partnerText")} />
-          <Perk icon="J" color="#FBBF24" title={t("premium.perk.weekly").replace("{n}", String(WEEKLY_BONUS_TOKENS))} text={t("premium.perk.weeklyText")} />
-          <Perk icon={`×${PREMIUM_TOKEN_MULTIPLIER}`} color="#F7F3FF" title={t("premium.perk.double")} text={t("premium.perk.doubleText")} />
+        <ul className="mt-7 flex flex-col gap-4">
+          <Perk kind="unlimited" color="#FF1A6C" delay={80} title={t("premium.perk.unlimited")} text={t("premium.perk.unlimitedText").replace("{n}", String(FREE_DAILY_LIMIT))} />
+          <Perk kind="partner" color="#8B5CF6" delay={140} title={t("premium.perk.partner")} text={t("premium.perk.partnerText")} />
+          <Perk kind="weekly" color="#FBBF24" delay={200} title={t("premium.perk.weekly").replace("{n}", String(WEEKLY_BONUS_TOKENS))} text={t("premium.perk.weeklyText")} />
+          <Perk kind="double" color="#F7F3FF" delay={260} title={t("premium.perk.double")} text={t("premium.perk.doubleText")} />
         </ul>
+        {selected?.trialDays ? (
+          <ol className="mt-7 rounded-[22px] bg-[#121016] border border-white/[0.06] px-4 py-4 flex flex-col gap-3">
+            <li className="flex items-center gap-3">
+              <span className="size-7 rounded-full bg-[#FF1A6C] flex items-center justify-center" aria-hidden>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7" /></svg>
+              </span>
+              <span className="text-sm"><b className="font-semibold">{t("premium.timelineToday")}</b> <span className="text-[#8C8798]">{t("premium.timelineTodayText")}</span></span>
+            </li>
+            <li className="flex items-center gap-3">
+              <span className="size-7 rounded-full bg-[#2A2533] flex items-center justify-center text-[0.7rem] font-bold tabular-nums" aria-hidden>{selected.trialDays}</span>
+              <span className="text-sm"><b className="font-semibold">{t("premium.timelineDay").replace("{n}", String(selected.trialDays))}</b> <span className="text-[#8C8798]">{t("premium.timelineDayText").replace("{price}", afterTrial)}</span></span>
+            </li>
+          </ol>
+        ) : null}
 
         {!native && !status.isPremium && (
           <p className="mt-7 rounded-[22px] bg-[#17141D] px-4 py-4 text-sm text-[#B9B3C7]">{t("premium.appOnly")}</p>
@@ -211,11 +251,14 @@ export default function PremiumScreen({ reason, onBack, onPurchased }: Props) {
                       active ? "border-[#FF1A6C] bg-[#FF1A6C]/10" : "border-[#2A2533] bg-[#17141D]"
                     }`}
                   >
-                    {id === "yearly" && savings > 0 && (
+                    {id === "yearly" && (
                       <span className="absolute -top-2.5 left-3 rounded-full bg-[#FBBF24] text-[#07060A] text-[0.68rem] font-bold px-2 py-0.5">
-                        {t("premium.save").replace("{n}", String(savings))}
+                        {savings > 0 ? t("premium.save").replace("{n}", String(savings)) : t("premium.bestValue")}
                       </span>
                     )}
+                    <span className={`absolute top-3 right-3 size-5 rounded-full border-2 flex items-center justify-center ${active ? "border-[#FF1A6C] bg-[#FF1A6C]" : "border-[#4A4453]"}`} aria-hidden>
+                      {active && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7" /></svg>}
+                    </span>
                     <span className="block text-sm font-semibold text-[#B9B3C7]">{t(id === "yearly" ? "premium.yearly" : "premium.monthly")}</span>
                     <span className="block mt-0.5 font-display text-xl font-bold tabular-nums">{product?.price ?? (failed ? "—" : "…")}</span>
                     <span className="block text-[0.75rem] text-[#8C8798] leading-snug min-h-[2.1em]">
@@ -238,7 +281,7 @@ export default function PremiumScreen({ reason, onBack, onPurchased }: Props) {
             <button
               onClick={() => void subscribe()}
               disabled={!selected || busy !== null}
-              className="cc-press w-full h-14 rounded-2xl bg-[#FF1A6C] text-white font-bold text-lg disabled:opacity-50"
+              className="cc-press cc-shine relative overflow-hidden w-full h-14 rounded-2xl bg-[#FF1A6C] text-white font-bold text-lg shadow-[0_14px_30px_-12px_rgba(255,26,108,0.7)] disabled:opacity-50"
             >
               {busy === "buy" ? "…" : ctaLabel}
             </button>
