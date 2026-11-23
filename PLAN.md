@@ -9,6 +9,9 @@ Metricool brand id 8298890 (instagram + tiktok, timezone Europe/Istanbul).
 Short, fun, curiosity-first: one punchy line + a tag/comment prompt + 4 hashtags. No research recap in the caption.
 Example: "The talker vs. the silent type. Tag your duo 👀💬"
 
+## Thumbnails (user feedback 2026-11-23)
+The cover must look like a thumbnail, not a video frame: bold Space Grotesk title on the notebook page, pink highlight, small Caveat kicker, pink badge + app icon (template: /home/claude/work/d1/thumb.html). Put it as the first 0.5 s of the video too (TikTok personal ignores videoThumbnailUrl).
+
 ## Topic queue (from the user's 14-day plan; English, 15-25 s, verify every source first)
 3. Hall 2017 humor meta-analysis: "Laugh with them, not at them" -> app tie-in (day 11)
 4. Aron 1997: "Ask your partner these 3 questions tonight" (day 3)
