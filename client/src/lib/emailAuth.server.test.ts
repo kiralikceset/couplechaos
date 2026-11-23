@@ -71,4 +71,15 @@ describe("email sign-in", () => {
     for (let i = 0; i < 3; i++) await auth.start(`u${i}@b.co`, "en");
     await expect(auth.start("u9@b.co", "en")).rejects.toThrow("BUSY");
   });
+
+  it("lets the store reviewer in with a fixed code", async () => {
+    process.env.REVIEW_EMAIL = "review@couplechaos.app"; process.env.REVIEW_CODE = "246810";
+    const sent: string[] = [];
+    const auth = createEmailAuth({ sender: async (to) => { sent.push(to); }, production: true });
+    await auth.start("Review@CoupleChaos.app", "en");
+    expect(sent).toHaveLength(0);
+    expect(() => auth.verify("review@couplechaos.app", "000000")).toThrow("WRONG_CODE");
+    expect(auth.verify("review@couplechaos.app", "246810").provider).toBe("email");
+    delete process.env.REVIEW_EMAIL; delete process.env.REVIEW_CODE;
+  });
 });

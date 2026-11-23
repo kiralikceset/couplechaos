@@ -76,6 +76,9 @@ export function createEmailAuth(options: { sender?: MailSender | null; now?: () 
   const now = options.now ?? Date.now;
   const production = options.production ?? process.env.NODE_ENV === "production";
   const sender = options.sender !== undefined ? options.sender : brevoSender();
+  // Store reviewers (Play Console "App access", App Review notes) get a fixed address and code: no inbox needed.
+  const reviewEmail = normalizeEmail(process.env.REVIEW_EMAIL || "");
+  const reviewCode = /^\d{6}$/.test(process.env.REVIEW_CODE || "") ? String(process.env.REVIEW_CODE) : "";
   const globalCap = options.globalHourlyCap ?? (Number(process.env.EMAIL_HOURLY_CAP) || DEFAULT_GLOBAL_SENDS_PER_HOUR);
 
   function sweep() {
@@ -90,6 +93,7 @@ export function createEmailAuth(options: { sender?: MailSender | null; now?: () 
   async function start(rawEmail: unknown, locale: unknown): Promise<void> {
     const email = normalizeEmail(rawEmail);
     if (!email) throw new AuthError(400, "BAD_EMAIL");
+    if (reviewEmail && reviewCode && email === reviewEmail) return;
     if (!sender && production) throw new AuthError(503, "EMAIL_NOT_CONFIGURED");
     const existing = pending.get(email);
     if (existing && now() - existing.sentAt < RESEND_AFTER_MS) throw new AuthError(429, "WAIT_BEFORE_RESEND");
@@ -134,6 +138,10 @@ export function createEmailAuth(options: { sender?: MailSender | null; now?: () 
     const email = normalizeEmail(rawEmail);
     const code = typeof rawCode === "string" ? rawCode.replace(/\D/g, "") : "";
     if (!email || code.length !== 6) throw new AuthError(400, "BAD_CODE");
+    if (reviewEmail && reviewCode && email === reviewEmail) {
+      if (!timingSafeEqual(Buffer.from(code), Buffer.from(reviewCode))) throw new AuthError(401, "WRONG_CODE");
+      return { id: emailUserId(email), provider: "email", email, name: "" };
+    }
     const entry = pending.get(email);
     if (!entry || entry.expires < now()) {
       pending.delete(email);
