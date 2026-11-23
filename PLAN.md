@@ -6,8 +6,6 @@ Files go to branch social-media: videos/YYYY-MM-DD-a.mp4, covers/YYYY-MM-DD-a.pn
 Metricool brand id 8298890 (instagram + tiktok, timezone Europe/Istanbul).
 
 ## Topic queue (from the user's 14-day plan; English, 15-25 s, verify every source first)
-1. Demand–withdraw: "One of you talks, the other goes quiet" (day 6)
-2. Aron 2000: "Your relationship isn't boring. Your routine is." (day 2)
 3. Hall 2017 humor meta-analysis: "Laugh with them, not at them" -> app tie-in (day 11)
 4. Aron 1997: "Ask your partner these 3 questions tonight" (day 3)
 5. Responsiveness (Arican-Dinc & Gable 2023): "Listening isn't understanding" (days 4+8 merged)
@@ -21,4 +19,5 @@ Skip: Gottman 69% and love languages (already made). Strip utm_source=chatgpt.co
 Every post gets a cover image (videoThumbnailUrl; TikTok uses it only on Business accounts).
 
 ## Done
+- 2026-11-23: demand–withdraw (18:30), Aron 2000 routine (21:30), both notebook style
 - love languages (notebook), Gottman 69%, Baylor phubbing, launch teaser
