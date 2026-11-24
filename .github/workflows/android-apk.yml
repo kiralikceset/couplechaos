@@ -23,7 +23,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: android-actions/setup-android@v3
       - name: Build web and sync Android
         run: |
           pnpm install --frozen-lockfile
@@ -31,6 +30,7 @@ jobs:
           npx cap sync android
       - name: Assemble debug APK
         run: |
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon -q
