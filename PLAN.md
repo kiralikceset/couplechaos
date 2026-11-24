@@ -12,6 +12,9 @@ Example: "The talker vs. the silent type. Tag your duo 👀💬"
 ## Thumbnails (user feedback 2026-11-23)
 The cover must look like a thumbnail, not a video frame: bold Space Grotesk title on the notebook page, pink highlight, small Caveat kicker, pink badge + app icon (template: /home/claude/work/d1/thumb.html). Put it as the first 0.5 s of the video too (TikTok personal ignores videoThumbnailUrl).
 
+## Tools
+- HyperFrames (heygen-com/hyperframes, Apache-2.0): HTML → MP4 with a block catalog (kinetic captions, charts, transitions). Installed by install-skills.sh; render with HYPERFRAMES_BROWSER_PATH set to the Playwright Chromium. Tested 2026-11-24 (10 s sample rendered in 29 s).
+
 ## Topic queue (from the user's 14-day plan; English, 15-25 s, verify every source first)
 5. Responsiveness (Arican-Dinc & Gable 2023): "Listening isn't understanding" (days 4+8 merged)
 6. Gordon 2012 gratitude: "When did you last really thank them?" (day 12)

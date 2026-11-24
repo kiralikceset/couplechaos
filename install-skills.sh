@@ -31,3 +31,10 @@ for d in "$TMP"/ScrapeCreators_social-media-research-skills/skills/*/; do put "$
 # 10. Animation styles (Remotion); run `npm install` inside it before rendering
 [ -e "$SK/animation-styles" ] || git clone -q --depth 1 https://github.com/deenukhan/animation-styles.git "$SK/animation-styles"
 rm -rf "$TMP"; echo "skills: $(ls "$SK" | wc -l), agents: $(ls "$AG" | wc -l)"
+
+# HyperFrames (HeyGen) — HTML → MP4 video framework + agent skills
+if [ ! -d /home/claude/heygen-com/hyperframes ]; then GIT_LFS_SKIP_SMUDGE=1 git clone -q --depth 1 https://github.com/heygen-com/hyperframes /home/claude/heygen-com/hyperframes; fi
+for s in hyperframes hyperframes-cli hyperframes-registry media-use style-sampling reverse-any-video remotion-to-hyperframes; do rm -rf ~/.claude/skills/$s; cp -r /home/claude/heygen-com/hyperframes/skills/$s ~/.claude/skills/; done
+mkdir -p /home/claude/work/hf && (cd /home/claude/work/hf && npm i hyperframes --silent)
+# Chrome download is blocked here: render with the Playwright Chromium
+echo 'export HYPERFRAMES_BROWSER_PATH=$(ls -d /opt/pw-browsers/chromium-*/chrome-linux*/chrome | head -1)' >> ~/.bashrc
