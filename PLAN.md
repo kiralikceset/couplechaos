@@ -13,8 +13,6 @@ Example: "The talker vs. the silent type. Tag your duo 👀💬"
 The cover must look like a thumbnail, not a video frame: bold Space Grotesk title on the notebook page, pink highlight, small Caveat kicker, pink badge + app icon (template: /home/claude/work/d1/thumb.html). Put it as the first 0.5 s of the video too (TikTok personal ignores videoThumbnailUrl).
 
 ## Topic queue (from the user's 14-day plan; English, 15-25 s, verify every source first)
-3. Hall 2017 humor meta-analysis: "Laugh with them, not at them" -> app tie-in (day 11)
-4. Aron 1997: "Ask your partner these 3 questions tonight" (day 3)
 5. Responsiveness (Arican-Dinc & Gable 2023): "Listening isn't understanding" (days 4+8 merged)
 6. Gordon 2012 gratitude: "When did you last really thank them?" (day 12)
 7. Rituals (Garcia-Rada, Sezer & Norton): "Happy couples have weird little rituals" (day 13)
@@ -26,5 +24,6 @@ Skip: Gottman 69% and love languages (already made). Strip utm_source=chatgpt.co
 Every post gets a cover image (videoThumbnailUrl; TikTok uses it only on Business accounts).
 
 ## Done
+- 2026-11-24 (scripts sent): Hall 2017 humor (18:30), Aron 1997 questions (21:30)
 - 2026-11-23: demand–withdraw (18:30), Aron 2000 routine (21:30), both notebook style
 - love languages (notebook), Gottman 69%, Baylor phubbing, launch teaser
