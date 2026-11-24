@@ -1,0 +1,44 @@
+# Builds an installable debug APK on a cloud machine and publishes it to the ci-apk branch.
+# Run: GitHub → Actions → "Android APK" → Run workflow.
+name: Android APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - name: Build web and sync Android
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+          npx cap sync android
+      - name: Assemble debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon -q
+          ls -la app/build/outputs/apk/debug/
+      - name: Publish APK to the ci-apk branch
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" && cd "$RUNNER_TEMP/out"
+          cp "$GITHUB_WORKSPACE/android/app/build/outputs/apk/debug/app-debug.apk" CoupleChaos-debug.apk
+          git init -q && git checkout -q -b ci-apk && git add . 
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "Debug APK run ${{ github.run_number }} (${{ github.sha }})"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-apk
