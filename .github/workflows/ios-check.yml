@@ -6,6 +6,9 @@ name: iOS build check
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: macos-26
@@ -53,3 +56,10 @@ jobs:
             ${{ runner.temp }}/launch.png
             ${{ runner.temp }}/launch2.png
             ${{ runner.temp }}/CoupleChaos-simulator.zip
+      - name: Publish screenshots to the ci-shots branch
+        run: |
+          mkdir -p "$RUNNER_TEMP/shots" && cd "$RUNNER_TEMP/shots"
+          git init -q && git checkout -q -b ci-shots
+          cp "$RUNNER_TEMP"/launch*.png .
+          git add . && git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "iOS simulator screenshots run ${{ github.run_number }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-shots
