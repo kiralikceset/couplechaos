@@ -1,0 +1,55 @@
+# Compiles the iOS app on a cloud Mac without signing (no Apple account needed).
+# Proves the Xcode project builds and gives a simulator build to try.
+# Run: GitHub → Actions → "iOS build check" → Run workflow.
+name: iOS build check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install and prepare web + native project
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run mobile:sync
+      - name: Select Xcode
+        run: |
+          XCODE="$(ls -d /Applications/Xcode_2[6-9]*.app 2>/dev/null | grep -vi beta | sort -V | tail -1)"
+          test -n "$XCODE" || { ls -d /Applications/Xcode*.app; exit 1; }
+          sudo xcode-select -s "$XCODE" && xcodebuild -version
+      - name: Build for the iOS simulator (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project ios/App/App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGNING_ALLOWED=NO | tail -60
+      - name: Screenshot on a simulator
+        run: |
+          APP="$(find "$RUNNER_TEMP/dd/Build/Products" -name 'App.app' -maxdepth 3 | head -1)"
+          DEV="$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next(x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")"
+          xcrun simctl boot "$DEV"; xcrun simctl bootstatus "$DEV" -b
+          xcrun simctl install "$DEV" "$APP"
+          xcrun simctl launch "$DEV" com.couplechaos.app
+          sleep 12
+          xcrun simctl io "$DEV" screenshot "$RUNNER_TEMP/launch.png"
+          sleep 6
+          xcrun simctl io "$DEV" screenshot "$RUNNER_TEMP/launch2.png"
+          cd "$(dirname "$APP")" && zip -qr "$RUNNER_TEMP/CoupleChaos-simulator.zip" App.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-build
+          path: |
+            ${{ runner.temp }}/launch.png
+            ${{ runner.temp }}/launch2.png
+            ${{ runner.temp }}/CoupleChaos-simulator.zip
