@@ -15,6 +15,9 @@ The cover must look like a thumbnail, not a video frame: bold Space Grotesk titl
 ## Tools
 - HyperFrames (heygen-com/hyperframes, Apache-2.0): HTML → MP4 with a block catalog (kinetic captions, charts, transitions). Installed by install-skills.sh; render with HYPERFRAMES_BROWSER_PATH set to the Playwright Chromium. Tested 2026-11-24 (10 s sample rendered in 29 s).
 
+## Style rule (user feedback 2026-11-25)
+Main account: notebook style only. The HyperFrames kinetic style was rejected for this account; never switch style without asking first.
+
 ## Grid rule (user feedback 2026-11-25)
 Every cover uses the notebook thumbnail template (thumb.html), whatever the video style, so the Instagram grid stays uniform. Kinetic (HyperFrames) videos also start with that thumbnail for 0.5 s.
 
