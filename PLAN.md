@@ -23,12 +23,13 @@ Every cover uses the notebook thumbnail template (thumb.html), whatever the vide
 
 ## Topic queue (from the user's 14-day plan; English, 15-25 s, verify every source first)
 9. Shared fun (Aron 2000 angle) -> "Couple Chaos" tie-in (day 7)
-10. "3-minute couple game, phones down" (day 14)
 11. Phubbing 2021 (Beukeboom & Pollmann) - only if a fresh angle (day 10)
+NEXT: refill the queue with question / "try this tonight" formats (they get ~2x views): would-you-rather, red flag/green flag, "rate your partner 1-10 on…", "couples who do X…".
 Skip: Gottman 69% and love languages (already made). Strip utm_source=chatgpt.com from every link.
 Every post gets a cover image (videoThumbnailUrl; TikTok uses it only on Business accounts).
 
 ## Done
+- 2026-11-27 (scripts sent): 3-minute phones-down game (18:30), this-or-that couples edition (21:30)
 - 2026-11-26 (scripts sent): feeling understood, Gordon & Chen 2016 (18:30), partner quiz (21:30)
 - 2026-11-25 (scripts sent): Gordon 2012 gratitude (18:30), rituals Garcia-Rada/Sezer/Norton (21:30)
 - 2026-11-24 (scripts sent): Hall 2017 humor (18:30), Aron 1997 questions (21:30)
