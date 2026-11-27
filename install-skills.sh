@@ -38,3 +38,7 @@ for s in hyperframes hyperframes-cli hyperframes-registry media-use style-sampli
 mkdir -p /home/claude/work/hf && (cd /home/claude/work/hf && npm i hyperframes --silent)
 # Chrome download is blocked here: render with the Playwright Chromium
 echo 'export HYPERFRAMES_BROWSER_PATH=$(ls -d /opt/pw-browsers/chromium-*/chrome-linux*/chrome | head -1)' >> ~/.bashrc
+
+# Appllama skills (app screen research; MCP connects separately as a claude.ai custom connector: https://mcp.appllama.io/mcp)
+[ -d /home/claude/appllama/appllama-skills ] || GIT_LFS_SKIP_SMUDGE=1 git clone -q --depth 1 https://github.com/appllama/appllama-skills /home/claude/appllama/appllama-skills
+for s in appllama-app-design-skill appllama-usage; do rm -rf ~/.claude/skills/$s; cp -r /home/claude/appllama/appllama-skills/skills/$s ~/.claude/skills/; done
