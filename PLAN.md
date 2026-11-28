@@ -16,6 +16,7 @@ The cover must look like a thumbnail, not a video frame: bold Space Grotesk titl
 - HyperFrames (heygen-com/hyperframes, Apache-2.0): HTML → MP4 with a block catalog (kinetic captions, charts, transitions). Installed by install-skills.sh; render with HYPERFRAMES_BROWSER_PATH set to the Playwright Chromium. Tested 2026-11-24 (10 s sample rendered in 29 s).
 
 ## Voice file rule (mistake on 2026-11-27: the two voices were swapped)
+From 2026-11-28 the user names the files <day>.1 (18:30 video) and <day>.2 (21:30 video), e.g. 29.1 / 29.2. Follow the name; if a name is missing or the day does not match, ask.
 Match each voice file to its script before building: the user generates video 1 first, so the lower number / earlier ElevenLabs timestamp in the filename is video 1. Then confirm with the pause pattern (align.py in /home/claude/work/d5 lists speech segments; compare with the script sentence by sentence). If still unsure, ask the user which is which; never guess.
 
 ## Style rule (user feedback 2026-11-25)
